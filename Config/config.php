@@ -183,6 +183,13 @@ $coParams = [
                 'method'     => 'GET|POST',
             ],
         ],
+        'api' => [
+            'mautic_api_customitemslist' => [
+                'path'       => '/customobjects/{objectAlias}/items',
+                'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\Api\CustomItemSearchApiController::listAction',
+                'method'     => 'GET',
+            ],
+        ],
     ],
 
     'services' => [
