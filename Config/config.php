@@ -189,6 +189,11 @@ $coParams = [
                 'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\Api\CustomItemSearchApiController::listAction',
                 'method'     => 'GET',
             ],
+            'mautic_api_customitemswrite' => [
+                'path'       => '/customobjects/{objectAlias}/items',
+                'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\Api\CustomItemWriteApiController::saveAction',
+                'method'     => 'POST|PATCH',
+            ],
         ],
     ],
 
