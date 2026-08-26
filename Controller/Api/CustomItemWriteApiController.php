@@ -24,12 +24,19 @@ use Symfony\Component\HttpFoundation\Response;
  *   POST /api/customobjects/courses/items
  *   {"data": [{"name": "311-999 - nome do curso", "attributes": {"cursid": "311-999", "cursname": "nome do curso"}}]}
  *
- * POST: "id" is optional per entry — omit it to create a new item, pass
- * an existing item's "id" to update it instead.
+ * POST creates only — "id" must be absent on every entry, present = 400.
+ * PATCH (same path/body shape) updates only — "id" is required on every
+ * entry; absent, or present but not found, = 400. Neither verb ever falls
+ * back to the other's behavior for a mismatched entry.
  *
- * PATCH (same path/body shape): "id" is required on every entry — PATCH
- * only updates, it never creates. An entry missing "id" fails the whole
- * request with a 400 before anything is written.
+ * PUT (same path/body shape) is the one exception: it upserts by "id",
+ * matching Mautic core's own PUT convention on its entity edit routes
+ * (ApiBundle/Controller/CommonApiController.php::editEntityAction) — "id"
+ * present and found = update; "id" present but not found, or absent
+ * entirely = create (a fresh id is assigned, the requested one is not
+ * reused). Added on request for API callers who expect that standard
+ * Mautic upsert convention and don't want to look up existence first —
+ * POST/PATCH stay strict on purpose (see git history) for callers who do.
  *
  * A single call can carry multiple entries in "data" to write several
  * items at once.
@@ -60,6 +67,8 @@ class CustomItemWriteApiController extends AbstractController
         }
 
         $isPatch = $request->isMethod('PATCH');
+        $isPost  = $request->isMethod('POST');
+        $isPut   = $request->isMethod('PUT');
 
         foreach ($payload['data'] as $itemData) {
             if (!is_array($itemData)) {
@@ -75,13 +84,20 @@ class CustomItemWriteApiController extends AbstractController
                     Response::HTTP_BAD_REQUEST
                 );
             }
+
+            if ($isPost && !empty($itemData['id'])) {
+                return new JsonResponse(
+                    ['errors' => [['message' => 'POST never accepts "id" — it only creates new items, it never updates one. Use PATCH to update.']]],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
         }
 
         $items = [];
 
         foreach ($payload['data'] as $itemData) {
             try {
-                $customItem = $this->getCustomItem($customObject, $itemData);
+                $customItem = $this->getCustomItem($customObject, $itemData, $isPut);
                 $customItem = $this->populateCustomItem($customItem, $itemData);
                 $customItem->setDefaultValuesForMissingFields();
                 $items[]    = $this->customItemModel->save($customItem);
@@ -103,13 +119,23 @@ class CustomItemWriteApiController extends AbstractController
      *
      * @throws NotFoundException
      */
-    private function getCustomItem(CustomObject $customObject, array $itemData): CustomItem
+    private function getCustomItem(CustomObject $customObject, array $itemData, bool $isPut = false): CustomItem
     {
         if (empty($itemData['id'])) {
             return new CustomItem($customObject);
         }
 
-        $customItem = $this->customItemModel->fetchEntity((int) $itemData['id']);
+        try {
+            $customItem = $this->customItemModel->fetchEntity((int) $itemData['id']);
+        } catch (NotFoundException $e) {
+            if ($isPut) {
+                // PUT upserts: an id that doesn't exist falls back to create, matching
+                // Mautic core's own PUT convention (see class docblock).
+                return new CustomItem($customObject);
+            }
+
+            throw $e;
+        }
 
         return $this->customItemModel->populateCustomFields($customItem);
     }
