@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Controller\Api;
 
+use Doctrine\ORM\EntityManagerInterface;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\InvalidValueException;
@@ -39,13 +40,19 @@ use Symfony\Component\HttpFoundation\Response;
  * POST/PATCH stay strict on purpose (see git history) for callers who do.
  *
  * A single call can carry multiple entries in "data" to write several
- * items at once.
+ * items at once, wrapped in one DB transaction — if any entry fails
+ * (missing "id" where required, "id" not found, an unknown field alias,
+ * a validation error like a missing required field, etc.), everything
+ * already written earlier in that same batch is rolled back too. Only a
+ * whole-request failure is atomic this way; a successful response commits
+ * every entry in "data" together.
  */
 class CustomItemWriteApiController extends AbstractController
 {
     public function __construct(
         private CustomObjectModel $customObjectModel,
-        private CustomItemModel $customItemModel
+        private CustomItemModel $customItemModel,
+        private EntityManagerInterface $em
     ) {
     }
 
@@ -95,17 +102,21 @@ class CustomItemWriteApiController extends AbstractController
 
         $items = [];
 
-        foreach ($payload['data'] as $itemData) {
-            try {
+        $this->em->getConnection()->beginTransaction();
+
+        try {
+            foreach ($payload['data'] as $itemData) {
                 $customItem = $this->getCustomItem($customObject, $itemData, $isPut);
                 $customItem = $this->populateCustomItem($customItem, $itemData);
                 $customItem->setDefaultValuesForMissingFields();
                 $items[]    = $this->customItemModel->save($customItem);
-            } catch (NotFoundException $e) {
-                return new JsonResponse(['errors' => [['message' => $e->getMessage()]]], Response::HTTP_BAD_REQUEST);
-            } catch (InvalidValueException $e) {
-                return new JsonResponse(['errors' => [['message' => $e->getMessage()]]], Response::HTTP_BAD_REQUEST);
             }
+
+            $this->em->getConnection()->commit();
+        } catch (NotFoundException|InvalidValueException $e) {
+            $this->em->getConnection()->rollBack();
+
+            return new JsonResponse(['errors' => [['message' => $e->getMessage()]]], Response::HTTP_BAD_REQUEST);
         }
 
         return new JsonResponse([
