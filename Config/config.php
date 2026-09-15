@@ -194,6 +194,14 @@ $coParams = [
                 'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\Api\CustomItemWriteApiController::saveAction',
                 'method'     => 'POST|PATCH|PUT',
             ],
+            'mautic_api_customitemsdelete' => [
+                'path'         => '/customobjects/{objectAlias}/items/{itemId}',
+                'controller'   => 'MauticPlugin\CustomObjectsBundle\Controller\Api\CustomItemDeleteApiController::deleteAction',
+                'method'       => 'DELETE',
+                'requirements' => [
+                    'itemId' => '\d+',
+                ],
+            ],
         ],
     ],
 
