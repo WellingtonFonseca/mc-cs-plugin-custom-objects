@@ -202,6 +202,11 @@ $coParams = [
                     'itemId' => '\d+',
                 ],
             ],
+            'mautic_api_customitemsbatchdelete' => [
+                'path'       => '/customobjects/{objectAlias}/items',
+                'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\Api\CustomItemDeleteApiController::batchDeleteAction',
+                'method'     => 'DELETE',
+            ],
         ],
     ],
 
