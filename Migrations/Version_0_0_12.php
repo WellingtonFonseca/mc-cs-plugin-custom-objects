@@ -19,9 +19,12 @@ class Version_0_0_12 extends AbstractMigration
      */
     protected function isApplicable(Schema $schema): bool
     {
-        $parts = [];
+        // The legacy (unprefixed) index names only differ from the expected ones when a table prefix is set.
+        // With an empty prefix they are the same index, so dropping it here would leave the table without it.
+        $dropLegacy = '' !== $this->tablePrefix;
+        $parts      = [];
 
-        if ($schema->getTable($this->concatPrefix('custom_item'))->hasIndex('name_fulltext')) {
+        if ($dropLegacy && $schema->getTable($this->concatPrefix('custom_item'))->hasIndex('name_fulltext')) {
             $parts[] = 'DROP INDEX name_fulltext';
         }
 
@@ -35,7 +38,7 @@ class Version_0_0_12 extends AbstractMigration
 
         $parts = [];
 
-        if ($schema->getTable($this->concatPrefix('custom_field_value_text'))->hasIndex('value_fulltext')) {
+        if ($dropLegacy && $schema->getTable($this->concatPrefix('custom_field_value_text'))->hasIndex('value_fulltext')) {
             $parts[] = 'DROP INDEX value_fulltext';
         }
 
@@ -48,10 +51,10 @@ class Version_0_0_12 extends AbstractMigration
         }
 
         $parts = [];
-        if ($schema->getTable($this->concatPrefix('custom_field_value_option'))->hasIndex('value_fulltext')) {
+        if ($dropLegacy && $schema->getTable($this->concatPrefix('custom_field_value_option'))->hasIndex('value_fulltext')) {
             $parts[] = 'DROP INDEX value_fulltext';
         }
-        if ($schema->getTable($this->concatPrefix('custom_field_value_option'))->hasIndex('unique')) {
+        if ($dropLegacy && $schema->getTable($this->concatPrefix('custom_field_value_option'))->hasIndex('unique')) {
             $parts[] = 'DROP INDEX `unique`';
         }
 
