@@ -28,6 +28,7 @@ class ReportColumnsBuilder
      */
     protected $columnTypeMapping = [
         'int'      => 'int',
+        'decimal'  => 'float',
         'date'     => 'date',
         'datetime' => 'datetime',
     ];
