@@ -10,7 +10,7 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
 $coParams = [
     'name'        => 'Custom Objects',
     'description' => 'Adds custom objects and fields features to Mautic',
-    'version'     => '0.0.27',
+    'version'     => '0.0.28',
     'author'      => 'Mautic, Inc.',
 
     'routes' => [
@@ -482,6 +482,11 @@ $coParams = [
             ],
             'custom.field.type.int' => [
                 'class'     => MauticPlugin\CustomObjectsBundle\CustomFieldType\IntType::class,
+                'arguments' => ['translator', 'mautic.lead.provider.fillterOperator'],
+                'tag'       => 'custom.field.type',
+            ],
+            'custom.field.type.decimal' => [
+                'class'     => MauticPlugin\CustomObjectsBundle\CustomFieldType\DecimalType::class,
                 'arguments' => ['translator', 'mautic.lead.provider.fillterOperator'],
                 'tag'       => 'custom.field.type',
             ],
