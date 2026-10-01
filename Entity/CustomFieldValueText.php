@@ -16,8 +16,7 @@ class CustomFieldValueText extends AbstractCustomFieldValue
     }
 
     /**
-     * Doctrine doesn't support prefix indexes. It's being added in the updatePluginSchema method.
-     * $builder->addIndex(['value(64)'], 'value_index');.
+     * Doctrine doesn't support prefix indexes. The (custom_field_id, value(64)) index is added by Version_0_0_30.
      */
     public static function loadMetadata(ORM\ClassMetadata $metadata): void
     {

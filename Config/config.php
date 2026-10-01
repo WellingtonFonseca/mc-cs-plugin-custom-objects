@@ -10,7 +10,7 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
 $coParams = [
     'name'        => 'Custom Objects',
     'description' => 'Adds custom objects and fields features to Mautic',
-    'version'     => '0.0.29',
+    'version'     => '0.0.30',
     'author'      => 'Mautic, Inc.',
 
     'routes' => [
