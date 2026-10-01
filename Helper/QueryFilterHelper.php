@@ -154,9 +154,10 @@ class QueryFilterHelper
         ContactSegmentFilter $filter,
         string $valueParameter,
         bool $alreadyNegated = false,
-        $filterParameterValue = null
+        $filterParameterValue = null,
+        ?string $operator = null
     ) {
-        $operator = $filter->getOperator();
+        $operator = $operator ?? $filter->getOperator();
         if ($alreadyNegated) {
             switch ($operator) {
                 case 'empty':
@@ -365,7 +366,8 @@ class QueryFilterHelper
                     $cinAlias,
                     $alias,
                     $segmentMergedFilter,
-                    $valueParameter
+                    $valueParameter,
+                    $segmentFilterFieldOperator
                 ),
                 $segmentFilterFieldOperator,
                 $filter['filter_value'],
@@ -418,9 +420,10 @@ class QueryFilterHelper
         string $cinAlias,
         string $alias,
         ContactSegmentFilter $filter,
-        string $valueParameter
+        string $valueParameter,
+        string $criterionOperator
     ) {
-        $segmentFilterFieldOperator = $filter->getOperator();
+        $segmentFilterFieldOperator = $criterionOperator;
         if ($isCmoFilter) {
             $expression = $this->getCustomObjectNameExpression(
                 $qb,
@@ -435,7 +438,8 @@ class QueryFilterHelper
                 $filter,
                 $valueParameter,
                 false,
-                $filter->getParameterValue()
+                $filter->getParameterValue(),
+                $criterionOperator
             );
         }
 

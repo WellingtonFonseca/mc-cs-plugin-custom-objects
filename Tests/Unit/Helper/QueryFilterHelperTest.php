@@ -6,15 +6,21 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Helper;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManager;
+use Doctrine\DBAL\Platforms\MySQLPlatform;
+use Mautic\LeadBundle\Provider\FilterOperatorProviderInterface;
+use Mautic\LeadBundle\Segment\ContactSegmentFilter;
+use Mautic\LeadBundle\Segment\ContactSegmentFilterCrate;
 use Mautic\LeadBundle\Segment\Query\Expression\ExpressionBuilder;
 use Mautic\LeadBundle\Segment\Query\QueryBuilder;
 use Mautic\LeadBundle\Segment\RandomParameterName;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\DateType;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterFactory;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterHelper;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomFieldRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 class QueryFilterHelperTest extends TestCase
 {
@@ -111,5 +117,62 @@ class QueryFilterHelperTest extends TestCase
 
         $this->queryFilterHelper
             ->addCustomObjectNameExpression($this->queryBuilder, 'test', 'eq', 10);
+    }
+
+    /**
+     * Each criterion of a merged filter must keep its own operator, even though
+     * the merged filter itself reports a single one.
+     */
+    public function testCreateMergeFilterQueryKeepsOperatorOfEachCriterion(): void
+    {
+        if (!defined('MAUTIC_TABLE_PREFIX')) {
+            define('MAUTIC_TABLE_PREFIX', '');
+        }
+
+        $connection = $this->createMock(Connection::class);
+        $connection->method('getDatabasePlatform')->willReturn(new MySQLPlatform());
+        $entityManager = $this->createMock(EntityManager::class);
+        $entityManager->method('getConnection')->willReturn($connection);
+
+        $customFieldTypeProvider = new CustomFieldTypeProvider();
+        $customFieldTypeProvider->addType(new DateType(
+            $this->createMock(TranslatorInterface::class),
+            $this->createMock(FilterOperatorProviderInterface::class)
+        ));
+
+        $queryFilterHelper = new QueryFilterHelper(
+            $entityManager,
+            new QueryFilterFactory(
+                $entityManager,
+                $customFieldTypeProvider,
+                $this->createMock(CustomFieldRepository::class),
+                new QueryFilterFactory\Calculator(),
+                1
+            ),
+            new RandomParameterName()
+        );
+
+        $crate = new ContactSegmentFilterCrate([
+            'glue'            => 'and',
+            'field'           => 'cmf_13',
+            'object'          => 'custom_object',
+            'type'            => 'date',
+            'operator'        => 'custom_operator',
+            'merged_property' => [
+                ['operator' => 'lt', 'filter_value' => '2026-10-01', 'field' => '13', 'type' => 'date', 'cmo_filter' => false],
+                ['operator' => 'gt', 'filter_value' => '2026-10-01', 'field' => '12', 'type' => 'date', 'cmo_filter' => false],
+            ],
+        ]);
+
+        $segmentFilter = $this->createMock(ContactSegmentFilter::class);
+        $segmentFilter->contactSegmentFilterCrate = $crate;
+        // The merged filter reports one operator for the whole group (the last criterion's).
+        $segmentFilter->method('getOperator')->willReturn('gt');
+        $segmentFilter->method('getParameterValue')->willReturn('2026-10-01');
+
+        $sql = $queryFilterHelper->createMergeFilterQuery($segmentFilter, 'l')->getSQL();
+
+        $this->assertMatchesRegularExpression('/cix_13_date_value\.value < :/', $sql);
+        $this->assertMatchesRegularExpression('/cix_12_date_value\.value > :/', $sql);
     }
 }
