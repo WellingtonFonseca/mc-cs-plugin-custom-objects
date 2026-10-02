@@ -10,6 +10,7 @@ use Doctrine\ORM\EntityManager;
 use Mautic\LeadBundle\Segment\ContactSegmentFilter;
 use Mautic\LeadBundle\Segment\Query\QueryBuilder as SegmentQueryBuilder;
 use Mautic\LeadBundle\Segment\RandomParameterName;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\AbstractMultivalueType;
 use MauticPlugin\CustomObjectsBundle\Exception\InvalidArgumentException;
 use MauticPlugin\CustomObjectsBundle\Repository\DbalQueryTrait;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\UnionQueryContainer;
@@ -331,18 +332,36 @@ class QueryFilterHelper
 
         foreach ($segmentFilter->contactSegmentFilterCrate->getMergedProperty() as $filter) {
             $segmentFilterFieldId       = (int) $filter['field'];
-            $segmentFilterFieldType     = $filter['type'] ?: $this->queryFilterFactory
-                ->getCustomFieldTypeById($segmentFilterFieldId);
+            $isCmoFilter                = $filter['cmo_filter'] ?? false;
+            // The type saved with a segment filter is the one the segment screen
+            // uses ('select' for every choice field, multiselect included), not the
+            // one that decides where the value is stored. The real field type does.
+            $segmentFilterFieldType     = $isCmoFilter
+                ? ($filter['type'] ?: 'text')
+                : $this->queryFilterFactory->getCustomFieldTypeById($segmentFilterFieldId);
             $dataTable                  = $this->queryFilterFactory->getTableNameFromType($segmentFilterFieldType);
             $segmentMergedFilter        = $segmentFilter;
             $segmentFilterFieldOperator = (string) $filter['operator'];
 
             $alias                      = $customItemXrefContactAlias.'_'.$segmentFilterFieldId.'_'.$filter['type'];
             $aliasValue                 = $alias.'_value';
-            $isCmoFilter                = $filter['cmo_filter'] ?? false;
             $cinAlias                   = 'cin_'.$segmentFilterFieldId;
             $cinAliasItem               = $cinAlias.'_item';
             $valueParameter             = $this->randomParameterNameService->generateRandomParameterName();
+
+            if (!$isCmoFilter
+                && AbstractMultivalueType::TABLE_NAME === $dataTable
+                && $this->addMergeOptionCondition(
+                    $qb,
+                    $customItemXrefContactAlias,
+                    $segmentFilterFieldId,
+                    $segmentFilterFieldOperator,
+                    $filter['filter_value'],
+                    $valueParameter
+                )
+            ) {
+                continue;
+            }
 
             if ($isCmoFilter && !in_array($cinAliasItem, $joinedAlias, true)) {
                 $this->joinMergeCustomItem($qb, $customItemXrefContactAlias, $cinAliasItem, $segmentFilterFieldId);
@@ -376,6 +395,55 @@ class QueryFilterHelper
         }
 
         return $qb;
+    }
+
+    /**
+     * A multiselect keeps one row per selected option, so its conditions are
+     * checked per item with EXISTS / NOT EXISTS on those rows instead of a join
+     * (an item with no option has no row to join, and "not in" must hold for
+     * every row, not for some). Each condition gets its own subquery, so two
+     * conditions on the same field can both hold on one item.
+     *
+     * @param mixed $value
+     *
+     * @return bool false when the operator is not one of these (the caller then
+     *              uses the generic join)
+     */
+    private function addMergeOptionCondition(
+        SegmentQueryBuilder $qb,
+        string $customItemXrefContactAlias,
+        int $fieldId,
+        string $operator,
+        $value,
+        string $valueParameter
+    ): bool {
+        $optionAlias = "cixo_{$fieldId}_{$valueParameter}";
+        $subQuery    = 'SELECT 1 FROM '.MAUTIC_TABLE_PREFIX.AbstractMultivalueType::TABLE_NAME." {$optionAlias}"
+            ." WHERE {$optionAlias}.custom_item_id = {$customItemXrefContactAlias}.custom_item_id"
+            ." AND {$optionAlias}.custom_field_id = {$fieldId}";
+
+        switch ($operator) {
+            case 'in':
+            case 'multiselect':
+                $qb->andWhere("EXISTS ({$subQuery} AND {$optionAlias}.value IN (:{$valueParameter}))");
+                $qb->setParameter($valueParameter, (array) $value, ArrayParameterType::STRING);
+                break;
+            case 'notIn':
+            case '!multiselect':
+                $qb->andWhere("NOT EXISTS ({$subQuery} AND {$optionAlias}.value IN (:{$valueParameter}))");
+                $qb->setParameter($valueParameter, (array) $value, ArrayParameterType::STRING);
+                break;
+            case 'empty':
+                $qb->andWhere("NOT EXISTS ({$subQuery})");
+                break;
+            case 'notEmpty':
+                $qb->andWhere("EXISTS ({$subQuery})");
+                break;
+            default:
+                return false;
+        }
+
+        return true;
     }
 
     private function joinMergeCustomItem(
