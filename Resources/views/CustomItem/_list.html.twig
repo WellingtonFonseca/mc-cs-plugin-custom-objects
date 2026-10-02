@@ -99,5 +99,7 @@
     </div>
 {%  elseif not (searchWarnings|default([]))|length %}
     {# With a search warning the warning already explains the empty list: Mautic's own "no results" would repeat it. #}
-    {{- include('@MauticCore/Helper/noresults.html.twig', { 'tip' : lookup ? 'custom.item.link.noresults.tip' : 'custom.object.noresults.tip' }) -}}
+    {# The tip ("create your first ...") only makes sense for an empty object. After a search it would be a second, wrong message. #}
+    {% set noresultsVars = searchValue|default('') ? {} : { 'tip' : lookup ? 'custom.item.link.noresults.tip' : 'custom.object.noresults.tip' } %}
+    {{- include('@MauticCore/Helper/noresults.html.twig', noresultsVars) -}}
 {% endif %}
