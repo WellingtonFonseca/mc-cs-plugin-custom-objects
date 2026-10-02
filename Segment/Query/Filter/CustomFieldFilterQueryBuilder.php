@@ -46,19 +46,26 @@ class CustomFieldFilterQueryBuilder extends BaseFilterQueryBuilder
             );
         }
 
-        match ($filterOperator) {
-            'empty', 'neq', 'notLike', '!multiselect', '!between', 'notBetween' => $queryBuilder->addLogic(
-                $queryBuilder->expr()->notExists($unionQueryContainer->getSQL()),
-                $filter->getGlue()
-            ),
-            default => $queryBuilder->addLogic(
-                $queryBuilder->expr()->exists($unionQueryContainer->getSQL()),
-                $filter->getGlue()
-            ),
-        };
+        $queryBuilder->addLogic(
+            self::isNegatedOperator($filterOperator)
+                ? $queryBuilder->expr()->notExists($unionQueryContainer->getSQL())
+                : $queryBuilder->expr()->exists($unionQueryContainer->getSQL()),
+            $filter->getGlue()
+        );
 
         $queryBuilder->setParameters($unionQueryContainer->getParameters(), $unionQueryContainer->getParameterTypes());
 
         return $queryBuilder;
+    }
+
+    /**
+     * Operators whose condition is built POSITIVE and then wrapped in NOT EXISTS.
+     * 'notIn' is the "not in" of a multiselect saved as 'select' (the segment
+     * screen types every choice field that way, and core only turns "not in" into
+     * '!multiselect' for the type 'multiselect').
+     */
+    public static function isNegatedOperator(string $operator): bool
+    {
+        return in_array($operator, ['empty', 'neq', 'notLike', '!multiselect', 'notIn', '!between', 'notBetween'], true);
     }
 }

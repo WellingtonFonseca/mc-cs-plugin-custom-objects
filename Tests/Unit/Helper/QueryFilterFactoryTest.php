@@ -32,6 +32,10 @@ class QueryFilterFactoryTest extends TestCase
     {
         parent::setUp();
 
+        if (!defined('MAUTIC_TABLE_PREFIX')) {
+            define('MAUTIC_TABLE_PREFIX', '');
+        }
+
         $this->prefix = MAUTIC_TABLE_PREFIX;
 
         $this->segmentFilter = $this->createMock(ContactSegmentFilter::class);
@@ -164,6 +168,32 @@ SQL;
 
         $this->assertCount(7, $unionQueryContainer);
         $this->assertSame($this->trimSpacesAndLinebreaks($expectedQuery), $unionQueryContainer->getSQL());
+    }
+
+    /**
+     * The segment screen saves 'select' for every choice field, a multiselect
+     * included: the value table comes from the real field type.
+     */
+    public function testQueryReadsTheTableOfTheRealFieldTypeNotTheSavedOne(): void
+    {
+        $entityManager = $this->createMock(EntityManager::class);
+        $entityManager->method('getConnection')->willReturn($this->createMock(Connection::class));
+
+        $multiselect = $this->createMock(CustomFieldTypeInterface::class);
+        $multiselect->method('getTableName')->willReturn('custom_field_value_option');
+        $fieldTypeProvider = $this->createMock(CustomFieldTypeProvider::class);
+        $fieldTypeProvider->method('getType')->willReturnCallback(
+            fn (string $type) => 'multiselect' === $type ? $multiselect : $this->fail("table asked for the saved type '{$type}'")
+        );
+        $repository = $this->createMock(CustomFieldRepository::class);
+        $repository->method('getCustomFieldTypeById')->with(1)->willReturn('multiselect');
+
+        $factory = new QueryFilterFactory($entityManager, $fieldTypeProvider, $repository, new QueryFilterFactory\Calculator(), 1);
+        $filter  = $this->createMock(ContactSegmentFilter::class);
+        $filter->method('getField')->willReturn(1);
+        $filter->method('getType')->willReturn('select');
+
+        $this->assertStringContainsString("{$this->prefix}custom_field_value_option alias_value", $factory->createQuery('alias', $filter)->getSQL());
     }
 
     private function constructWithExpectedLimit(int $limit): void
