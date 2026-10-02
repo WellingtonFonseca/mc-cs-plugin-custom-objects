@@ -25,9 +25,12 @@ use MauticPlugin\CustomObjectsBundle\EventListener\CustomItemXrefContactSubscrib
 use MauticPlugin\CustomObjectsBundle\Repository\CustomItemRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomItemXrefContactSubscriberTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     private const ITEM_ID = 90;
 
     private const ENTITY_ID = 123;
@@ -427,10 +430,10 @@ class CustomItemXrefContactSubscriberTest extends TestCase
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('setParameter')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['customItemId', self::ITEM_ID, null],
                 ['contactId', self::ENTITY_ID, null]
-            );
+            ], null, false, $this->queryBuilder, 'setParameter'));
 
         $this->queryBuilder->expects($this->once())
             ->method('getQuery')

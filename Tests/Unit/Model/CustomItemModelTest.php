@@ -40,9 +40,12 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomItemModelTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     private $customItem;
 
     private $user;
@@ -166,10 +169,10 @@ class CustomItemModelTest extends TestCase
         $this->customItem->expects($this->once())->method('getCustomFieldValues')->willReturn(new ArrayCollection());
         $this->customItem->expects($this->never())->method('recordCustomFieldValueChanges');
         $this->dispatcher->method('dispatch')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [$this->isInstanceOf(CustomItemEvent::class), CustomItemEvents::ON_CUSTOM_ITEM_PRE_SAVE],
                 [$this->isInstanceOf(CustomItemEvent::class), CustomItemEvents::ON_CUSTOM_ITEM_POST_SAVE]
-            );
+            ], null, false, $this->dispatcher, 'dispatch'));
         $this->customItemRepository->expects($this->once())->method('upsert')->with($this->customItem);
         $this->validator->expects($this->once())->method('validate')->with($this->customItem)->willReturn($this->violationList);
 
@@ -190,10 +193,10 @@ class CustomItemModelTest extends TestCase
         $this->customItem->expects($this->once())->method('recordCustomFieldValueChanges');
         $this->customFieldValueModel->expects($this->once())->method('save')->with($customFieldValue);
         $this->dispatcher->method('dispatch')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [$this->isInstanceOf(CustomItemEvent::class), CustomItemEvents::ON_CUSTOM_ITEM_PRE_SAVE],
                 [$this->isInstanceOf(CustomItemEvent::class), CustomItemEvents::ON_CUSTOM_ITEM_POST_SAVE]
-            );
+            ], null, false, $this->dispatcher, 'dispatch'));
         $this->validator->expects($this->once())->method('validate')->with($this->customItem)->willReturn($this->violationList);
 
         $this->assertSame($this->customItem, $this->customItemModel->save($this->customItem));
@@ -203,10 +206,10 @@ class CustomItemModelTest extends TestCase
     {
         $this->customItem->expects($this->once())->method('getId')->willReturn(34);
         $this->dispatcher->method('dispatch')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [$this->isInstanceOf(CustomItemEvent::class), CustomItemEvents::ON_CUSTOM_ITEM_PRE_DELETE],
                 [$this->isInstanceOf(CustomItemEvent::class), CustomItemEvents::ON_CUSTOM_ITEM_POST_DELETE]
-            );
+            ], null, false, $this->dispatcher, 'dispatch'));
         $this->entityManager->expects($this->once())->method('remove')->with($this->customItem);
         $this->entityManager->expects($this->once())->method('flush');
 
@@ -238,7 +241,7 @@ class CustomItemModelTest extends TestCase
 
         $this->dispatcher->expects($this->exactly(2))
             ->method('dispatch')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [
                     $this->callback(function (CustomItemXrefEntityDiscoveryEvent $event) use ($xref) {
                         $this->assertSame($this->customItem, $event->getCustomItem());
@@ -260,7 +263,7 @@ class CustomItemModelTest extends TestCase
                     }),
                     CustomItemEvents::ON_CUSTOM_ITEM_LINK_ENTITY,
                 ]
-            );
+            ], null, false, $this->dispatcher, 'dispatch'));
 
         $this->assertSame($xref, $this->customItemModel->linkEntity($this->customItem, 'contact', 123));
     }
@@ -290,7 +293,7 @@ class CustomItemModelTest extends TestCase
 
         $this->dispatcher->expects($this->exactly(2))
             ->method('dispatch')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [
                     $this->callback(function (CustomItemXrefEntityDiscoveryEvent $event) use ($xref) {
                         $this->assertSame($this->customItem, $event->getCustomItem());
@@ -312,7 +315,7 @@ class CustomItemModelTest extends TestCase
                     }),
                     CustomItemEvents::ON_CUSTOM_ITEM_UNLINK_ENTITY,
                 ]
-            );
+            ], null, false, $this->dispatcher, 'dispatch'));
 
         $this->assertSame($xref, $this->customItemModel->unlinkEntity($this->customItem, 'contact', 123));
     }
@@ -448,18 +451,18 @@ class CustomItemModelTest extends TestCase
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('select')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [CustomItem::TABLE_ALIAS],
                 ['the select count expr']
-            );
+            ], null, false, $this->queryBuilder, 'select'));
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('setMaxResults')
-            ->withConsecutive([10], [1]);
+            ->willReturnCallback($this->consecutiveCalls([[10], [1]], null, false, $this->queryBuilder, 'setMaxResults'));
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('setFirstResult')
-            ->withConsecutive([10], [0]);
+            ->willReturnCallback($this->consecutiveCalls([[10], [0]], null, false, $this->queryBuilder, 'setFirstResult'));
 
         $this->queryBuilder->expects($this->once())
             ->method('resetDQLPart')
@@ -519,26 +522,26 @@ class CustomItemModelTest extends TestCase
 
         $this->queryBuilder->expects($this->exactly(4))
             ->method('select')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [CustomItem::TABLE_ALIAS],
                 ['IDENTITY(ValueText.customItem)'],
                 ['IDENTITY(ValueOption.customItem)'],
                 ['CustomItem.name as value, CustomItem.id']
-            );
+            ], null, false, $this->queryBuilder, 'select'));
 
         $this->queryBuilder->expects($this->any())
             ->method('andWhere')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['MATCH (ValueText.value) AGAINST (:search BOOLEAN) > 0'],
                 ['MATCH (ValueOption.value) AGAINST (:search BOOLEAN) > 0']
-            );
+            ], null, false, $this->queryBuilder, 'andWhere'));
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('setParameter')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['customObjectId', 44],
                 ['search', '(+Item* +A*) >"Item A"']
-            );
+            ], null, false, $this->queryBuilder, 'setParameter'));
 
         $this->queryBuilder->expects($this->once())
             ->method('getQuery')

@@ -18,9 +18,12 @@ use MauticPlugin\CustomObjectsBundle\Repository\CustomItemRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class ContactTabSubscriberTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     /**
      * @var MockObject|CustomObjectModel
      */
@@ -134,7 +137,7 @@ class ContactTabSubscriberTest extends TestCase
 
         $this->customContentEvent
             ->method('addTemplate')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [
                     '@CustomObjects/SubscribedEvents/Tab/link.html.twig',
                     [
@@ -146,7 +149,7 @@ class ContactTabSubscriberTest extends TestCase
                 [
                     '@CustomObjects/SubscribedEvents/Tab/modal.html.twig',
                 ]
-            );
+            ], null, false, $this->customContentEvent, 'addTemplate'));
 
         $this->customObjectModel->expects($this->once())
             ->method('getMasterCustomObjects')
@@ -197,14 +200,13 @@ class ContactTabSubscriberTest extends TestCase
 
         $this->customItemRouteProvider->expects($this->exactly(2))
             ->method('buildListRoute')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [555, 1, 'contact', 45],
                 [555, 1, 'contact', 45, ['lookup' => 1, 'search' => '']]
-            )
-            ->willReturnOnConsecutiveCalls(
+            ], [
                 'search/route',
                 'link/route'
-            );
+            ], true));
 
         $sessionProvider = $this->createMock(SessionProvider::class);
         $sessionProvider->method('getFilter')->willReturn('Search something');

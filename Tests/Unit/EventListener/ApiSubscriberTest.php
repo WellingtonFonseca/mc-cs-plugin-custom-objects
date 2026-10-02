@@ -21,9 +21,12 @@ use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
 {
+    use ConsecutiveCallsTrait;
+
     private const CONTROLLER_METHODS = [
         'newEntityAction',
         'newEntitiesAction',
@@ -362,11 +365,10 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
 
         $customItem->expects($this->exactly(2))
             ->method('findCustomFieldValueForFieldAlias')
-            ->withConsecutive(['sku'], ['price'])
-            ->will($this->onConsecutiveCalls(
+            ->willReturnCallback($this->consecutiveCalls([['sku'], ['price']], [
                 $skuValue,
-                $this->throwException(new NotFoundException('Field value for price not found'))
-            ));
+                new NotFoundException('Field value for price not found')
+            ], true));
 
         $customItem->expects($this->once())
             ->method('createNewCustomFieldValueByFieldAlias')

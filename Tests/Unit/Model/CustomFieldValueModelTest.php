@@ -22,9 +22,12 @@ use MauticPlugin\CustomObjectsBundle\Model\CustomFieldValueModel;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
 {
+    use ConsecutiveCallsTrait;
+
     private $customObject;
     private $customItem;
     private $customField;
@@ -92,7 +95,8 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
         $noValueField = $this->createMock(CustomField::class);
         $customFields = new ArrayCollection([44 => $this->customField, 66 => $noValueField]);
         $customItem   = $this->getMockBuilder(CustomItem::class)
-            ->setMethods(['getCustomObject', 'getPublishedFields', 'getId', 'isNew'])
+            ->onlyMethods(['getCustomObject', 'getId', 'isNew'])
+            ->addMethods(['getPublishedFields'])
             ->disableOriginalConstructor()
             ->getMock();
 
@@ -138,31 +142,31 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('select')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ["cfv_text.custom_field_id, cfv_text.custom_item_id, cfv_text.value, 'text' AS type"],
                 ["cfv_int.custom_field_id, cfv_int.custom_item_id, cfv_int.value, 'int' AS type"]
-            );
+            ], null, false, $this->queryBuilder, 'select'));
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('from')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [MAUTIC_TABLE_PREFIX.'custom_field_value_text'],
                 [MAUTIC_TABLE_PREFIX.'custom_field_value_int']
-            );
+            ], null, false, $this->queryBuilder, 'from'));
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('where')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['cfv_text.custom_item_id = 33'],
                 ['cfv_int.custom_item_id = 33']
-            );
+            ], null, false, $this->queryBuilder, 'where'));
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('andWhere')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['cfv_text.custom_field_id = 44'],
                 ['cfv_int.custom_field_id = 66']
-            );
+            ], null, false, $this->queryBuilder, 'andWhere'));
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('getSQL')
@@ -283,7 +287,7 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
 
         $customFieldValue->expects($this->exactly(3))
             ->method('setValue')
-            ->withConsecutive(['red'], ['green'], [4]);
+            ->willReturnCallback($this->consecutiveCalls([['red'], ['green'], [4]], null, false, $customFieldValue, 'setValue'));
 
         $this->customItem->expects($this->exactly(2))
             ->method('getId')

@@ -19,9 +19,12 @@ use MauticPlugin\CustomObjectsBundle\EventListener\CustomItemXrefCustomItemSubsc
 use MauticPlugin\CustomObjectsBundle\Repository\CustomItemRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomItemXrefCustomItemSubscriberTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     private const ITEM_A_ID = 90;
 
     private const ITEM_B_ID = 123;
@@ -325,10 +328,10 @@ class CustomItemXrefCustomItemSubscriberTest extends TestCase
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('setParameter')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['customItemLower', self::ITEM_A_ID, null],
                 ['customItemHigher', self::ITEM_B_ID, null]
-            );
+            ], null, false, $this->queryBuilder, 'setParameter'));
 
         $this->queryBuilder->expects($this->once())
             ->method('getQuery')

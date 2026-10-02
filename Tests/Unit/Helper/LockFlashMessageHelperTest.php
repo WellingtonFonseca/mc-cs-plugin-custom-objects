@@ -11,9 +11,12 @@ use MauticPlugin\CustomObjectsBundle\Helper\LockFlashMessageHelper;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Routing\Router;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class LockFlashMessageHelperTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     public function testAddFlash(): void
     {
         $coreParametersHelper = $this->createMock(CoreParametersHelper::class);
@@ -70,13 +73,11 @@ class LockFlashMessageHelperTest extends TestCase
 
         $coreParametersHelper
             ->method('get')
-            ->withConsecutive(['date_format_dateonly'], ['date_format_timeonly'], ['date_format_full'])
-            ->willReturnOnConsecutiveCalls($dateFormat1, $dateFormat2, $dateFormat3);
+            ->willReturnCallback($this->consecutiveCalls([['date_format_dateonly'], ['date_format_timeonly'], ['date_format_full']], [$dateFormat1, $dateFormat2, $dateFormat3], true));
 
         $checkedOut
             ->method('format')
-            ->withConsecutive([$dateFormat1], [$dateFormat2], [$dateFormat3])
-            ->willReturnOnConsecutiveCalls('1', '2', '3');
+            ->willReturnCallback($this->consecutiveCalls([[$dateFormat1], [$dateFormat2], [$dateFormat3]], ['1', '2', '3'], true));
 
         $flashBag->expects($this->once())
             ->method('add')

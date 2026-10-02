@@ -27,9 +27,12 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     use ProjectVersionTrait;
 
     /**
@@ -332,8 +335,7 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
 
         $this->translator
             ->method('trans')
-            ->withConsecutive(...$translationsKeys)
-            ->willReturn(...$translations);
+            ->willReturnCallback($this->consecutiveCalls([...$translationsKeys], ...$translations));
 
         $this->filterOperatorProvider->expects($this->any())
             ->method('getAllOperators')
@@ -398,12 +400,11 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
 
         $this->translator
             ->method('trans')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['custom.item.name.label'],
-            )
-            ->willReturn(
+            ], 
                 'Mobile'
-            );
+            ));
 
         $this->filterOperatorProvider->expects($this->once())
             ->method('getAllOperators')
@@ -432,7 +433,7 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
 
         $this->dispatcher->expects($this->exactly(3))
             ->method('dispatch')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [
                     LeadEvents::COLLECT_OPERATORS_FOR_FIELD_TYPE,
                     $this->callback(function (TypeOperatorsEvent $event) {
@@ -487,7 +488,7 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
                         return true;
                     }),
                 ],
-            );
+            ], null, false, $this->dispatcher, 'dispatch'));
 
         $this->subscriber->onGenerateSegmentFilters($event);
 

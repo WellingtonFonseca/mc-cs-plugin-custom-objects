@@ -28,9 +28,12 @@ use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\QueryFilterFactory;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CampaignSubscriberTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     private const OBJECT_ID = 63;
 
     private const FIELD_ID = 42;
@@ -134,7 +137,7 @@ class CampaignSubscriberTest extends TestCase
 
         $this->campaignBuilderEvent
             ->method('addAction')
-            ->withConsecutive(['custom_item.63.linkcontact'], ['custom_item.63.fieldvalue']);
+            ->willReturnCallback($this->consecutiveCalls([['custom_item.63.linkcontact'], ['custom_item.63.fieldvalue']], null, false, $this->campaignBuilderEvent, 'addAction'));
 
         $this->campaignSubscriber->onCampaignBuild($this->campaignBuilderEvent);
     }
@@ -237,11 +240,10 @@ class CampaignSubscriberTest extends TestCase
 
         $this->customItemModel->expects($this->exactly(2))
             ->method('fetchEntity')
-            ->withConsecutive([564], [333])
-            ->will($this->onConsecutiveCalls(
-                $this->throwException(new NotFoundException()),
-                $this->throwException(new NotFoundException())
-            ));
+            ->willReturnCallback($this->consecutiveCalls([[564], [333]], [
+                new NotFoundException(),
+                new NotFoundException()
+            ], true));
 
         $this->customItemModel->expects($this->never())
             ->method('linkEntity');
@@ -277,8 +279,7 @@ class CampaignSubscriberTest extends TestCase
 
         $this->customItemModel->expects($this->exactly(2))
             ->method('fetchEntity')
-            ->withConsecutive([564], [333])
-            ->will($this->onConsecutiveCalls($customItem564, $customItem333));
+            ->willReturnCallback($this->consecutiveCalls([[564], [333]], [$customItem564, $customItem333], true));
 
         $this->customItemModel->expects($this->once())
             ->method('linkEntity')

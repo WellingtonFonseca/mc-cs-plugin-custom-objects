@@ -13,9 +13,12 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomObjectPermissionsTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     /**
      * @var MockObject|CoreParametersHelper
      */
@@ -169,11 +172,11 @@ class CustomObjectPermissionsTest extends TestCase
 
         $this->formBuilder->expects($this->exactly(3))
             ->method('add')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['custom_objects:custom_fields'],
                 ['custom_objects:custom_objects'],
                 ["custom_objects:$objectId"]
-            );
+            ], null, false, $this->formBuilder, 'add'));
 
         $this->permissions->buildForm($this->formBuilder, [], []);
     }

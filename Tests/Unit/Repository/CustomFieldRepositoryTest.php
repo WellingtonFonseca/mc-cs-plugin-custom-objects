@@ -13,9 +13,12 @@ use Doctrine\Persistence\ManagerRegistry;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomFieldRepository;
 use PHPUnit\Framework\MockObject\MockObject;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomFieldRepositoryTest extends \PHPUnit\Framework\TestCase
 {
+    use ConsecutiveCallsTrait;
+
     private $entityManager;
     private $queryBuilder;
     private $query;
@@ -61,11 +64,10 @@ class CustomFieldRepositoryTest extends \PHPUnit\Framework\TestCase
     {
         $this->queryBuilder->expects($this->exactly(2))
             ->method('select')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [CustomField::TABLE_ALIAS],
                 ['count(CustomField.id) as alias_count']
-            )
-            ->willReturnSelf();
+            ], $this->queryBuilder));
 
         $this->queryBuilder->expects($this->once())
             ->method('from')
@@ -90,11 +92,10 @@ class CustomFieldRepositoryTest extends \PHPUnit\Framework\TestCase
     {
         $this->queryBuilder->expects($this->exactly(2))
             ->method('select')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [CustomField::TABLE_ALIAS],
                 ['count(CustomField.id) as alias_count']
-            )
-            ->willReturnSelf();
+            ], $this->queryBuilder));
 
         $this->queryBuilder->expects($this->once())
             ->method('from')
@@ -109,10 +110,10 @@ class CustomFieldRepositoryTest extends \PHPUnit\Framework\TestCase
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('setParameter')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['alias', 'alias-1'],
                 ['ignoreId', 444]
-            );
+            ], null, false, $this->queryBuilder, 'setParameter'));
 
         $this->expression->expects($this->once())
             ->method('neq')
@@ -146,10 +147,10 @@ class CustomFieldRepositoryTest extends \PHPUnit\Framework\TestCase
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('setParameter')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['customObjectId', 456],
                 ['required', true]
-            );
+            ], null, false, $this->queryBuilder, 'setParameter'));
 
         $customField = $this->createMock(CustomField::class);
 

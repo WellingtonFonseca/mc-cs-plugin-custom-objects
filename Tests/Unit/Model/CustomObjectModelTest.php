@@ -35,9 +35,12 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomObjectModelTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     private $customObject;
     private $customField;
     private $user;
@@ -201,10 +204,10 @@ class CustomObjectModelTest extends TestCase
             ->with($this->customField);
 
         $this->dispatcher->method('dispatch')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [$this->isInstanceOf(CustomObjectEvent::class), CustomObjectEvents::ON_CUSTOM_OBJECT_PRE_SAVE],
                 [$this->isInstanceOf(CustomObjectEvent::class), CustomObjectEvents::ON_CUSTOM_OBJECT_POST_SAVE]
-            );
+            ], null, false, $this->dispatcher, 'dispatch'));
         $this->entityManager->expects($this->once())->method('persist')->with($this->customObject);
         $this->entityManager->expects($this->once())->method('flush');
 
@@ -234,10 +237,10 @@ class CustomObjectModelTest extends TestCase
 
         $this->customObject->expects($this->exactly(2))
             ->method('setAlias')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['product'],
                 ['product1']
-            );
+            ], null, false, $this->customObject, 'setAlias'));
 
         $this->customObject->expects($this->exactly(3))
             ->method('getAlias')
@@ -245,11 +248,10 @@ class CustomObjectModelTest extends TestCase
 
         $this->customObjectRepository->expects($this->exactly(2))
             ->method('checkAliasExists')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['product', 123],
                 ['product1', 123]
-            )
-            ->will($this->onConsecutiveCalls(true, false));
+            ], [true, false], true));
 
         $this->customObject->expects($this->once())
             ->method('setCreatedBy')
@@ -281,10 +283,10 @@ class CustomObjectModelTest extends TestCase
             ->with($this->customField);
 
         $this->dispatcher->method('dispatch')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [$this->isInstanceOf(CustomObjectEvent::class), CustomObjectEvents::ON_CUSTOM_OBJECT_PRE_SAVE],
                 [$this->isInstanceOf(CustomObjectEvent::class), CustomObjectEvents::ON_CUSTOM_OBJECT_POST_SAVE]
-            );
+            ], null, false, $this->dispatcher, 'dispatch'));
         $this->entityManager->expects($this->once())->method('persist')->with($this->customObject);
         $this->entityManager->expects($this->once())->method('flush');
 
@@ -334,10 +336,10 @@ class CustomObjectModelTest extends TestCase
             ->with($this->customField);
 
         $this->dispatcher->method('dispatch')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [$this->isInstanceOf(CustomObjectEvent::class), CustomObjectEvents::ON_CUSTOM_OBJECT_PRE_SAVE],
                 [$this->isInstanceOf(CustomObjectEvent::class), CustomObjectEvents::ON_CUSTOM_OBJECT_POST_SAVE]
-            );
+            ], null, false, $this->dispatcher, 'dispatch'));
         $this->entityManager->expects($this->once())->method('persist')->with($this->customObject);
         $this->entityManager->expects($this->once())->method('flush');
 
@@ -351,9 +353,9 @@ class CustomObjectModelTest extends TestCase
             ->willReturn(34);
 
         $this->dispatcher->method('dispatch')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [$this->isInstanceOf(CustomObjectEvent::class), CustomObjectEvents::ON_CUSTOM_OBJECT_PRE_DELETE]
-            );
+            ], null, false, $this->dispatcher, 'dispatch'));
 
         $this->entityManager->expects($this->once())
             ->method('remove')
@@ -551,18 +553,18 @@ class CustomObjectModelTest extends TestCase
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('select')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [CustomObject::TABLE_ALIAS],
                 ['the select count expr']
-            );
+            ], null, false, $this->queryBuilder, 'select'));
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('setMaxResults')
-            ->withConsecutive([10], [1]);
+            ->willReturnCallback($this->consecutiveCalls([[10], [1]], null, false, $this->queryBuilder, 'setMaxResults'));
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('setFirstResult')
-            ->withConsecutive([20], [0]);
+            ->willReturnCallback($this->consecutiveCalls([[20], [0]], null, false, $this->queryBuilder, 'setFirstResult'));
 
         $this->queryBuilder->expects($this->once())
             ->method('resetDQLPart')
@@ -583,10 +585,10 @@ class CustomObjectModelTest extends TestCase
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('andWhere')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [CustomObject::TABLE_ALIAS.'.name LIKE %:search%'],
                 [CustomObject::TABLE_ALIAS.'.createdBy', 22]
-            );
+            ], null, false, $this->queryBuilder, 'andWhere'));
 
         $this->queryBuilder->expects($this->once())
             ->method('setParameter')

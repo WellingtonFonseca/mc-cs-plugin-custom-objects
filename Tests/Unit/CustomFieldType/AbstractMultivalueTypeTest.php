@@ -17,9 +17,12 @@ use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Helper\CsvHelper;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class AbstractMultivalueTypeTest extends \PHPUnit\Framework\TestCase
 {
+    use ConsecutiveCallsTrait;
+
     private $translator;
     private $customField;
     private $customItem;
@@ -224,12 +227,11 @@ class AbstractMultivalueTypeTest extends \PHPUnit\Framework\TestCase
 
         $this->customField->expects($this->exactly(3))
             ->method('valueToLabel')
-            ->withConsecutive(['one'], ['two'], ['unicorn'])
-            ->will($this->onConsecutiveCalls(
+            ->willReturnCallback($this->consecutiveCalls([['one'], ['two'], ['unicorn']], [
                 'Option 1',
                 'Option2',
-                $this->throwException(new NotFoundException('Value unicorn does not exist'))
-            ));
+                new NotFoundException('Value unicorn does not exist')
+            ], true));
 
         $this->assertSame('"Option 1",Option2,unicorn', $this->fieldType->valueToString($fieldValue));
     }
