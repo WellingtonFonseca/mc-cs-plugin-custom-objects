@@ -26,6 +26,12 @@
                     'overlayDisabled': lookup
                 }) }}
 
+                {% if not lookup %}
+                    <p class="text-muted small mb-0 pl-md pr-md pt-sm pb-sm custom-item-search-hint">
+                        {{ 'custom.item.search.hint'|trans }}
+                    </p>
+                {% endif %}
+
                 <div class="page-list" id="{{ namespace }}">
                     {{ include('@CustomObjects/CustomItem/_list.html.twig') }}
                 </div>

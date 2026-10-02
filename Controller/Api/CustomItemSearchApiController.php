@@ -6,10 +6,10 @@ namespace MauticPlugin\CustomObjectsBundle\Controller\Api;
 
 use Doctrine\ORM\EntityManagerInterface;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
-use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueDate;
-use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueText;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
+use MauticPlugin\CustomObjectsBundle\Exception\InvalidValueException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
+use MauticPlugin\CustomObjectsBundle\Helper\ItemFieldFilter;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -28,23 +28,22 @@ use Symfony\Component\HttpFoundation\Response;
  *   GET /api/customobjects/disciplines/items?discclass=3110987_54321&discstart=2026-09-20
  *       -> items matching BOTH filters
  *
- * Supports "text" and "date" type fields (the ones actually in use:
- * cursid/cursname/discname/discclass are text, discstart/discend are
- * date). Another field type would need its value entity class added to
- * VALUE_ENTITY_CLASS_BY_TYPE below, following the same pattern.
+ * Every field type can be filtered, through ItemFieldFilter (the same code
+ * as the item list search). Text and select-like fields must be EQUAL to the
+ * value; dates match the whole day; int/decimal/date/datetime also accept a
+ * leading >, >=, < or <= (?progresso=>=0.5); a multiselect matches when the
+ * item has that option.
  */
 class CustomItemSearchApiController extends AbstractController
 {
-    private const VALUE_ENTITY_CLASS_BY_TYPE = [
-        'text' => CustomFieldValueText::class,
-        'date' => CustomFieldValueDate::class,
-    ];
+    private ItemFieldFilter $itemFieldFilter;
 
     public function __construct(
         private CustomObjectModel $customObjectModel,
         private CustomItemModel $customItemModel,
         private EntityManagerInterface $em
     ) {
+        $this->itemFieldFilter = new ItemFieldFilter();
     }
 
     public function listAction(Request $request, string $objectAlias): JsonResponse
@@ -60,7 +59,13 @@ class CustomItemSearchApiController extends AbstractController
             $fieldsByAlias[$field->getAlias()] = $field;
         }
 
-        $filters = [];
+        $qb = $this->em->createQueryBuilder()
+            ->select('ci')
+            ->from(CustomItem::class, 'ci')
+            ->andWhere('ci.customObject = :customObject')
+            ->setParameter('customObject', $customObject);
+
+        $index = 0;
         foreach ($request->query->all() as $fieldAlias => $value) {
             if (!isset($fieldsByAlias[$fieldAlias])) {
                 return new JsonResponse(
@@ -73,36 +78,22 @@ class CustomItemSearchApiController extends AbstractController
             $customField = $fieldsByAlias[$fieldAlias];
             $type        = $customField->getType();
 
-            if (!isset(self::VALUE_ENTITY_CLASS_BY_TYPE[$type])) {
+            if (!$this->itemFieldFilter->isSupported((string) $type)) {
                 return new JsonResponse(
                     ['errors' => [['message' => "Filtering by field type '{$type}' (field '{$fieldAlias}') is not supported yet."]]],
                     Response::HTTP_BAD_REQUEST
                 );
             }
 
-            $filters[] = [
-                'field' => $customField,
-                'value' => 'date' === $type ? new \DateTimeImmutable((string) $value) : (string) $value,
-                'class' => self::VALUE_ENTITY_CLASS_BY_TYPE[$type],
-            ];
-        }
-
-        $qb = $this->em->createQueryBuilder()
-            ->select('ci')
-            ->from(CustomItem::class, 'ci')
-            ->andWhere('ci.customObject = :customObject')
-            ->setParameter('customObject', $customObject);
-
-        foreach ($filters as $i => $filter) {
-            $valueAlias = 'v'.$i;
-            $qb->join(
-                $filter['class'],
-                $valueAlias,
-                'WITH',
-                "{$valueAlias}.customItem = ci AND {$valueAlias}.customField = :field{$i} AND {$valueAlias}.value = :value{$i}"
-            )
-                ->setParameter("field{$i}", $filter['field'])
-                ->setParameter("value{$i}", $filter['value']);
+            try {
+                // Same filter as the item list search, except that text must be equal, not just contain the value.
+                $this->itemFieldFilter->apply($qb, 'ci', $customField, (string) $value, ItemFieldFilter::TEXT_EQUALS, $index++);
+            } catch (InvalidValueException $e) {
+                return new JsonResponse(
+                    ['errors' => [['message' => "Invalid value for field '{$fieldAlias}': {$e->getMessage()}"]]],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
         }
 
         $items = $qb->getQuery()->getResult();

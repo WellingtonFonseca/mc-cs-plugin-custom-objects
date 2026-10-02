@@ -72,6 +72,7 @@ class ListController extends CommonController
         $response  = [
             'viewParameters' => [
                 'searchValue'      => $search,
+                'searchWarnings'   => $search ? $customItemModel->getSearchWarnings($objectId, $search) : [],
                 'customObject'     => $customObject,
                 'filterEntityId'   => $filterEntityId,
                 'filterEntityType' => $filterEntityType,

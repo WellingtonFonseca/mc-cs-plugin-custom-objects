@@ -18,6 +18,7 @@ use Mautic\CoreBundle\Translation\Translator;
 use MauticPlugin\CustomObjectsBundle\CustomItemEvents;
 use MauticPlugin\CustomObjectsBundle\DTO\CustomItemFieldListData;
 use MauticPlugin\CustomObjectsBundle\DTO\TableConfig;
+use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueInterface;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueOption;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueText;
@@ -32,6 +33,8 @@ use MauticPlugin\CustomObjectsBundle\Event\CustomItemXrefEntityEvent;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\InvalidValueException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
+use MauticPlugin\CustomObjectsBundle\Helper\ItemFieldFilter;
+use MauticPlugin\CustomObjectsBundle\Helper\ItemSearchParser;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomItemRepository;
 use Psr\Log\LoggerInterface;
@@ -340,10 +343,49 @@ class CustomItemModel extends FormModel
         $queryBuilder->setParameter('customObjectId', $customObjectId);
 
         if ($search) {
-            $this->applySearchFilter($queryBuilder, $search);
+            $this->applySearchFilter($queryBuilder, $search, (int) $customObjectId);
         }
 
         return $this->applyOwnerFilter($queryBuilder, $customObjectId);
+    }
+
+    /**
+     * Problems with the "alias:value" terms of a list search, to show next to the search box:
+     * [['type' => 'unknown_alias'|'invalid_value', 'alias' => string], ...].
+     * Unknown aliases are ignored by the search; terms with an invalid value match nothing.
+     *
+     * @return array<int, array{type: string, alias: string}>
+     */
+    public function getSearchWarnings(int $customObjectId, string $search): array
+    {
+        $parsed = (new ItemSearchParser())->parse($search);
+
+        if (!$parsed->hasTerms()) {
+            return [];
+        }
+
+        $fields   = $this->getFieldsByAlias($customObjectId);
+        $filter   = new ItemFieldFilter();
+        $probe    = new QueryBuilder($this->em);
+        $warnings = [];
+
+        foreach ($parsed->getTerms() as $index => $term) {
+            $field = $fields[strtolower($term->alias)] ?? null;
+
+            if (null === $field) {
+                $warnings[] = ['type' => 'unknown_alias', 'alias' => $term->alias];
+
+                continue;
+            }
+
+            try {
+                $filter->apply($probe, CustomItem::TABLE_ALIAS, $field, $term->value, ItemFieldFilter::TEXT_CONTAINS, $index);
+            } catch (InvalidValueException|\UnexpectedValueException) {
+                $warnings[] = ['type' => 'invalid_value', 'alias' => $term->alias];
+            }
+        }
+
+        return $warnings;
     }
 
     /**
@@ -400,7 +442,60 @@ class CustomItemModel extends FormModel
         return $queryBuilder;
     }
 
-    private function applySearchFilter(QueryBuilder $queryBuilder, string $search): void
+    /**
+     * "alias:value" terms filter that one field (see ItemFieldFilter), all joined with AND. What is
+     * left of the text is the old full-text search. A search without terms is exactly the old one.
+     * An alias the object does not have is ignored; a value that is invalid for the field type
+     * matches nothing (showing everything would look like a result).
+     */
+    private function applySearchFilter(QueryBuilder $queryBuilder, string $search, int $customObjectId): void
+    {
+        $parsed = (new ItemSearchParser())->parse($search);
+
+        if (!$parsed->hasTerms()) {
+            $this->applyFullTextSearch($queryBuilder, $search);
+
+            return;
+        }
+
+        $fields = $this->getFieldsByAlias($customObjectId);
+        $filter = new ItemFieldFilter();
+
+        foreach ($parsed->getTerms() as $index => $term) {
+            $field = $fields[strtolower($term->alias)] ?? null;
+
+            if (null === $field) {
+                continue;
+            }
+
+            try {
+                $filter->apply($queryBuilder, CustomItem::TABLE_ALIAS, $field, $term->value, ItemFieldFilter::TEXT_CONTAINS, $index);
+            } catch (InvalidValueException|\UnexpectedValueException) {
+                $queryBuilder->andWhere(CustomItem::TABLE_ALIAS.'.id IS NULL');
+            }
+        }
+
+        if ('' !== $parsed->getFreeText()) {
+            $this->applyFullTextSearch($queryBuilder, $parsed->getFreeText());
+        }
+    }
+
+    /**
+     * @return array<string, CustomField> by lower-case alias
+     */
+    private function getFieldsByAlias(int $customObjectId): array
+    {
+        $fields = [];
+
+        /** @var CustomField $field */
+        foreach ($this->em->getRepository(CustomField::class)->findBy(['customObject' => $customObjectId]) as $field) {
+            $fields[strtolower((string) $field->getAlias())] = $field;
+        }
+
+        return $fields;
+    }
+
+    private function applyFullTextSearch(QueryBuilder $queryBuilder, string $search): void
     {
         $valueTextBuilder = $this->em->createQueryBuilder();
         $valueTextBuilder->select('IDENTITY(ValueText.customItem)');
