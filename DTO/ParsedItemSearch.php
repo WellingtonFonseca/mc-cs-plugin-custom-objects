@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\CustomObjectsBundle\Helper;
+namespace MauticPlugin\CustomObjectsBundle\DTO;
 
 final class ParsedItemSearch
 {

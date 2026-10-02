@@ -97,6 +97,7 @@
             }
         ) -}}
     </div>
-{%  else %}
+{%  elseif not (searchWarnings|default([]))|length %}
+    {# With a search warning the warning already explains the empty list: Mautic's own "no results" would repeat it. #}
     {{- include('@MauticCore/Helper/noresults.html.twig', { 'tip' : lookup ? 'custom.item.link.noresults.tip' : 'custom.object.noresults.tip' }) -}}
 {% endif %}

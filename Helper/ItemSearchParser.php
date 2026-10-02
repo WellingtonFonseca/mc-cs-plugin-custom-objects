@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Helper;
 
+use MauticPlugin\CustomObjectsBundle\DTO\ItemSearchTerm;
+use MauticPlugin\CustomObjectsBundle\DTO\ParsedItemSearch;
+
 /**
  * Splits the Custom Item list search into "alias:value" terms and free text.
  *
