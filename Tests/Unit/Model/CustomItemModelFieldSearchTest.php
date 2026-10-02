@@ -129,21 +129,20 @@ class CustomItemModelFieldSearchTest extends TestCase
         $this->assertSame('%disciplina 01%', $this->params($qb)['sval0']);
     }
 
-    public function testUnknownAliasIsIgnoredAndTheListIsNotBroken(): void
+    public function testUnknownAliasMatchesNothing(): void
     {
         $qb = $this->build('nao_existe:abc');
 
+        $this->assertStringContainsString('CustomItem.id IS NULL', $qb->getDQL());
         $this->assertStringNotContainsString('EXISTS', $qb->getDQL());
         $this->assertStringNotContainsString('MATCH', $qb->getDQL());
-        $this->assertArrayNotHasKey('sfield0', $this->params($qb));
     }
 
-    public function testUnknownAliasDoesNotDropTheOtherTerms(): void
+    public function testUnknownAliasMakesTheWholeSearchMatchNothing(): void
     {
         $qb = $this->build('nao_existe:abc inicio:2026-08-23');
 
-        $this->assertSame(1, substr_count($qb->getDQL(), 'EXISTS'));
-        $this->assertSame(11, $this->params($qb)['sfield1']);
+        $this->assertStringContainsString('CustomItem.id IS NULL', $qb->getDQL());
     }
 
     public function testInvalidValueMatchesNothing(): void
@@ -166,10 +165,11 @@ class CustomItemModelFieldSearchTest extends TestCase
 
     public function testAliasOfAnotherObjectIsNotFiltered(): void
     {
-        // an alias of ANOTHER object (not in findBy of object 44) must not be filtered on
+        // an alias of ANOTHER object (not in findBy of object 44) is unknown here
         $qb = $this->build('outro_objeto_campo:1');
 
         $this->assertStringNotContainsString('EXISTS', $qb->getDQL());
+        $this->assertStringContainsString('CustomItem.id IS NULL', $qb->getDQL());
     }
 
     public function testWarningsListUnknownAliasesAndInvalidValues(): void

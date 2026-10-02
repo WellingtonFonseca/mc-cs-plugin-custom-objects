@@ -352,7 +352,7 @@ class CustomItemModel extends FormModel
     /**
      * Problems with the "alias:value" terms of a list search, to show next to the search box:
      * [['type' => 'unknown_alias'|'invalid_value', 'alias' => string], ...].
-     * Unknown aliases are ignored by the search; terms with an invalid value match nothing.
+     * Both kinds of term match nothing.
      *
      * @return array<int, array{type: string, alias: string}>
      */
@@ -445,8 +445,8 @@ class CustomItemModel extends FormModel
     /**
      * "alias:value" terms filter that one field (see ItemFieldFilter), all joined with AND. What is
      * left of the text is the old full-text search. A search without terms is exactly the old one.
-     * An alias the object does not have is ignored; a value that is invalid for the field type
-     * matches nothing (showing everything would look like a result).
+     * An alias the object does not have, or a value that is invalid for the field type, matches
+     * nothing (showing everything would look like a result).
      */
     private function applySearchFilter(QueryBuilder $queryBuilder, string $search, int $customObjectId): void
     {
@@ -465,6 +465,8 @@ class CustomItemModel extends FormModel
             $field = $fields[strtolower($term->alias)] ?? null;
 
             if (null === $field) {
+                $queryBuilder->andWhere(CustomItem::TABLE_ALIAS.'.id IS NULL');
+
                 continue;
             }
 
