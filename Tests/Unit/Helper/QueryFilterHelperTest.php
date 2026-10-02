@@ -14,6 +14,7 @@ use Mautic\LeadBundle\Segment\Query\Expression\ExpressionBuilder;
 use Mautic\LeadBundle\Segment\Query\QueryBuilder;
 use Mautic\LeadBundle\Segment\RandomParameterName;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\DateType;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\TextType;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterFactory;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterHelper;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
@@ -125,6 +126,64 @@ class QueryFilterHelperTest extends TestCase
      */
     public function testCreateMergeFilterQueryKeepsOperatorOfEachCriterion(): void
     {
+        $sql = $this->mergedSql([
+            ['operator' => 'lt', 'filter_value' => '2026-10-01', 'field' => '13', 'type' => 'date', 'cmo_filter' => false],
+            ['operator' => 'gt', 'filter_value' => '2026-10-01', 'field' => '12', 'type' => 'date', 'cmo_filter' => false],
+        ]);
+
+        $this->assertMatchesRegularExpression('/cix_13_date_value\.value < :/', $sql);
+        $this->assertMatchesRegularExpression('/cix_12_date_value\.value > :/', $sql);
+    }
+
+    /**
+     * The merged query has no NOT EXISTS around it (unlike the single-filter
+     * builders), so a negated operator must be built as the real negation on
+     * the item's own value, not as its positive condition.
+     */
+    public function testMergedNotLikeOnAFieldNegatesTheValue(): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'notLike', 'filter_value' => '%(C)%', 'field' => '14', 'type' => 'text', 'cmo_filter' => false],
+        ]);
+
+        $this->assertMatchesRegularExpression('/\(\(cix_14_text_value\.value IS NULL\) OR \(cix_14_text_value\.value NOT LIKE :par\d+\)\)/', $sql);
+    }
+
+    public function testMergedNotEqualOnAnItemNameNegatesTheName(): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'neq', 'filter_value' => 'Disciplina 1', 'field' => '1', 'type' => 'text', 'cmo_filter' => true],
+        ]);
+
+        $this->assertMatchesRegularExpression('/\(\(cin_1_item\.name <> :par\d+\) OR \(cin_1_item\.name IS NULL\)\)/', $sql);
+    }
+
+    public function testMergedNotLikeOnAnItemNameNegatesTheName(): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'notLike', 'filter_value' => '%(C)%', 'field' => '1', 'type' => 'text', 'cmo_filter' => true],
+        ]);
+
+        $this->assertMatchesRegularExpression('/\(\(cin_1_item\.name IS NULL\) OR \(cin_1_item\.name NOT LIKE :par\d+\)\)/', $sql);
+    }
+
+    /**
+     * Operators that already work in the merged query must stay as they are.
+     */
+    public function testMergedNotEqualOnAFieldKeepsItsExpression(): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'neq', 'filter_value' => 'x', 'field' => '14', 'type' => 'text', 'cmo_filter' => false],
+        ]);
+
+        $this->assertMatchesRegularExpression('/\(\(cix_14_text_value\.value <> :par\d+\) OR \(cix_14_text_value\.value IS NULL\)\)/', $sql);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $criteria merged_property of a merged filter
+     */
+    private function mergedSql(array $criteria): string
+    {
         if (!defined('MAUTIC_TABLE_PREFIX')) {
             define('MAUTIC_TABLE_PREFIX', '');
         }
@@ -135,10 +194,12 @@ class QueryFilterHelperTest extends TestCase
         $entityManager->method('getConnection')->willReturn($connection);
 
         $customFieldTypeProvider = new CustomFieldTypeProvider();
-        $customFieldTypeProvider->addType(new DateType(
-            $this->createMock(TranslatorInterface::class),
-            $this->createMock(FilterOperatorProviderInterface::class)
-        ));
+        foreach ([DateType::class, TextType::class] as $typeClass) {
+            $customFieldTypeProvider->addType(new $typeClass(
+                $this->createMock(TranslatorInterface::class),
+                $this->createMock(FilterOperatorProviderInterface::class)
+            ));
+        }
 
         $queryFilterHelper = new QueryFilterHelper(
             $entityManager,
@@ -158,10 +219,7 @@ class QueryFilterHelperTest extends TestCase
             'object'          => 'custom_object',
             'type'            => 'date',
             'operator'        => 'custom_operator',
-            'merged_property' => [
-                ['operator' => 'lt', 'filter_value' => '2026-10-01', 'field' => '13', 'type' => 'date', 'cmo_filter' => false],
-                ['operator' => 'gt', 'filter_value' => '2026-10-01', 'field' => '12', 'type' => 'date', 'cmo_filter' => false],
-            ],
+            'merged_property' => $criteria,
         ]);
 
         $segmentFilter = $this->createMock(ContactSegmentFilter::class);
@@ -170,9 +228,6 @@ class QueryFilterHelperTest extends TestCase
         $segmentFilter->method('getOperator')->willReturn('gt');
         $segmentFilter->method('getParameterValue')->willReturn('2026-10-01');
 
-        $sql = $queryFilterHelper->createMergeFilterQuery($segmentFilter, 'l')->getSQL();
-
-        $this->assertMatchesRegularExpression('/cix_13_date_value\.value < :/', $sql);
-        $this->assertMatchesRegularExpression('/cix_12_date_value\.value > :/', $sql);
+        return $queryFilterHelper->createMergeFilterQuery($segmentFilter, 'l')->getSQL();
     }
 }

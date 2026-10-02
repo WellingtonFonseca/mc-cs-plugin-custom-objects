@@ -424,6 +424,25 @@ class QueryFilterHelper
         string $criterionOperator
     ) {
         $segmentFilterFieldOperator = $criterionOperator;
+
+        // The single-filter builders wrap these operators in NOT EXISTS, so their
+        // expressions are the POSITIVE condition. The merged query has no such
+        // wrapper (all criteria must hold on the same item), so they are negated
+        // here, on the item's own value.
+        $column = $isCmoFilter ? $cinAlias.'_item.name' : $alias.'_value.value';
+        if ('notLike' === $criterionOperator) {
+            return $qb->expr()->or(
+                $qb->expr()->isNull($column),
+                $qb->expr()->notLike($column, ":{$valueParameter}")
+            );
+        }
+        if ($isCmoFilter && 'neq' === $criterionOperator) {
+            return $qb->expr()->or(
+                $qb->expr()->neq($column, ":{$valueParameter}"),
+                $qb->expr()->isNull($column)
+            );
+        }
+
         if ($isCmoFilter) {
             $expression = $this->getCustomObjectNameExpression(
                 $qb,
