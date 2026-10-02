@@ -10,9 +10,12 @@ use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\NotNull;
 use Symfony\Component\Validator\Mapping\ClassMetadata;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomFieldOptionTest extends \PHPUnit\Framework\TestCase
 {
+    use ConsecutiveCallsTrait;
+
     public function testLoadValidatorMetadata(): void
     {
         $metadata = $this->createMock(ClassMetadata::class);
@@ -20,13 +23,13 @@ class CustomFieldOptionTest extends \PHPUnit\Framework\TestCase
 
         $metadata->expects($this->exactly(5))
             ->method('addPropertyConstraint')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['label', $this->isInstanceOf(NotBlank::class)],
                 ['label', $this->isInstanceOf(Length::class)],
                 ['value', $this->isInstanceOf(NotNull::class)],
                 ['value', $this->isInstanceOf(Length::class)],
                 ['order', $this->isInstanceOf(NotNull::class)]
-            );
+            ], null, false, $metadata, 'addPropertyConstraint'));
 
         $object->loadValidatorMetadata($metadata);
     }

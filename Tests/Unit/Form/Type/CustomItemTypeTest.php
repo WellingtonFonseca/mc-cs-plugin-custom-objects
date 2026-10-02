@@ -17,9 +17,12 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Valid;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomItemTypeTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     /** @var CustomItemType */
     private $customItemType;
 
@@ -59,7 +62,7 @@ class CustomItemTypeTest extends TestCase
             ->builder
             ->expects($this->exactly(7))
             ->method('add')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [
                     'name',
                     TextType::class,
@@ -120,7 +123,8 @@ class CustomItemTypeTest extends TestCase
                         'cancel_onclick' => $cancelOnclickUrl,
                     ],
                 ]
-            );
+            ], null, false, $this
+            ->builder, 'add'));
 
         $this
             ->builder

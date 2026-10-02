@@ -31,9 +31,12 @@ use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomItemImportModelTest extends \PHPUnit\Framework\TestCase
 {
+    use ConsecutiveCallsTrait;
+
     private const ROW_DATA = [
         'name'        => 'Mautic Demo',
         'date'        => '2019-03-04',
@@ -288,11 +291,11 @@ class CustomItemImportModelTest extends \PHPUnit\Framework\TestCase
 
         $this->customItemModel->expects($this->exactly(3))
             ->method('linkEntity')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [$customItem, 'contact', 3262739],
                 [$customItem, 'contact', 3262738],
                 [$customItem, 'contact', 3262737]
-            );
+            ], null, false, $this->customItemModel, 'linkEntity'));
 
         $this->customItemModel->expects($this->once())
             ->method('save')
@@ -335,11 +338,11 @@ class CustomItemImportModelTest extends \PHPUnit\Framework\TestCase
 
         $this->customItemModel->expects($this->exactly(3))
             ->method('linkEntity')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [$customItem, 'contact', 3262739],
                 [$customItem, 'contact', 3262738],
                 [$customItem, 'contact', 3262737]
-            );
+            ], null, false, $this->customItemModel, 'linkEntity'));
 
         $this->customItemModel->expects($this->once())
             ->method('save')
@@ -387,11 +390,11 @@ class CustomItemImportModelTest extends \PHPUnit\Framework\TestCase
 
         $this->customItemModel->expects($this->exactly(1))
             ->method('linkEntity')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [$customItem, 'contact', 3262739],
                 [$customItem, 'contact', 3262738],
                 [$customItem, 'contact', 3262737]
-            );
+            ], null, false, $this->customItemModel, 'linkEntity'));
 
         $this->customItemModel->expects($this->once())
             ->method('save')

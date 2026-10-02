@@ -21,9 +21,12 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefContact;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomItemXrefContactRepository;
 use PHPUnit\Framework\MockObject\MockObject;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomItemXrefContactRepositoryTest extends \PHPUnit\Framework\TestCase
 {
+    use ConsecutiveCallsTrait;
+
     private $entityManager;
     private $classMetadata;
     private $contact;
@@ -92,7 +95,7 @@ class CustomItemXrefContactRepositoryTest extends \PHPUnit\Framework\TestCase
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('select')
-            ->withConsecutive([CustomItemXrefContact::TABLE_ALIAS], [CustomObject::TABLE_ALIAS.'.id']);
+            ->willReturnCallback($this->consecutiveCalls([[CustomItemXrefContact::TABLE_ALIAS], [CustomObject::TABLE_ALIAS.'.id']], null, false, $this->queryBuilder, 'select'));
 
         $this->queryBuilder->expects($this->once())
             ->method('addSelect')
@@ -104,10 +107,10 @@ class CustomItemXrefContactRepositoryTest extends \PHPUnit\Framework\TestCase
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('innerJoin')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [CustomItemXrefContact::TABLE_ALIAS.'.customItem', CustomItem::TABLE_ALIAS],
                 [CustomItem::TABLE_ALIAS.'.customObject', CustomObject::TABLE_ALIAS]
-            );
+            ], null, false, $this->queryBuilder, 'innerJoin'));
 
         $this->queryBuilder->expects($this->once())
             ->method('where')

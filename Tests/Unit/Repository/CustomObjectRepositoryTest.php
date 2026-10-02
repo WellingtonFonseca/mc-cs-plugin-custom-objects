@@ -16,9 +16,12 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomObjectRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomObjectRepositoryTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     /**
      * @var MockObject&EntityManagerInterface
      */
@@ -79,11 +82,10 @@ class CustomObjectRepositoryTest extends TestCase
     {
         $this->queryBuilder->expects($this->exactly(2))
             ->method('select')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [CustomObject::TABLE_ALIAS],
                 ['count(CustomObject.id) as alias_count']
-            )
-            ->willReturnSelf();
+            ], $this->queryBuilder));
 
         $this->queryBuilder->expects($this->once())
             ->method('from')
@@ -108,11 +110,10 @@ class CustomObjectRepositoryTest extends TestCase
     {
         $this->queryBuilder->expects($this->exactly(2))
             ->method('select')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [CustomObject::TABLE_ALIAS],
                 ['count(CustomObject.id) as alias_count']
-            )
-            ->willReturnSelf();
+            ], $this->queryBuilder));
 
         $this->queryBuilder->expects($this->once())
             ->method('from')
@@ -127,10 +128,10 @@ class CustomObjectRepositoryTest extends TestCase
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('setParameter')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['alias', 'alias-1'],
                 ['ignoreId', 444]
-            );
+            ], null, false, $this->queryBuilder, 'setParameter'));
 
         $this->expression->expects($this->once())
             ->method('neq')

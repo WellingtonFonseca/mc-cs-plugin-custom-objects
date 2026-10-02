@@ -14,9 +14,12 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 use Symfony\Component\Validator\Mapping\ClassMetadata;
 use Symfony\Component\Validator\Violation\ConstraintViolationBuilderInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class AbstractCustomFieldValueTest extends \PHPUnit\Framework\TestCase
 {
+    use ConsecutiveCallsTrait;
+
     private $customObject;
     private $customField;
     private $customItem;
@@ -55,10 +58,10 @@ class AbstractCustomFieldValueTest extends \PHPUnit\Framework\TestCase
 
         $metadata->expects($this->exactly(2))
             ->method('addPropertyConstraint')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['customField', $this->isInstanceOf(NotBlank::class)],
                 ['customItem', $this->isInstanceOf(NotBlank::class)]
-            );
+            ], null, false, $metadata, 'addPropertyConstraint'));
 
         $metadata->expects($this->once())
             ->method('addConstraint')

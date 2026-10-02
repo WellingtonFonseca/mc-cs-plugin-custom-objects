@@ -16,9 +16,12 @@ use MauticPlugin\CustomObjectsBundle\Repository\CustomItemRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomItemTabSubscriberTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     /**
      * @var MockObject|CustomObjectModel
      */
@@ -104,11 +107,10 @@ class CustomItemTabSubscriberTest extends TestCase
 
         $this->customContentEvent
             ->method('checkContext')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['@CustomObjects/CustomItem/detail.html.twig', 'tabs'],
                 ['@CustomObjects/CustomItem/detail.html.twig', 'tabs.content']
-            )
-            ->willReturnOnConsecutiveCalls(true, false);
+            ], [true, false], true));
 
         $this->customContentEvent->expects($this->once())
             ->method('getVars')
@@ -116,7 +118,7 @@ class CustomItemTabSubscriberTest extends TestCase
 
         $this->customContentEvent
             ->method('addTemplate')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [
                     '@CustomObjects/SubscribedEvents/Tab/link.html.twig',
                     [
@@ -128,7 +130,7 @@ class CustomItemTabSubscriberTest extends TestCase
                 [
                     '@CustomObjects/SubscribedEvents/Tab/modal.html.twig',
                 ]
-            );
+            ], null, false, $this->customContentEvent, 'addTemplate'));
 
         $this->customObjectModel->expects($this->once())
             ->method('getMasterCustomObjects')
@@ -157,11 +159,10 @@ class CustomItemTabSubscriberTest extends TestCase
 
         $this->customContentEvent
             ->method('checkContext')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['@CustomObjects/CustomItem/detail.html.twig', 'tabs'],
                 ['@CustomObjects/CustomItem/detail.html.twig', 'tabs.content']
-            )
-            ->willReturn(true, false);
+            ], [true, false], true));
 
         $this->customContentEvent->expects($this->once())
             ->method('getVars')
@@ -193,11 +194,10 @@ class CustomItemTabSubscriberTest extends TestCase
 
         $this->customContentEvent
             ->method('checkContext')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['@CustomObjects/CustomItem/detail.html.twig', 'tabs'],
                 ['@CustomObjects/CustomItem/detail.html.twig', 'tabs.content']
-            )
-            ->willReturn(false, true);
+            ], [false, true], true));
 
         $this->customContentEvent->expects($this->once())
             ->method('getVars')
@@ -215,14 +215,13 @@ class CustomItemTabSubscriberTest extends TestCase
 
         $this->customItemRouteProvider->expects($this->exactly(2))
             ->method('buildListRoute')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [555, 1, 'customItem', 45],
                 [555, 1, 'customItem', 45, ['lookup' => 1, 'search' => '']]
-            )
-            ->willReturnOnConsecutiveCalls(
+            ], [
                 'search/route',
                 'link/route'
-            );
+            ], true));
 
         $sessionProvider = $this->createMock(SessionProvider::class);
         $sessionProvider->method('getFilter')->willReturn('Search something');

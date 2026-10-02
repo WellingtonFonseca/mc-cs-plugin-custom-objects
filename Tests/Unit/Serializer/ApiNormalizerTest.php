@@ -15,9 +15,12 @@ use MauticPlugin\CustomObjectsBundle\Serializer\ApiNormalizer;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class ApiNormalizerTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     /**
      * @var \PHPUnit\Framework\MockObject\MockObject|Normalizer
      */
@@ -98,12 +101,11 @@ class ApiNormalizerTest extends TestCase
         $customOptionTwo = $this->createMock(CustomFieldOption::class);
         $this->normalizerInterface
             ->method('denormalize')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [$options[0], $classOption, null, []],
                 [$options[1], $classOption, null, []],
                 [$dataReduced, $class, null, []]
-            )
-            ->willReturnOnConsecutiveCalls($customOptionOne, $customOptionTwo, $customField);
+            ], [$customOptionOne, $customOptionTwo, $customField], true));
         $customFieldType = $this->createMock(CustomFieldTypeInterface::class);
         $this->customFieldTypeProvider
             ->expects($this->once())
@@ -116,7 +118,7 @@ class ApiNormalizerTest extends TestCase
             ->with($customFieldType);
         $customField
             ->method('addOption')
-            ->withConsecutive([$customOptionOne], [$customOptionTwo]);
+            ->willReturnCallback($this->consecutiveCalls([[$customOptionOne], [$customOptionTwo]], null, false, $customField, 'addOption'));
         $customField
             ->expects($this->once())
             ->method('setDefaultValue')

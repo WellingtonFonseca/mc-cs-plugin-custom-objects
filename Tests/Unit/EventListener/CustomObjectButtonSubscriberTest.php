@@ -13,9 +13,12 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
 {
+    use ConsecutiveCallsTrait;
+
     private $itemPermissionProvider;
     private $objectPermissionProvider;
     private $objectRouteProvider;
@@ -99,16 +102,15 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
 
         $this->translator->expects($this->exactly(3))
             ->method('trans')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['custom.object.delete.confirm'],
                 ['mautic.core.form.delete'],
                 ['mautic.core.form.cancel']
-            )
-            ->willReturn('translated string');
+            ], 'translated string'));
 
         $this->event->expects($this->exactly(4))
             ->method('addButton')
-            ->withConsecutive([[
+            ->willReturnCallback($this->consecutiveCalls([[[
                 'attr' => [
                     'href'                  => 'generated/delete/route',
                     'data-toggle'           => 'confirmation',
@@ -142,7 +144,7 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
                 'btnText'   => 'mautic.core.form.new',
                 'iconClass' => 'fa fa-plus',
                 'priority'  => 500,
-            ]]);
+            ]]], null, false, $this->event, 'addButton'));
 
         $this->subscriber->injectViewButtons($this->event);
     }
@@ -249,7 +251,7 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
 
         $this->event->expects($this->exactly(6))
             ->method('addButton')
-            ->withConsecutive([[
+            ->willReturnCallback($this->consecutiveCalls([[[
                 'attr' => [
                     'href'                  => 'generated/delete/route',
                     'data-toggle'           => 'confirmation',
@@ -297,7 +299,7 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
                 'btnText'   => 'custom.item.create.link',
                 'iconClass' => 'fa fa-fw fa-plus',
                 'priority'  => 0,
-            ]]);
+            ]]], null, false, $this->event, 'addButton'));
 
         $this->subscriber->injectViewButtons($this->event);
     }

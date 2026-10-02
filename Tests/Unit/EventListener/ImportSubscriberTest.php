@@ -22,9 +22,12 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomFieldRepository;
 use Symfony\Component\Form\Form;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class ImportSubscriberTest extends \PHPUnit\Framework\TestCase
 {
+    use ConsecutiveCallsTrait;
+
     private $customObjectModel;
 
     private $customItemImportModel;
@@ -297,7 +300,7 @@ class ImportSubscriberTest extends \PHPUnit\Framework\TestCase
 
         $this->translator->expects($this->exactly(2))
             ->method('trans')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [
                     'custom.item.name.label',
                 ],
@@ -309,8 +312,7 @@ class ImportSubscriberTest extends \PHPUnit\Framework\TestCase
                     ],
                     'validators',
                 ]
-            )
-            ->will($this->onConsecutiveCalls('Name', 'These fields are required...'));
+            ], ['Name', 'These fields are required...'], true));
 
         $this->importSubscriber->onValidateImport($this->importValidateEvent);
     }

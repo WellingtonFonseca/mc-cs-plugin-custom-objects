@@ -17,10 +17,13 @@ use MauticPlugin\CustomObjectsBundle\Provider\SessionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProviderFactory;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
 use Symfony\Component\HttpFoundation\Request;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 #[\AllowDynamicProperties]
 class BatchDeleteControllerTest extends ControllerTestCase
 {
+    use ConsecutiveCallsTrait;
+
     private $customItemModel;
     private $sessionProvider;
     private $sessionProviderFactory;
@@ -157,12 +160,11 @@ class BatchDeleteControllerTest extends ControllerTestCase
 
         $this->customItemModel
             ->method('fetchEntity')
-            ->withConsecutive([13], [14])
-            ->willReturn($customItem13, $customItem14);
+            ->willReturnCallback($this->consecutiveCalls([[13], [14]], [$customItem13, $customItem14], true));
 
         $this->customItemModel
             ->method('delete')
-            ->withConsecutive([$customItem13], [$customItem14]);
+            ->willReturnCallback($this->consecutiveCalls([[$customItem13], [$customItem14]], null, false, $this->customItemModel, 'delete'));
 
         $this->flashBag->expects($this->once())
             ->method('add')

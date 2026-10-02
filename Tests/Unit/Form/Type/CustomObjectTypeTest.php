@@ -21,9 +21,12 @@ use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomObjectTypeTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     /**
      * @var MockObject|EntityManager
      */
@@ -108,7 +111,7 @@ class CustomObjectTypeTest extends TestCase
         $builder = $this->createMock(FormBuilderInterface::class);
         $builder
             ->method('add')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [
                     'alias',
                     TextType::class,
@@ -222,7 +225,7 @@ class CustomObjectTypeTest extends TestCase
                         'cancel_onclick' => "mQuery('form[name=custom_object]').attr('action', mQuery('form[name=custom_object]').attr('action').replace('/save', '/cancel'));",
                     ],
                 ]
-            );
+            ], null, false, $builder, 'add'));
 
         $builder->expects($this->once())
             ->method('get')

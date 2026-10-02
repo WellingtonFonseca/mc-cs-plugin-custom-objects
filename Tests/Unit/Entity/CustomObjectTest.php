@@ -12,9 +12,12 @@ use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Mapping\ClassMetadata;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomObjectTest extends \PHPUnit\Framework\TestCase
 {
+    use ConsecutiveCallsTrait;
+
     public function testClone(): void
     {
         $object = new CustomObject();
@@ -33,14 +36,14 @@ class CustomObjectTest extends \PHPUnit\Framework\TestCase
 
         $metadata->expects($this->exactly(6))
             ->method('addPropertyConstraint')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['alias', $this->isInstanceOf(Length::class)],
                 ['nameSingular', $this->isInstanceOf(NotBlank::class)],
                 ['nameSingular', $this->isInstanceOf(Length::class)],
                 ['namePlural', $this->isInstanceOf(NotBlank::class)],
                 ['namePlural', $this->isInstanceOf(Length::class)],
                 ['description', $this->isInstanceOf(Length::class)]
-            );
+            ], null, false, $metadata, 'addPropertyConstraint'));
 
         $object->loadValidatorMetadata($metadata);
     }

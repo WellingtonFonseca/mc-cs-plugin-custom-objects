@@ -21,9 +21,12 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormConfigBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 final class CampaignConditionFieldValueTypeTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     /**
      * @var MockObject|CustomFieldModel
      */
@@ -83,8 +86,7 @@ final class CampaignConditionFieldValueTypeTest extends TestCase
             ]);
         $this->translatorMock
             ->method('trans')
-            ->withConsecutive(['a'], ['b'], ['a'], ['b'])
-            ->willReturnOnConsecutiveCalls('a', 'b', 'a', 'b');
+            ->willReturnCallback($this->consecutiveCalls([['a'], ['b'], ['a'], ['b']], ['a', 'b', 'a', 'b'], true));
 
         $customField->setTypeObject(new IntType($this->translatorMock, $filterOperatorProviderInterfaceMock));
         $customFields = [42 => $customField];
@@ -101,7 +103,7 @@ final class CampaignConditionFieldValueTypeTest extends TestCase
         $formBuilderMock = $this->createMock(FormBuilderInterface::class);
         $formBuilderMock
             ->method('add')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [
                     'field',
                     ChoiceType::class,
@@ -150,7 +152,7 @@ final class CampaignConditionFieldValueTypeTest extends TestCase
                     HiddenType::class,
                     ['data' => 42],
                 ]
-            );
+            ], null, false, $formBuilderMock, 'add'));
         $options = [
             'customObjectId' => $customObject->getId(),
             'data'           => [

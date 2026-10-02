@@ -39,9 +39,12 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class TokenSubscriberTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     /**
      * @var ConfigProvider|MockObject
      */
@@ -223,21 +226,19 @@ class TokenSubscriberTest extends TestCase
 
         $this->tokenParser
             ->method('buildTokenWithDefaultOptions')
-            ->withConsecutive([$coAlias, 'name'], [$coAlias, $cfAlias])
-            ->willReturnOnConsecutiveCalls('token', 'token1');
+            ->willReturnCallback($this->consecutiveCalls([[$coAlias, 'name'], [$coAlias, $cfAlias]], ['token', 'token1'], true));
 
         $this->tokenParser
             ->method('buildTokenLabel')
-            ->withConsecutive([$coName, 'Name'], [$coName, $cfLabel])
-            ->willReturn('tokenLabel', 'tokenLabel1');
+            ->willReturnCallback($this->consecutiveCalls([[$coName, 'Name'], [$coName, $cfLabel]], ['tokenLabel', 'tokenLabel1'], true));
 
         $this->builderEvent
             ->method('addToken')
-            ->withConsecutive(['token', 'tokenLabel'], ['token1', 'tokenLabel1']);
+            ->willReturnCallback($this->consecutiveCalls([['token', 'tokenLabel'], ['token1', 'tokenLabel1']], null, false, $this->builderEvent, 'addToken'));
 
         $this->builderEvent
             ->method('addToken')
-            ->withConsecutive(['token', 'tokenLabel'], ['token1', 'tokenLabel1']);
+            ->willReturnCallback($this->consecutiveCalls([['token', 'tokenLabel'], ['token1', 'tokenLabel1']], null, false, $this->builderEvent, 'addToken'));
 
         $this->subscriber->onBuilderBuild($this->builderEvent);
     }
@@ -549,7 +550,7 @@ class TokenSubscriberTest extends TestCase
 
         $this->customItemModel->expects($this->exactly(2))
             ->method('populateCustomFields')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [
                     $this->callback(function (CustomItem $customItem) {
                         $this->assertSame(3456, $customItem->getId());
@@ -566,8 +567,7 @@ class TokenSubscriberTest extends TestCase
                         return true;
                     }),
                 ]
-            )
-            ->will($this->onConsecutiveCalls($customItemWithField, $customItemWithoutField));
+            ], [$customItemWithField, $customItemWithoutField], true));
 
         $this->subscriber->decodeTokens($emailSendEvent);
 
@@ -704,7 +704,7 @@ class TokenSubscriberTest extends TestCase
 
         $this->customItemModel->expects($this->exactly(2))
             ->method('populateCustomFields')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [
                     $this->callback(function (CustomItem $customItem) {
                         $this->assertSame(3456, $customItem->getId());
@@ -721,8 +721,7 @@ class TokenSubscriberTest extends TestCase
                         return true;
                     }),
                 ]
-            )
-            ->will($this->onConsecutiveCalls($customItemWithField, $customItemWithoutField));
+            ], [$customItemWithField, $customItemWithoutField], true));
 
         $this->subscriber->decodeTokens($emailSendEvent);
 

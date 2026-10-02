@@ -16,9 +16,12 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomItemButtonSubscriberTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     private const OBJECT_ID  = 555;
     private const ITEM_ID    = 222;
     private const CONTACT_ID = 84;
@@ -79,7 +82,7 @@ class CustomItemButtonSubscriberTest extends TestCase
     {
         $this->event->expects($this->any())
             ->method('getRoute')
-            ->willReturn(CustomItemRouteProvider::ROUTE_LIST, ['route', ['objectId' => self::OBJECT_ID]]);
+            ->willReturnCallback($this->returnsThenNull([CustomItemRouteProvider::ROUTE_LIST, ['route', ['objectId' => self::OBJECT_ID]]]));
 
         $this->event->expects($this->exactly(3))
             ->method('getRequest')
@@ -133,7 +136,7 @@ class CustomItemButtonSubscriberTest extends TestCase
     {
         $this->event->expects($this->any())
             ->method('getRoute')
-            ->willReturn(CustomItemRouteProvider::ROUTE_LIST, ['route', ['objectId' => self::OBJECT_ID]]);
+            ->willReturnCallback($this->returnsThenNull([CustomItemRouteProvider::ROUTE_LIST, ['route', ['objectId' => self::OBJECT_ID]]]));
 
         $this->event->expects($this->exactly(2))
             ->method('getRequest')
@@ -206,17 +209,16 @@ class CustomItemButtonSubscriberTest extends TestCase
 
         $this->translator->expects($this->exactly(4))
             ->method('trans')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['custom.item.delete.confirm'],
                 ['mautic.core.form.delete'],
                 ['mautic.core.form.cancel'],
                 ['mautic.core.form.confirmbatchdelete']
-            )
-            ->willReturn('translated string');
+            ], 'translated string'));
 
         $this->event->expects($this->exactly(8))
             ->method('addButton')
-            ->withConsecutive([[
+            ->willReturnCallback($this->consecutiveCalls([[[
                 'attr' => [
                     'href'                  => 'generated/delete/route',
                     'data-toggle'           => 'confirmation',
@@ -281,7 +283,7 @@ class CustomItemButtonSubscriberTest extends TestCase
                 'btnText'   => 'mautic.core.form.delete',
                 'iconClass' => 'fa fa-fw fa-trash-o text-danger',
                 'priority'  => 0,
-            ]]);
+            ]]], null, false, $this->event, 'addButton'));
 
         $this->subscrber->injectViewButtons($this->event);
     }
@@ -290,7 +292,7 @@ class CustomItemButtonSubscriberTest extends TestCase
     {
         $this->event->expects($this->any())
             ->method('getRoute')
-            ->willReturn(CustomItemRouteProvider::ROUTE_LIST, ['route', ['objectId' => self::OBJECT_ID]]);
+            ->willReturnCallback($this->returnsThenNull([CustomItemRouteProvider::ROUTE_LIST, ['route', ['objectId' => self::OBJECT_ID]]]));
 
         $this->event->expects($this->exactly(2))
             ->method('getRequest')
@@ -357,7 +359,7 @@ class CustomItemButtonSubscriberTest extends TestCase
     {
         $this->event->expects($this->any())
             ->method('getRoute')
-            ->willReturn(CustomItemRouteProvider::ROUTE_VIEW, ['route', ['objectId' => self::OBJECT_ID]]);
+            ->willReturnCallback($this->returnsThenNull([CustomItemRouteProvider::ROUTE_VIEW, ['route', ['objectId' => self::OBJECT_ID]]]));
 
         $this->customItem->expects($this->any())
             ->method('getId')
@@ -401,7 +403,7 @@ class CustomItemButtonSubscriberTest extends TestCase
 
         $this->event->expects($this->exactly(4))
             ->method('addButton')
-            ->withConsecutive([[
+            ->willReturnCallback($this->consecutiveCalls([[[
                 'attr' => [
                     'href'                  => 'generated/delete/route',
                     'data-toggle'           => 'confirmation',
@@ -435,7 +437,7 @@ class CustomItemButtonSubscriberTest extends TestCase
                 'btnText'   => 'mautic.core.form.close',
                 'iconClass' => 'fa fa-fw fa-remove',
                 'priority'  => 400,
-            ]]);
+            ]]], null, false, $this->event, 'addButton'));
 
         $this->subscrber->injectViewButtons($this->event);
     }

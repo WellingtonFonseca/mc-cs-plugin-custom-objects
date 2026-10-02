@@ -19,9 +19,12 @@ use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\QueryFilterFactory;
 use Monolog\Logger;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class DynamicContentSubscriberTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     /** @var ConfigProvider|MockObject */
     private $configProviderMock;
 
@@ -91,7 +94,7 @@ class DynamicContentSubscriberTest extends TestCase
 
         $this->queryFilterFactory->expects($this->exactly(2))
             ->method('configureQueryBuilderFromSegmentFilter')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [
                     [
                         'type'          => CustomFieldFilterQueryBuilder::getServiceId(),
@@ -110,11 +113,10 @@ class DynamicContentSubscriberTest extends TestCase
                     ],
                     'filter_custom_item_1',
                 ]
-            )
-            ->will($this->onConsecutiveCalls(
+            ], [
                 $this->queryBuilderMock,
-                $this->throwException(new InvalidSegmentFilterException('Testing invalid segment handling here.'))
-            ));
+                new InvalidSegmentFilterException('Testing invalid segment handling here.')
+            ], true));
 
         $event = $this->buildEventWithFilters();
         $event->setIsEvaluated(false);

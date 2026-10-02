@@ -11,9 +11,12 @@ use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
 use PHPUnit\Framework\TestCase;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class MenuSubscriberTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     private $customObjectModel;
 
     private $configProvider;
@@ -113,7 +116,7 @@ class MenuSubscriberTest extends TestCase
 
         $this->menuEvent
             ->method('addMenuItems')
-            ->willReturnOnConsecutiveCalls(
+            ->willReturnCallback($this->returnsThenNull([
                 [
                     'priority' => 61,
                     'items'    => [
@@ -135,7 +138,7 @@ class MenuSubscriberTest extends TestCase
                         ],
                     ],
                 ]
-            );
+            ]));
 
         $this->menuSubscriber->onBuildMenu($this->menuEvent);
     }

@@ -26,9 +26,12 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 use Symfony\Component\Validator\Mapping\ClassMetadata;
 use Symfony\Component\Validator\Violation\ConstraintViolationBuilderInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomFieldTest extends \PHPUnit\Framework\TestCase
 {
+    use ConsecutiveCallsTrait;
+
     public function testClone(): void
     {
         $customField = new CustomField();
@@ -46,7 +49,7 @@ class CustomFieldTest extends \PHPUnit\Framework\TestCase
 
         $metadata->expects($this->exactly(7))
             ->method('addPropertyConstraint')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['label', $this->isInstanceOf(NotBlank::class)],
                 ['label', $this->isInstanceOf(Length::class)],
                 ['alias', $this->isInstanceOf(Length::class)],
@@ -54,14 +57,14 @@ class CustomFieldTest extends \PHPUnit\Framework\TestCase
                 ['type', $this->isInstanceOf(Length::class)],
                 ['customObject', $this->isInstanceOf(NotBlank::class)],
                 ['defaultValue', $this->isInstanceOf(Length::class)]
-            );
+            ], null, false, $metadata, 'addPropertyConstraint'));
 
         $metadata->expects($this->exactly(2))
             ->method('addConstraint')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [$this->isInstanceOf(Callback::class)],
                 [$this->isInstanceOf(AllowUniqueIdentifier::class)]
-            );
+            ], null, false, $metadata, 'addConstraint'));
 
         $object->loadValidatorMetadata($metadata);
     }

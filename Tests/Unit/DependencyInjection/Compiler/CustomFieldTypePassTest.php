@@ -7,9 +7,12 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\DependencyInjection\Compil
 use MauticPlugin\CustomObjectsBundle\DependencyInjection\Compiler\CustomFieldTypePass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomFieldTypePassTest extends \PHPUnit\Framework\TestCase
 {
+    use ConsecutiveCallsTrait;
+
     public function testProcess(): void
     {
         $containerBuilder    = $this->createMock(ContainerBuilder::class);
@@ -23,21 +26,20 @@ class CustomFieldTypePassTest extends \PHPUnit\Framework\TestCase
 
         $containerBuilder->expects($this->exactly(3))
             ->method('findDefinition')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['custom_field.type.provider'],
                 ['int.type'],
                 ['text.type']
-            )
-            ->willReturnOnConsecutiveCalls(
+            ], [
                 $definition
-            );
+            ], true));
 
         $definition->expects($this->exactly(2))
             ->method('addMethodCall')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['addType'],
                 ['addType']
-            );
+            ], null, false, $definition, 'addMethodCall'));
 
         $customFieldTypePass->process($containerBuilder);
     }

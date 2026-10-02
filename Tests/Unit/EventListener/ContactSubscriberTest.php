@@ -19,9 +19,12 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomItemXrefContactRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
 {
+    use ConsecutiveCallsTrait;
+
     private $translator;
     private $entityManager;
     private $routeProvider;
@@ -85,30 +88,29 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
 
         $this->translator->expects($this->exactly(3))
             ->method('trans')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['custom.item.event.linked'],
                 ['custom.item.event.unlinked'],
                 ['custom.item.unlink.event']
-            )
-            ->will($this->onConsecutiveCalls(
+            ], [
                 'CI Linked',
                 'CI Unlinked',
                 'CI Unlinked'
-            ));
+            ], true));
 
         $this->leadTimelineEvent->expects($this->exactly(2))
             ->method('addEventType')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['customitem.linked', 'CI Linked'],
                 ['customitem.unlinked', 'CI Unlinked']
-            );
+            ], null, false, $this->leadTimelineEvent, 'addEventType'));
 
         $this->leadTimelineEvent->expects($this->exactly(2))
             ->method('isApplicable')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['customitem.linked'],
                 ['customitem.unlinked']
-            )->will($this->onConsecutiveCalls(false, true));
+            ], [false, true], true));
 
         $this->leadTimelineEvent->expects($this->once())
             ->method('getLead')
@@ -202,30 +204,29 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
 
         $this->translator->expects($this->exactly(3))
             ->method('trans')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['custom.item.event.linked'],
                 ['custom.item.link.event.not.found'],
                 ['custom.item.event.unlinked']
-            )
-            ->will($this->onConsecutiveCalls(
+            ], [
                 'CI Linked',
                 'CI Linked not found',
                 'CI Unlinked'
-            ));
+            ], true));
 
         $this->leadTimelineEvent->expects($this->exactly(2))
             ->method('addEventType')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['customitem.linked', 'CI Linked'],
                 ['customitem.unlinked', 'CI Unlinked']
-            );
+            ], null, false, $this->leadTimelineEvent, 'addEventType'));
 
         $this->leadTimelineEvent->expects($this->exactly(2))
             ->method('isApplicable')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['customitem.linked'],
                 ['customitem.unlinked']
-            )->will($this->onConsecutiveCalls(true, false));
+            ], [true, false], true));
 
         $this->leadTimelineEvent->expects($this->once())
             ->method('getLead')

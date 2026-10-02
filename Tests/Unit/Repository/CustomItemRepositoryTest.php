@@ -19,9 +19,12 @@ use MauticPlugin\CustomObjectsBundle\Repository\CustomItemRepository;
 use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomItemRepositoryTest extends TestCase
 {
+    use ConsecutiveCallsTrait;
+
     private $entityManager;
     private $customObject;
     private $queryBuilder;
@@ -81,22 +84,22 @@ class CustomItemRepositoryTest extends TestCase
 
         $this->queryBuilder->expects($this->exactly(3))
             ->method('select')
-            ->withConsecutive(['CustomItem'], ['COUNT(CustomItem.id)'], ['IDENTITY(contactReference.customItem)']);
+            ->willReturnCallback($this->consecutiveCalls([['CustomItem'], ['COUNT(CustomItem.id)'], ['IDENTITY(contactReference.customItem)']], null, false, $this->queryBuilder, 'select'));
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('from')
-            ->withConsecutive([null, 'CustomItem'], [CustomItemXrefContact::class, 'contactReference']);
+            ->willReturnCallback($this->consecutiveCalls([[null, 'CustomItem'], [CustomItemXrefContact::class, 'contactReference']], null, false, $this->queryBuilder, 'from'));
 
         $this->queryBuilder->expects($this->any())
             ->method('where')
-            ->withConsecutive(['CustomItem.customObject = :customObjectId'], ['contactReference.contact = :contactId']);
+            ->willReturnCallback($this->consecutiveCalls([['CustomItem.customObject = :customObjectId'], ['contactReference.contact = :contactId']], null, false, $this->queryBuilder, 'where'));
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('setParameter')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['customObjectId', $customObjectId],
                 ['contactId', $contactId]
-            );
+            ], null, false, $this->queryBuilder, 'setParameter'));
 
         $this->query->expects($this->once())
             ->method('getSingleScalarResult')
@@ -134,20 +137,20 @@ class CustomItemRepositoryTest extends TestCase
 
         $this->queryBuilder->expects($this->exactly(4))
             ->method('select')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['CustomItem'],
                 ['COUNT(CustomItem.id)'],
                 ['IDENTITY(lower.customItemLower)'],
                 ['IDENTITY(higher.customItemHigher)']
-            );
+            ], null, false, $this->queryBuilder, 'select'));
 
         $this->queryBuilder->expects($this->exactly(3))
             ->method('from')
-            ->withConsecutive([null], [CustomItemXrefCustomItem::class], [CustomItemXrefCustomItem::class]);
+            ->willReturnCallback($this->consecutiveCalls([[null], [CustomItemXrefCustomItem::class], [CustomItemXrefCustomItem::class]], null, false, $this->queryBuilder, 'from'));
 
         $this->queryBuilder->expects($this->exactly(3))
             ->method('where')
-            ->withConsecutive(['CustomItem.customObject = :customObjectId'], ['lower.customItemHigher = :customItemId']);
+            ->willReturnCallback($this->consecutiveCalls([['CustomItem.customObject = :customObjectId'], ['lower.customItemHigher = :customItemId']], null, false, $this->queryBuilder, 'where'));
 
         $this->queryBuilder->expects($this->once())
             ->method('andWhere')
@@ -155,10 +158,10 @@ class CustomItemRepositoryTest extends TestCase
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('setParameter')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 ['customObjectId', $customObjectId],
                 ['customItemId', $customItemId]
-            );
+            ], null, false, $this->queryBuilder, 'setParameter'));
 
         $this->query->expects($this->once())
             ->method('getSingleScalarResult')

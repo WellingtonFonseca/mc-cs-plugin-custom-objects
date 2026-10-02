@@ -17,9 +17,12 @@ use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
+use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 class CustomFieldTypeTest extends \PHPUnit\Framework\TestCase
 {
+    use ConsecutiveCallsTrait;
+
     /**
      * @var mixed|MockObject|FormBuilderInterface
      */
@@ -73,7 +76,7 @@ class CustomFieldTypeTest extends \PHPUnit\Framework\TestCase
 
         $this->formBuilder->expects($this->exactly(12))
             ->method('add')
-            ->withConsecutive(
+            ->willReturnCallback($this->consecutiveCalls([
                 [
                     'id', HiddenType::class,
                 ],
@@ -164,7 +167,7 @@ class CustomFieldTypeTest extends \PHPUnit\Framework\TestCase
                         ],
                     ],
                 ]
-            );
+            ], null, false, $this->formBuilder, 'add'));
 
         $this->formBuilder->expects($this->once())
             ->method('get')
