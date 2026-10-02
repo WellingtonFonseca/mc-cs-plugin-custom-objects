@@ -30,7 +30,7 @@ class CustomFieldValueInt extends AbstractCustomFieldValue
      */
     public function setValue($value = null): void
     {
-        $this->value = null === $value ? null : (int) $value;
+        $this->value = (null === $value || '' === $value) ? null : (int) $value;
     }
 
     /**
