@@ -84,4 +84,43 @@ class IntTypeTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($this->customItem, $valueEntity->getCustomItem());
         $this->assertSame(234, $valueEntity->getValue());
     }
+
+    /**
+     * @return iterable<string, array{0: mixed, 1: int|null}>
+     */
+    public static function storedValues(): iterable
+    {
+        yield 'null is empty' => [null, null];
+        yield 'empty string is empty' => ['', null];
+        yield '0 is a value' => [0, 0];
+        yield "'0' is a value" => ['0', 0];
+        yield 'a number as a string' => ['7', 7];
+        yield 'a number' => [42, 42];
+    }
+
+    /**
+     * An unfilled number is NULL, not 0 (the column is nullable): 0 is a real value,
+     * and with 0 stored for "no value" the "empty" segment filter never matched.
+     *
+     * @param mixed $input
+     *
+     * @dataProvider storedValues
+     */
+    public function testAnUnfilledNumberIsStoredAsNullNotZero($input, ?int $expected): void
+    {
+        $valueEntity = $this->fieldType->createValueEntity($this->customField, $this->customItem, $input);
+
+        $this->assertSame($expected, $valueEntity->getValue());
+    }
+
+    public function testSetValueKeepsEmptyAsNull(): void
+    {
+        $valueEntity = new CustomFieldValueInt($this->customField, $this->customItem, 5);
+
+        $valueEntity->setValue('');
+        $this->assertNull($valueEntity->getValue());
+
+        $valueEntity->setValue(0);
+        $this->assertSame(0, $valueEntity->getValue());
+    }
 }

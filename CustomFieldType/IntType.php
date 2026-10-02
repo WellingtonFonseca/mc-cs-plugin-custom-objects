@@ -38,7 +38,9 @@ class IntType extends AbstractCustomFieldType
      */
     public function createValueEntity(CustomField $customField, CustomItem $customItem, $value = null): CustomFieldValueInterface
     {
-        return new CustomFieldValueInt($customField, $customItem, (int) $value);
+        // An unfilled number is NULL (the column is nullable), not 0: 0 is a value
+        // of its own, and the "empty" segment filter could never match a stored 0.
+        return new CustomFieldValueInt($customField, $customItem, (null === $value || '' === $value) ? null : (int) $value);
     }
 
     /**
