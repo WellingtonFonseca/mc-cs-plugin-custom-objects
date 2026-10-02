@@ -374,7 +374,71 @@ class QueryFilterHelperTest extends TestCase
      * @param array<int, array<string, mixed>> $criteria   merged_property of a merged filter
      * @param array<int, string>               $fieldTypes real field type key by field id (adds to the defaults)
      */
-    private function mergedSql(array $criteria, array $fieldTypes = []): string
+    /**
+     * @return iterable<string, array{0: string, 1: int, 2: string}>
+     */
+    public static function singleFilterEmptyCases(): iterable
+    {
+        yield 'decimal' => ['decimal', 18, 'cfwq_18'];
+        yield 'int' => ['int', 17, 'cfwq_17'];
+    }
+
+    /**
+     * The single-filter path (merge filter OFF) had the same flaw as the merged
+     * one: "empty" / "not empty" compared a numeric column with '', and 0 = ''
+     * in MySQL, so 0 read as empty.
+     *
+     * @dataProvider singleFilterEmptyCases
+     */
+    public function testSingleFilterEmptyOnANumericColumnOnlyChecksNull(string $type, int $fieldId, string $alias): void
+    {
+        $sql = $this->singleFilterSql($type, $fieldId, $alias, 'notEmpty');
+
+        $this->assertStringContainsString('IS NOT NULL', $sql);
+        $this->assertStringNotContainsString("<> ''", $sql);
+        $this->assertStringNotContainsString("!= ''", $sql);
+    }
+
+    public function testSingleFilterEmptyOnATextColumnKeepsTheEmptyStringCheck(): void
+    {
+        $sql = $this->singleFilterSql('text', 14, 'cfwq_14', 'notEmpty');
+
+        $this->assertStringContainsString("<> ''", $sql);
+    }
+
+    /**
+     * "not in" on a multiselect saved as 'select' stays 'notIn'. The positive IN
+     * condition must still be applied (the caller wraps it in NOT EXISTS), instead
+     * of being skipped, which turned "not in" into "has any option".
+     */
+    public function testSingleFilterNotInOnAMultiselectAppliesTheInCondition(): void
+    {
+        $sql = $this->singleFilterSql('select', 15, 'cfwq_15', 'notIn', ['pos']);
+
+        $this->assertMatchesRegularExpression('/cfwq_15_value\.value IN \(:/', $sql);
+        $this->assertStringContainsString('custom_field_value_option', $sql);
+    }
+
+    /**
+     * @param mixed $value
+     */
+    private function singleFilterSql(string $type, int $fieldId, string $alias, string $operator, $value = null): string
+    {
+        $filter = $this->createMock(ContactSegmentFilter::class);
+        $filter->method('getField')->willReturn($fieldId);
+        $filter->method('getType')->willReturn($type);
+        $filter->method('getOperator')->willReturn($operator);
+        $filter->method('getParameterValue')->willReturn($value);
+        // Mautic answers "supports the empty string" for every Custom Object value.
+        $filter->method('doesColumnSupportEmptyValue')->willReturn(true);
+
+        return $this->createQueryFilterHelper()->createValueQuery($alias, $filter, true)->getSQL();
+    }
+
+    /**
+     * @param array<int, string> $fieldTypes real field type key by field id (adds to the defaults)
+     */
+    private function createQueryFilterHelper(array $fieldTypes = []): QueryFilterHelper
     {
         if (!defined('MAUTIC_TABLE_PREFIX')) {
             define('MAUTIC_TABLE_PREFIX', '');
@@ -398,7 +462,7 @@ class QueryFilterHelperTest extends TestCase
             $customFieldTypeProvider->addType($this->createFieldType($typeClass));
         }
 
-        $queryFilterHelper = new QueryFilterHelper(
+        return new QueryFilterHelper(
             $entityManager,
             new QueryFilterFactory(
                 $entityManager,
@@ -409,6 +473,11 @@ class QueryFilterHelperTest extends TestCase
             ),
             new RandomParameterName()
         );
+    }
+
+    private function mergedSql(array $criteria, array $fieldTypes = []): string
+    {
+        $queryFilterHelper = $this->createQueryFilterHelper($fieldTypes);
 
         $crate = new ContactSegmentFilterCrate([
             'glue'            => 'and',

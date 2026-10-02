@@ -74,6 +74,15 @@ class QueryFilterHelper
         bool $filterAlreadyNegated = false
     ): void {
         $filterValue = $filter->getParameterValue();
+        // Only text-like values are stored as '' when unfilled. Comparing a numeric
+        // or date column with '' is true for 0 in MySQL, so there only NULL counts.
+        $supportsEmptyString = AbstractTextType::TABLE_NAME === $this->queryFilterFactory->getTableNameFromType(
+            $this->queryFilterFactory->getCustomFieldTypeById((int) $filter->getField()) ?: (string) $filter->getType()
+        );
+        // On a custom field, 'notIn' is the "not in" of a multiselect saved as
+        // 'select'. It is the same as '!multiselect': the positive IN condition,
+        // which the caller negates. Left as 'notIn' the condition was skipped.
+        $operator = 'notIn' === $filter->getOperator() ? '!multiselect' : $filter->getOperator();
         foreach ($unionQueryContainer as $segmentQueryBuilder) {
             $valueParameter = $this->randomParameterNameService->generateRandomParameterName();
             $expression     = $this->getCustomValueValueExpression(
@@ -82,13 +91,15 @@ class QueryFilterHelper
                 $filter,
                 $valueParameter,
                 $filterAlreadyNegated,
-                $filterValue
+                $filterValue,
+                $operator,
+                $supportsEmptyString
             );
 
             $this->addOperatorExpression(
                 $segmentQueryBuilder,
                 $expression,
-                $filter->getOperator(),
+                $operator,
                 $filterValue,
                 $valueParameter
             );

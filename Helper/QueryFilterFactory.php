@@ -30,8 +30,10 @@ class QueryFilterFactory
         ContactSegmentFilter $segmentFilter
     ): UnionQueryContainer {
         $segmentFilterFieldId   = (int) $segmentFilter->getField();
-        $segmentFilterFieldType = $segmentFilter->getType();
-        $segmentFilterFieldType = $segmentFilterFieldType ?: $this->customFieldRepository->getCustomFieldTypeById($segmentFilterFieldId);
+        // The segment screen saves 'select' for every choice field (a multiselect
+        // included), so the saved type cannot tell where the value is stored: the
+        // real field type does. The saved one is only the fallback.
+        $segmentFilterFieldType = $this->customFieldRepository->getCustomFieldTypeById($segmentFilterFieldId) ?: $segmentFilter->getType();
         $dataTable              = $this->fieldTypeProvider->getType($segmentFilterFieldType)->getTableName();
 
         $this->unionQueryContainer = new UnionQueryContainer();
