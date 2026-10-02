@@ -416,6 +416,25 @@ class QueryFilterHelper
     }
 
     /**
+     * The items of ONE contact that satisfy all the criteria of a merged filter on
+     * the same item: createMergeFilterQuery() (the one the segment runs) turned into
+     * a query for the item ids. For code outside the plugin that needs to know WHICH
+     * items matched (a segment only asks whether one exists), so it does not have to
+     * know this query's aliases.
+     */
+    public function createMergedItemIdsQuery(ContactSegmentFilter $segmentFilter, int $contactId): SegmentQueryBuilder
+    {
+        $leadAlias = 'merged_items_lead';
+        $qb        = $this->createMergeFilterQuery($segmentFilter, $leadAlias);
+        $qb->select('DISTINCT cix.custom_item_id')
+            ->innerJoin('cix', MAUTIC_TABLE_PREFIX.'leads', $leadAlias, "{$leadAlias}.id = cix.contact_id")
+            ->andWhere("{$leadAlias}.id = :merged_items_contact_id")
+            ->setParameter('merged_items_contact_id', $contactId);
+
+        return $qb;
+    }
+
+    /**
      * A multiselect keeps one row per selected option, so its conditions are
      * checked per item with EXISTS / NOT EXISTS on those rows instead of a join
      * (an item with no option has no row to join, and "not in" must hold for

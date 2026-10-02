@@ -371,9 +371,54 @@ class QueryFilterHelperTest extends TestCase
     }
 
     /**
+     * @param array<int, array<string, mixed>> $criteria merged_property of a merged filter
+     */
+    private function mergedFilter(array $criteria): ContactSegmentFilter
+    {
+        $crate = new ContactSegmentFilterCrate([
+            'glue'            => 'and',
+            'field'           => 'cmf_13',
+            'object'          => 'custom_object',
+            'type'            => 'date',
+            'operator'        => 'custom_operator',
+            'merged_property' => $criteria,
+        ]);
+
+        $segmentFilter = $this->createMock(ContactSegmentFilter::class);
+        $segmentFilter->contactSegmentFilterCrate = $crate;
+        // The merged filter reports one operator for the whole group (the last criterion's).
+        $segmentFilter->method('getOperator')->willReturn('gt');
+        $segmentFilter->method('getParameterValue')->willReturn('2026-10-01');
+        // Custom Object values have no column in the contacts schema, so Mautic
+        // answers "supports the empty string" for every one of them (seen live).
+        $segmentFilter->method('doesColumnSupportEmptyValue')->willReturn(true);
+
+        return $segmentFilter;
+    }
+
+    /**
      * @param array<int, array<string, mixed>> $criteria   merged_property of a merged filter
      * @param array<int, string>               $fieldTypes real field type key by field id (adds to the defaults)
      */
+    /**
+     * Consumers (the n8n variable resolver) ask for the ITEMS of one contact that
+     * satisfy a merged filter, instead of knowing the query's internal aliases.
+     */
+    public function testMergedItemIdsQuerySelectsTheItemsOfOneContact(): void
+    {
+        $query = $this->createQueryFilterHelper()->createMergedItemIdsQuery($this->mergedFilter([
+            ['operator' => 'lt', 'filter_value' => '2026-10-01', 'field' => '13', 'type' => 'date', 'cmo_filter' => false],
+            ['operator' => 'gt', 'filter_value' => '2026-10-01', 'field' => '12', 'type' => 'date', 'cmo_filter' => false],
+        ]), 77);
+        $sql = $query->getSQL();
+
+        $this->assertStringStartsWith('SELECT DISTINCT cix.custom_item_id FROM custom_item_xref_contact cix', $sql);
+        $this->assertMatchesRegularExpression('/cix_13_date_value\.value < :/', $sql);
+        $this->assertMatchesRegularExpression('/cix_12_date_value\.value > :/', $sql);
+        $this->assertSame(77, array_values(array_filter($query->getParameters(), 'is_int'))[0] ?? null);
+        $this->assertStringContainsString('cix.contact_id', $sql);
+    }
+
     /**
      * @return iterable<string, array{0: string, 1: int, 2: string}>
      */
@@ -479,23 +524,7 @@ class QueryFilterHelperTest extends TestCase
     {
         $queryFilterHelper = $this->createQueryFilterHelper($fieldTypes);
 
-        $crate = new ContactSegmentFilterCrate([
-            'glue'            => 'and',
-            'field'           => 'cmf_13',
-            'object'          => 'custom_object',
-            'type'            => 'date',
-            'operator'        => 'custom_operator',
-            'merged_property' => $criteria,
-        ]);
-
-        $segmentFilter = $this->createMock(ContactSegmentFilter::class);
-        $segmentFilter->contactSegmentFilterCrate = $crate;
-        // The merged filter reports one operator for the whole group (the last criterion's).
-        $segmentFilter->method('getOperator')->willReturn('gt');
-        $segmentFilter->method('getParameterValue')->willReturn('2026-10-01');
-        // Custom Object values have no column in the contacts schema, so Mautic
-        // answers "supports the empty string" for every one of them (seen live).
-        $segmentFilter->method('doesColumnSupportEmptyValue')->willReturn(true);
+        $segmentFilter = $this->mergedFilter($criteria);
 
         return $queryFilterHelper->createMergeFilterQuery($segmentFilter, 'l')->getSQL();
     }
