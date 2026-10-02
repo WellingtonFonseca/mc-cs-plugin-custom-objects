@@ -42,4 +42,18 @@ class ItemSearchTranslationsTest extends TestCase
         $this->assertStringContainsString('%alias%', $found['custom.item.search.warning.unknown_alias']);
         $this->assertStringContainsString('%alias%', $found['custom.item.search.warning.invalid_value']);
     }
+
+    public function testInvalidValueWarningTexts(): void
+    {
+        $dir = __DIR__.'/../../../Translations/';
+
+        $this->assertStringContainsString(
+            'custom.item.search.warning.invalid_value="Valor inválido para %alias%"',
+            (string) file_get_contents($dir.'pt_BR/messages.ini')
+        );
+        $this->assertStringContainsString(
+            'custom.item.search.warning.invalid_value="Invalid value for %alias%"',
+            (string) file_get_contents($dir.'en_US/messages.ini')
+        );
+    }
 }
