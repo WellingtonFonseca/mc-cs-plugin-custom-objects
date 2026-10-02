@@ -13,8 +13,23 @@ use Mautic\LeadBundle\Segment\ContactSegmentFilterCrate;
 use Mautic\LeadBundle\Segment\Query\Expression\ExpressionBuilder;
 use Mautic\LeadBundle\Segment\Query\QueryBuilder;
 use Mautic\LeadBundle\Segment\RandomParameterName;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\CheckboxGroupType;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\CountryType;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\DateTimeType;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\DecimalType;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\EmailType;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\HiddenType;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\IntType;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\PhoneType;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\RadioGroupType;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\TextareaType;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\UrlType;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\CustomFieldTypeInterface;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\DateType;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\MultiselectType;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\SelectType;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\TextType;
+use MauticPlugin\CustomObjectsBundle\Helper\CsvHelper;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterFactory;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterHelper;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
@@ -180,9 +195,135 @@ class QueryFilterHelperTest extends TestCase
     }
 
     /**
-     * @param array<int, array<string, mixed>> $criteria merged_property of a merged filter
+     * The value table comes from the real field type (multiselect values live in
+     * custom_field_value_option), not from the 'select' type the segment saved.
      */
-    private function mergedSql(array $criteria): string
+    public function testMergedInOnAMultiselectReadsTheOptionTable(): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'in', 'filter_value' => ['pos'], 'field' => '15', 'type' => 'select', 'cmo_filter' => false],
+        ]);
+
+        $this->assertStringNotContainsString('custom_field_value_text', $sql);
+        $this->assertMatchesRegularExpression('/AND \(EXISTS \(SELECT 1 FROM custom_field_value_option (\w+) WHERE \1\.custom_item_id = cix\.custom_item_id AND \1\.custom_field_id = 15 AND \1\.value IN \(:par\w+\)\)\)/', $sql);
+    }
+
+    public function testMergedNotInOnAMultiselectIsNotExists(): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'notIn', 'filter_value' => ['pos'], 'field' => '15', 'type' => 'select', 'cmo_filter' => false],
+        ]);
+
+        $this->assertMatchesRegularExpression('/AND \(NOT EXISTS \(SELECT 1 FROM custom_field_value_option (\w+) WHERE \1\.custom_item_id = cix\.custom_item_id AND \1\.custom_field_id = 15 AND \1\.value IN \(:par\w+\)\)\)/', $sql);
+    }
+
+    public function testMergedEmptyOnAMultiselectIsNotExistsOfAnyOption(): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'empty', 'filter_value' => null, 'field' => '15', 'type' => 'select', 'cmo_filter' => false],
+        ]);
+
+        $this->assertMatchesRegularExpression('/AND \(NOT EXISTS \(SELECT 1 FROM custom_field_value_option (\w+) WHERE \1\.custom_item_id = cix\.custom_item_id AND \1\.custom_field_id = 15\)\)/', $sql);
+    }
+
+    public function testMergedNotEmptyOnAMultiselectIsExistsOfAnyOption(): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'notEmpty', 'filter_value' => null, 'field' => '15', 'type' => 'select', 'cmo_filter' => false],
+        ]);
+
+        $this->assertMatchesRegularExpression('/AND \(EXISTS \(SELECT 1 FROM custom_field_value_option (\w+) WHERE \1\.custom_item_id = cix\.custom_item_id AND \1\.custom_field_id = 15\)\)/', $sql);
+    }
+
+    /**
+     * Two conditions on the same multiselect are each their own EXISTS on the
+     * item, so "has pos" AND "has grad" can both hold on one item.
+     */
+    public function testMergedTwoConditionsOnTheSameMultiselectAreIndependent(): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'in', 'filter_value' => ['pos'], 'field' => '15', 'type' => 'select', 'cmo_filter' => false],
+            ['operator' => 'in', 'filter_value' => ['grad'], 'field' => '15', 'type' => 'select', 'cmo_filter' => false],
+        ]);
+
+        $this->assertSame(2, substr_count($sql, 'EXISTS (SELECT 1 FROM custom_field_value_option'));
+        $this->assertSame(2, preg_match_all('/custom_field_value_option (\w+) WHERE/', $sql, $aliases));
+        $this->assertNotSame($aliases[1][0], $aliases[1][1]);
+    }
+
+    private const FIELD_TYPE_CLASSES = [
+        CheckboxGroupType::class, CountryType::class, DateTimeType::class, DateType::class, DecimalType::class,
+        EmailType::class, HiddenType::class, IntType::class, MultiselectType::class, PhoneType::class,
+        RadioGroupType::class, SelectType::class, TextType::class, TextareaType::class, UrlType::class,
+    ];
+
+    /**
+     * Builds a field type with a mock for every constructor argument.
+     */
+    private function createFieldType(string $typeClass): CustomFieldTypeInterface
+    {
+        $arguments = [];
+        foreach ((new \ReflectionClass($typeClass))->getConstructor()->getParameters() as $parameter) {
+            $arguments[] = $this->createMock($parameter->getType()->getName());
+        }
+
+        return new $typeClass(...$arguments);
+    }
+
+    /**
+     * @return iterable<string, array{0: string, 1: string}>
+     */
+    public static function fieldTypeTables(): iterable
+    {
+        $text   = 'custom_field_value_text';
+        $option = 'custom_field_value_option';
+        $tables = [
+            CheckboxGroupType::class => $option, MultiselectType::class => $option,
+            DateType::class          => 'custom_field_value_date',
+            DateTimeType::class      => 'custom_field_value_datetime',
+            DecimalType::class       => 'custom_field_value_decimal',
+            IntType::class           => 'custom_field_value_int',
+            CountryType::class       => $text, EmailType::class => $text, HiddenType::class => $text,
+            PhoneType::class         => $text, RadioGroupType::class => $text, SelectType::class => $text,
+            TextType::class          => $text, TextareaType::class => $text, UrlType::class => $text,
+        ];
+
+        foreach ($tables as $typeClass => $table) {
+            yield substr($typeClass, strrpos($typeClass, '\\') + 1) => [$typeClass, $table];
+        }
+    }
+
+    /**
+     * Whatever type the segment filter carries, the value is read from the table
+     * of the REAL field type, for every field type of the plugin.
+     *
+     * @dataProvider fieldTypeTables
+     */
+    public function testMergedReadsTheValueTableOfTheRealFieldType(string $typeClass, string $expectedTable): void
+    {
+        $this->assertContains($typeClass, self::FIELD_TYPE_CLASSES);
+        $key = $this->createFieldType($typeClass)->getKey();
+
+        $sql = $this->mergedSql(
+            [['operator' => 'notEmpty', 'filter_value' => null, 'field' => '20', 'type' => 'select', 'cmo_filter' => false]],
+            [20 => $key]
+        );
+
+        if ('custom_field_value_option' === $expectedTable) {
+            $this->assertStringContainsString('FROM custom_field_value_option cixo_20_', $sql);
+            $this->assertStringNotContainsString('INNER JOIN', $sql);
+        } else {
+            $this->assertStringContainsString("INNER JOIN {$expectedTable} cix_20_select_value", $sql);
+        }
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $criteria merged_property of a merged filter
+    /**
+     * @param array<int, array<string, mixed>> $criteria   merged_property of a merged filter
+     * @param array<int, string>               $fieldTypes real field type key by field id (adds to the defaults)
+     */
+    private function mergedSql(array $criteria, array $fieldTypes = []): string
     {
         if (!defined('MAUTIC_TABLE_PREFIX')) {
             define('MAUTIC_TABLE_PREFIX', '');
@@ -193,12 +334,16 @@ class QueryFilterHelperTest extends TestCase
         $entityManager = $this->createMock(EntityManager::class);
         $entityManager->method('getConnection')->willReturn($connection);
 
+        // Real field type by id: 12/13 date, 14 text, 15 multiselect (the segment
+        // filter itself carries the UI type, 'select' for every choice field).
+        $fieldTypes            = $fieldTypes + [12 => 'date', 13 => 'date', 14 => 'text', 15 => 'multiselect'];
+        $customFieldRepository = $this->createMock(CustomFieldRepository::class);
+        $customFieldRepository->method('getCustomFieldTypeById')
+            ->willReturnCallback(static fn (int $id): string => $fieldTypes[$id] ?? 'text');
+
         $customFieldTypeProvider = new CustomFieldTypeProvider();
-        foreach ([DateType::class, TextType::class] as $typeClass) {
-            $customFieldTypeProvider->addType(new $typeClass(
-                $this->createMock(TranslatorInterface::class),
-                $this->createMock(FilterOperatorProviderInterface::class)
-            ));
+        foreach (self::FIELD_TYPE_CLASSES as $typeClass) {
+            $customFieldTypeProvider->addType($this->createFieldType($typeClass));
         }
 
         $queryFilterHelper = new QueryFilterHelper(
@@ -206,7 +351,7 @@ class QueryFilterHelperTest extends TestCase
             new QueryFilterFactory(
                 $entityManager,
                 $customFieldTypeProvider,
-                $this->createMock(CustomFieldRepository::class),
+                $customFieldRepository,
                 new QueryFilterFactory\Calculator(),
                 1
             ),
