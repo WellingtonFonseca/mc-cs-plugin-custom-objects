@@ -11,6 +11,7 @@ use Mautic\LeadBundle\Segment\ContactSegmentFilter;
 use Mautic\LeadBundle\Segment\Query\QueryBuilder as SegmentQueryBuilder;
 use Mautic\LeadBundle\Segment\RandomParameterName;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\AbstractMultivalueType;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\AbstractTextType;
 use MauticPlugin\CustomObjectsBundle\Exception\InvalidArgumentException;
 use MauticPlugin\CustomObjectsBundle\Repository\DbalQueryTrait;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\UnionQueryContainer;
@@ -156,9 +157,11 @@ class QueryFilterHelper
         string $valueParameter,
         bool $alreadyNegated = false,
         $filterParameterValue = null,
-        ?string $operator = null
+        ?string $operator = null,
+        ?bool $supportsEmptyString = null
     ) {
-        $operator = $operator ?? $filter->getOperator();
+        $operator            = $operator ?? $filter->getOperator();
+        $supportsEmptyString = $supportsEmptyString ?? $filter->doesColumnSupportEmptyValue();
         if ($alreadyNegated) {
             switch ($operator) {
                 case 'empty':
@@ -179,7 +182,7 @@ class QueryFilterHelper
                 $expression = $customQuery->expr()->orX(
                     $customQuery->expr()->isNull($tableAlias.'_value.value'),
                 );
-                if ($filter->doesColumnSupportEmptyValue()) {
+                if ($supportsEmptyString) {
                     $expression->add(
                         $customQuery->expr()->eq($tableAlias.'_value.value', $customQuery->expr()->literal(''))
                     );
@@ -189,7 +192,7 @@ class QueryFilterHelper
                 $expression = $customQuery->expr()->and(
                     $customQuery->expr()->isNotNull($tableAlias.'_value.value'),
                 );
-                if ($filter->doesColumnSupportEmptyValue()) {
+                if ($supportsEmptyString) {
                     $expression->add(
                         $customQuery->expr()->neq($tableAlias.'_value.value', $customQuery->expr()->literal(''))
                     );
@@ -386,7 +389,11 @@ class QueryFilterHelper
                     $alias,
                     $segmentMergedFilter,
                     $valueParameter,
-                    $segmentFilterFieldOperator
+                    $segmentFilterFieldOperator,
+                    // Only text-like values are stored as '' when unfilled. Comparing a
+                    // numeric or date column with '' is true for 0 in MySQL, so 0 would
+                    // read as "empty": those columns are checked for NULL only.
+                    AbstractTextType::TABLE_NAME === $dataTable
                 ),
                 $segmentFilterFieldOperator,
                 $filter['filter_value'],
@@ -489,7 +496,8 @@ class QueryFilterHelper
         string $alias,
         ContactSegmentFilter $filter,
         string $valueParameter,
-        string $criterionOperator
+        string $criterionOperator,
+        bool $valueSupportsEmptyString
     ) {
         $segmentFilterFieldOperator = $criterionOperator;
 
@@ -526,7 +534,8 @@ class QueryFilterHelper
                 $valueParameter,
                 false,
                 $filter->getParameterValue(),
-                $criterionOperator
+                $criterionOperator,
+                $valueSupportsEmptyString
             );
         }
 

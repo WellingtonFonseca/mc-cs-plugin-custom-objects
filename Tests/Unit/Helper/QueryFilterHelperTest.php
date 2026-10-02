@@ -320,6 +320,57 @@ class QueryFilterHelperTest extends TestCase
     /**
      * @param array<int, array<string, mixed>> $criteria merged_property of a merged filter
     /**
+     * @return iterable<string, array{0: string, 1: int}>
+     */
+    public static function nonTextColumns(): iterable
+    {
+        yield 'int' => ['int', 17];
+        yield 'decimal' => ['decimal', 18];
+        yield 'date' => ['date', 13];
+    }
+
+    /**
+     * 0 is a value, not "empty": comparing a numeric (or date) column with ''
+     * is true for 0 in MySQL, so only IS NULL may be used on those columns.
+     *
+     * @dataProvider nonTextColumns
+     */
+    public function testMergedEmptyOnANonTextColumnOnlyChecksNull(string $type, int $fieldId): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'empty', 'filter_value' => null, 'field' => (string) $fieldId, 'type' => $type, 'cmo_filter' => false],
+        ]);
+
+        $this->assertStringContainsString("cix_{$fieldId}_{$type}_value.value IS NULL", $sql);
+        $this->assertStringNotContainsString("= ''", $sql);
+    }
+
+    /**
+     * @dataProvider nonTextColumns
+     */
+    public function testMergedNotEmptyOnANonTextColumnOnlyChecksNotNull(string $type, int $fieldId): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'notEmpty', 'filter_value' => null, 'field' => (string) $fieldId, 'type' => $type, 'cmo_filter' => false],
+        ]);
+
+        $this->assertStringContainsString("cix_{$fieldId}_{$type}_value.value IS NOT NULL", $sql);
+        $this->assertStringNotContainsString("<> ''", $sql);
+    }
+
+    /**
+     * An unfilled text or select is stored as '', so there both checks stay.
+     */
+    public function testMergedEmptyAndNotEmptyOnATextColumnAlsoCheckTheEmptyString(): void
+    {
+        $empty    = $this->mergedSql([['operator' => 'empty', 'filter_value' => null, 'field' => '14', 'type' => 'text', 'cmo_filter' => false]]);
+        $notEmpty = $this->mergedSql([['operator' => 'notEmpty', 'filter_value' => null, 'field' => '14', 'type' => 'text', 'cmo_filter' => false]]);
+
+        $this->assertStringContainsString("cix_14_text_value.value = ''", $empty);
+        $this->assertStringContainsString("cix_14_text_value.value <> ''", $notEmpty);
+    }
+
+    /**
      * @param array<int, array<string, mixed>> $criteria   merged_property of a merged filter
      * @param array<int, string>               $fieldTypes real field type key by field id (adds to the defaults)
      */
@@ -331,12 +382,13 @@ class QueryFilterHelperTest extends TestCase
 
         $connection = $this->createMock(Connection::class);
         $connection->method('getDatabasePlatform')->willReturn(new MySQLPlatform());
+        $connection->method('quote')->willReturnCallback(static fn ($value): string => "'{$value}'");
         $entityManager = $this->createMock(EntityManager::class);
         $entityManager->method('getConnection')->willReturn($connection);
 
         // Real field type by id: 12/13 date, 14 text, 15 multiselect (the segment
         // filter itself carries the UI type, 'select' for every choice field).
-        $fieldTypes            = $fieldTypes + [12 => 'date', 13 => 'date', 14 => 'text', 15 => 'multiselect'];
+        $fieldTypes            = $fieldTypes + [12 => 'date', 13 => 'date', 14 => 'text', 15 => 'multiselect', 16 => 'select', 17 => 'int', 18 => 'decimal'];
         $customFieldRepository = $this->createMock(CustomFieldRepository::class);
         $customFieldRepository->method('getCustomFieldTypeById')
             ->willReturnCallback(static fn (int $id): string => $fieldTypes[$id] ?? 'text');
@@ -372,6 +424,9 @@ class QueryFilterHelperTest extends TestCase
         // The merged filter reports one operator for the whole group (the last criterion's).
         $segmentFilter->method('getOperator')->willReturn('gt');
         $segmentFilter->method('getParameterValue')->willReturn('2026-10-01');
+        // Custom Object values have no column in the contacts schema, so Mautic
+        // answers "supports the empty string" for every one of them (seen live).
+        $segmentFilter->method('doesColumnSupportEmptyValue')->willReturn(true);
 
         return $queryFilterHelper->createMergeFilterQuery($segmentFilter, 'l')->getSQL();
     }
