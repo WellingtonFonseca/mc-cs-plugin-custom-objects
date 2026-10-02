@@ -207,7 +207,9 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($this->customField, $storedValue->getCustomField());
         $this->assertSame($customItem, $storedValue->getCustomItem());
 
-        $this->assertSame(0, $newValue->getValue());
+        // A number with no stored value is empty (NULL), not 0: IntType keeps an unfilled
+        // number as NULL now, and 0 is a value of its own.
+        $this->assertNull($newValue->getValue());
         $this->assertSame($noValueField, $newValue->getCustomField());
         $this->assertSame($customItem, $newValue->getCustomItem());
     }
