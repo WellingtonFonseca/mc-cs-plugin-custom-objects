@@ -404,7 +404,8 @@ class QueryFilterHelper
                     // Only text-like values are stored as '' when unfilled. Comparing a
                     // numeric or date column with '' is true for 0 in MySQL, so 0 would
                     // read as "empty": those columns are checked for NULL only.
-                    AbstractTextType::TABLE_NAME === $dataTable
+                    AbstractTextType::TABLE_NAME === $dataTable,
+                    $filter['filter_value']
                 ),
                 $segmentFilterFieldOperator,
                 $filter['filter_value'],
@@ -527,7 +528,8 @@ class QueryFilterHelper
         ContactSegmentFilter $filter,
         string $valueParameter,
         string $criterionOperator,
-        bool $valueSupportsEmptyString
+        bool $valueSupportsEmptyString,
+        $criterionValue = null
     ) {
         $segmentFilterFieldOperator = $criterionOperator;
 
@@ -563,7 +565,9 @@ class QueryFilterHelper
                 $filter,
                 $valueParameter,
                 false,
-                $filter->getParameterValue(),
+                // A criterion's own value (the merged filter only reports the last one's):
+                // "between" needs its own two.
+                $criterionValue,
                 $criterionOperator,
                 $valueSupportsEmptyString
             );

@@ -401,6 +401,31 @@ class QueryFilterHelperTest extends TestCase
      * @param array<int, string>               $fieldTypes real field type key by field id (adds to the defaults)
      */
     /**
+     * "between" carries its own two values. The merged filter only reports the value
+     * of its LAST criterion, so reading it there made a "between" that is not last
+     * fail ("expects an array with exactly two elements").
+     */
+    public function testMergedBetweenUsesItsOwnTwoValues(): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'between', 'filter_value' => ['2026-09-01', '2026-09-30'], 'field' => '13', 'type' => 'date', 'cmo_filter' => false],
+            ['operator' => 'gt', 'filter_value' => '2026-10-01', 'field' => '12', 'type' => 'date', 'cmo_filter' => false],
+        ]);
+
+        $this->assertStringContainsString("cix_13_date_value.value BETWEEN '2026-09-01' AND '2026-09-30'", $sql);
+        $this->assertMatchesRegularExpression('/cix_12_date_value\.value > :/', $sql);
+    }
+
+    public function testMergedNotBetweenIsARealNegation(): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'notBetween', 'filter_value' => ['2026-09-01', '2026-09-30'], 'field' => '13', 'type' => 'date', 'cmo_filter' => false],
+        ]);
+
+        $this->assertStringContainsString("NOT cix_13_date_value.value BETWEEN '2026-09-01' AND '2026-09-30'", $sql);
+    }
+
+    /**
      * Consumers (the n8n variable resolver) ask for the ITEMS of one contact that
      * satisfy a merged filter, instead of knowing the query's internal aliases.
      */
