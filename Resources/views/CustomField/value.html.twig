@@ -5,9 +5,12 @@
     {% set date = 'date' == customFieldType ? dateToDate(fieldValue.getValue()) : dateToFull(fieldValue.getValue()) %}
     {{ date }}
 {% elseif customFieldType in fieldTypes %}
-{# TODO: Transform to string #}
-{#    {{ '%s'|format(fieldValue.getCustomField().getTypeObject()|escape)|raw }}#}
-    {{ '%s'|format(fieldValue.getValue()|first|escape)|raw }}
+    {# select holds a string, multiselect a list: |first on a string gave its first character. #}
+    {% if fieldValue.getValue() is iterable %}
+        {{ fieldValue.getValue()|join(', ')|escape }}
+    {% else %}
+        {{ '%s'|format(fieldValue.getValue()|escape)|raw }}
+    {% endif %}
 {% elseif fieldValue.getValue() is iterable %}
     {{ fieldValue.getValue()|join(', ') }}
 {% else %}
