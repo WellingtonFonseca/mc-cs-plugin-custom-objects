@@ -1,35 +1,42 @@
 <div class="tab-pane fade bdr-w-0 custom-object-tab" id="{{ tabId }}-container">
-    <div class="row">
-        <div class="col-md-3">
-            {{ include('@MauticCore/Helper/search.html.twig', {
-                'searchValue': searchValue,
-                'action': searchRoute,
-                'searchId': searchId,
-                'target': '#'~namespace,
-                'searchHelp': ''
-            }) }}
+    {# Same look as the contact's History filter (LeadBundle Timeline/_list_filter_form): a panel with the search field and its icon, buttons in the footer. Core's button helper, so the buttons follow the theme. #}
+    <div class="panel">
+        <div class="form-control-icon pa-md">
+            <input type="text" class="form-control bdr-w-0 search" id="{{ searchId }}" name="search"
+                   placeholder="{{ 'mautic.core.search.placeholder'|trans }}" value="{{ searchValue|escape }}" autocomplete="off"
+                   data-toggle="livesearch" data-target="#{{ namespace }}" data-tmpl="list" data-action="{{ searchRoute }}"
+                   data-overlay="true" data-overlay-text="{{ 'mautic.core.search.livesearch'|trans }}" data-overlay-target="#{{ namespace }}" />
+            <span class="the-icon ri-search-line text-muted"></span>
         </div>
-        <div class="col-md-9 text-right">
-            <a href="{{ linkRoute }}"
-               class="btn btn-default"
-               data-toggle="ajaxmodal"
-               data-target="#customItemLookupModal"
-               data-header="{{ linkHeader }}">
-                <span>
-                    <i class="fa fa-link"></i>
-                    <span class="hidden-xs hidden-sm">
-                        {{ 'custom.item.link.existing'|trans }}
-                    </span>
-                </span>
-            </a>
-            <a href="{{ newRoute }}" class="btn btn-default" data-toggle="ajax">
-                <span>
-                    <i class="fa fa-plus"></i>
-                    <span class="hidden-xs hidden-sm">
-                        {{ 'custom.item.link.new'|trans }}
-                    </span>
-                </span>
-            </a>
+        <div class="panel-footer d-flex jc-end gap-1">
+            {% include '@MauticCore/Helper/button.html.twig' with {
+                buttons: [
+                    {
+                        href: linkRoute,
+                        icon: 'ri-link',
+                        label: 'custom.item.link.existing',
+                        variant: 'secondary',
+                        size: 'sm',
+                        attributes: {
+                            'id': tabId ~ '-link-existing',
+                            'data-toggle': 'ajaxmodal',
+                            'data-target': '#customItemLookupModal',
+                            'data-header': linkHeader
+                        }
+                    },
+                    {
+                        href: newRoute,
+                        icon: 'ri-add-line',
+                        label: 'custom.item.link.new',
+                        variant: 'primary',
+                        size: 'sm',
+                        attributes: {
+                            'id': tabId ~ '-link-new',
+                            'data-toggle': 'ajax'
+                        }
+                    }
+                ]
+            } %}
         </div>
     </div>
     <div class='custom-item-list page-list mt-20' id="{{ namespace }}">
