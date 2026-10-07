@@ -98,6 +98,9 @@ class CustomItemSearchApiController extends AbstractController
 
         $items = $qb->getQuery()->getResult();
 
+        // The values of every item in one go; serializeItem() below then finds them already loaded.
+        $this->customItemModel->populateCustomFieldsForItems($items);
+
         return new JsonResponse([
             'total' => count($items),
             'items' => array_map(fn (CustomItem $item) => $this->serializeItem($item), $items),

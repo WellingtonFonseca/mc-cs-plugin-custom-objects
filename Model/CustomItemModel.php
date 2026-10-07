@@ -293,6 +293,27 @@ class CustomItemModel extends FormModel
     }
 
     /**
+     * populateCustomFields() for a whole list: the values of the items that have none yet are
+     * read together (see CustomFieldValueModel::createValuesForItems()) instead of one query each.
+     *
+     * @param CustomItem[] $customItems
+     */
+    public function populateCustomFieldsForItems(array $customItems): void
+    {
+        $pending = array_values(array_filter($customItems, static fn (CustomItem $item): bool => 0 === $item->getCustomFieldValues()->count()));
+
+        if ([] === $pending) {
+            return;
+        }
+
+        $this->customFieldValueModel->createValuesForItems($pending);
+
+        foreach ($pending as $customItem) {
+            $customItem->createFieldValuesSnapshot();
+        }
+    }
+
+    /**
      * @param CustomItem[] $customItems
      */
     public function getFieldListData(CustomObject $customObject, array $customItems, string $filterEntityType): ?CustomItemFieldListData

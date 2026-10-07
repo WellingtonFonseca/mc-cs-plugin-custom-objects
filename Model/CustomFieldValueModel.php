@@ -18,6 +18,9 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class CustomFieldValueModel
 {
+    /** Items whose values are read by one query (keeps the IN list and the packet small). */
+    private const BATCH_SIZE = 1000;
+
     public function __construct(
         private EntityManager $entityManager,
         private ValidatorInterface $validator
@@ -35,6 +38,62 @@ class CustomFieldValueModel
 
         $this->createValueEntities($customFields, $customItem);
         $this->setValuesFromDatabase($valueRows, $customItem);
+    }
+
+    /**
+     * Same result as createValuesForItem() for each item, but the values of ALL the
+     * items are read together: one query per value table and chunk of items, instead
+     * of one query per item. For lists (the API listing returns every matching item).
+     *
+     * @param CustomItem[] $customItems
+     */
+    public function createValuesForItems(array $customItems): void
+    {
+        $byObject = [];
+        foreach ($customItems as $customItem) {
+            $byObject[spl_object_id($customItem->getCustomObject())][] = $customItem;
+        }
+
+        foreach ($byObject as $items) {
+            $customFields = $items[0]->getCustomObject()->getPublishedFields();
+            $rowsByItem   = $this->fetchRowsByItem($customFields, $items);
+
+            foreach ($items as $customItem) {
+                $this->createValueEntities($customFields, $customItem);
+                $customFieldValues = $customItem->getCustomFieldValues();
+
+                foreach ($rowsByItem[(int) $customItem->getId()] ?? [] as $row) {
+                    $customFieldValue = $customFieldValues->get((int) $row['custom_field_id']);
+
+                    if (null !== $customFieldValue) {
+                        $this->setValueToField($customFieldValue, $row['value']);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * @param CustomItem[] $customItems all of the same Custom Object
+     *
+     * @return array<int, list<array<string, mixed>>> rows grouped by item id
+     */
+    private function fetchRowsByItem(Collection $customFields, array $customItems): array
+    {
+        $saved = array_values(array_filter($customItems, static fn (CustomItem $item): bool => !$item->isNew()));
+
+        if (0 === $customFields->count() || [] === $saved) {
+            return [];
+        }
+
+        $rowsByItem = [];
+        foreach (array_chunk($saved, self::BATCH_SIZE) as $chunk) {
+            foreach ($this->fetchItemsListData($customFields->toArray(), $chunk) as $row) {
+                $rowsByItem[(int) $row['custom_item_id']][] = $row;
+            }
+        }
+
+        return $rowsByItem;
     }
 
     /**
