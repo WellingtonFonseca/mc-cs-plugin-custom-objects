@@ -214,6 +214,60 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($customItem, $newValue->getCustomItem());
     }
 
+    public function testCreateValuesForItemsReadsAllTheItemsWithOneQuery(): void
+    {
+        $field = $this->createMock(CustomField::class);
+        $field->method('getId')->willReturn(44);
+        $field->method('getTypeObject')->willReturn(new TextType($this->translator, $this->filterOperatorProvider));
+
+        $object = $this->createMock(CustomObject::class);
+        $object->method('getPublishedFields')->willReturn(new ArrayCollection([44 => $field]));
+
+        $items = [];
+        foreach ([31, 32] as $id) {
+            $item = $this->getMockBuilder(CustomItem::class)->onlyMethods(['getCustomObject', 'getId', 'isNew'])->disableOriginalConstructor()->getMock();
+            $item->method('getCustomObject')->willReturn($object);
+            $item->method('getId')->willReturn($id);
+            $item->method('isNew')->willReturn(false);
+            $items[] = $item;
+        }
+
+        $connection = $this->createMock(Connection::class);
+        $connection->method('createQueryBuilder')->willReturnCallback(fn () => new \Doctrine\DBAL\Query\QueryBuilder($connection));
+        $connection->expects($this->once())
+            ->method('fetchAllAssociative')
+            ->with($this->stringContains('custom_item_id IN (:itemIds)'), $this->callback(fn (array $p): bool => [31, 32] === $p['itemIds']))
+            ->willReturn([
+                ['custom_item_id' => 32, 'custom_field_id' => 44, 'value' => 'second'],
+                ['custom_item_id' => 31, 'custom_field_id' => 44, 'value' => 'first'],
+            ]);
+        $this->entityManager->method('getConnection')->willReturn($connection);
+
+        $this->customFieldValueModel->createValuesForItems($items);
+
+        $this->assertSame('first', $items[0]->getCustomFieldValues()->get(44)->getValue());
+        $this->assertSame('second', $items[1]->getCustomFieldValues()->get(44)->getValue());
+    }
+
+    public function testCreateValuesForItemsDoesNotQueryWhenAllItemsAreNew(): void
+    {
+        $field = $this->createMock(CustomField::class);
+        $field->method('getId')->willReturn(44);
+        $field->method('getTypeObject')->willReturn(new TextType($this->translator, $this->filterOperatorProvider));
+        $object = $this->createMock(CustomObject::class);
+        $object->method('getPublishedFields')->willReturn(new ArrayCollection([44 => $field]));
+
+        $item = $this->getMockBuilder(CustomItem::class)->onlyMethods(['getCustomObject', 'isNew'])->disableOriginalConstructor()->getMock();
+        $item->method('getCustomObject')->willReturn($object);
+        $item->method('isNew')->willReturn(true);
+
+        $this->entityManager->expects($this->never())->method('getConnection');
+
+        $this->customFieldValueModel->createValuesForItems([$item]);
+
+        $this->assertSame(1, $item->getCustomFieldValues()->count());
+    }
+
     public function testSaveForNewCustomItem(): void
     {
         $customFieldValue = $this->createMock(CustomFieldValueInterface::class);
