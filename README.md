@@ -42,6 +42,10 @@ Color: Red
 
 Once some of your contacts buy a Mautic T-shirt or hoodie you can link them with the product they've bought. You can automate that with a Mautic Campaign action, API or CSV import. Once these links are established you'll be able to build Segments based on who bought what, or if they for example bought products with price greater than $100 or products of red color. Then your automated workflows can hit the right audience.
 
+## Segment filters: including / excluding on text fields
+
+The segment form offers `including` / `excluding` (`in` / `!in`) on the text fields of a Custom Object (text, email, phone, url, textarea) and on the item name, so several values fit in one criterion, joined with `|` (`A|B|C`), instead of one criterion per value joined by OR. The suggestions of the segment form's value chips (from MauticPatchesBundle) come from `GET /s/custom/segment-filter-values.json?field=cmf_<field id>|cmo_<object id>&q=&limit=` (distinct stored values, view access to the object required). Code: `EventListener/SegmentTextInOperatorSubscriber.php`, `Controller/SegmentFilterValuesController.php`, `Helper/SegmentFilterValues.php`.
+
 ## Requirements
 
 - Plugin supports PHP 7.1+.
