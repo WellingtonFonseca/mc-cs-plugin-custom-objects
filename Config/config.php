@@ -94,6 +94,12 @@ $coParams = [
                 'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\CustomItem\BatchDeleteController::deleteAction',
                 'method'     => 'POST',
             ],
+            // The suggestions of the segment form's including / excluding chips for a Custom Object text filter.
+            'mautic_custom_segment_filter_values' => [
+                'path'       => '/custom/segment-filter-values.json',
+                'controller' => 'MauticPlugin\\CustomObjectsBundle\\Controller\\SegmentFilterValuesController::valuesAction',
+                'method'     => 'GET',
+            ],
             CustomItemRouteProvider::ROUTE_LOOKUP => [
                 'path'       => '/custom/object/{objectId}/item/lookup.json',
                 'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\CustomItem\LookupController::listAction',
