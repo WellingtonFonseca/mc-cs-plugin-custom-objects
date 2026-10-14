@@ -226,6 +226,31 @@ class QueryFilterHelperTest extends TestCase
         $this->assertMatchesRegularExpression('/AND \(NOT EXISTS \(SELECT 1 FROM custom_field_value_option (\w+) WHERE \1\.custom_item_id = cix\.custom_item_id AND \1\.custom_field_id = 15\)\)/', $sql);
     }
 
+    /**
+     * An item with no row in the value table at all (created before the field
+     * existed, or saved without it) is empty too: "empty" cannot be an inner join
+     * on the value table, it is "an item of the field's object that has no filled value".
+     */
+    public function testMergedEmptyOnADecimalAlsoMatchesAnItemWithoutRow(): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'empty', 'filter_value' => null, 'field' => '18', 'type' => 'decimal', 'cmo_filter' => false],
+        ]);
+
+        $this->assertDoesNotMatchRegularExpression('/JOIN custom_field_value_decimal/', $sql);
+        $this->assertMatchesRegularExpression('/EXISTS \(SELECT 1 FROM custom_field (\w+) INNER JOIN custom_item (\w+) ON \2\.custom_object_id = \1\.custom_object_id WHERE \1\.id = 18 AND \2\.id = cix\.custom_item_id\)/', $sql);
+        $this->assertMatchesRegularExpression('/NOT EXISTS \(SELECT 1 FROM custom_field_value_decimal (\w+) WHERE \1\.custom_item_id = cix\.custom_item_id AND \1\.custom_field_id = 18 AND \1\.value IS NOT NULL\)/', $sql);
+    }
+
+    public function testMergedEmptyOnATextAlsoCountsTheEmptyString(): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'empty', 'filter_value' => null, 'field' => '14', 'type' => 'text', 'cmo_filter' => false],
+        ]);
+
+        $this->assertMatchesRegularExpression('/NOT EXISTS \(SELECT 1 FROM custom_field_value_text (\w+) WHERE \1\.custom_item_id = cix\.custom_item_id AND \1\.custom_field_id = 14 AND \1\.value IS NOT NULL AND \1\.value <> \'\'\)/', $sql);
+    }
+
     public function testMergedNotEmptyOnAMultiselectIsExistsOfAnyOption(): void
     {
         $sql = $this->mergedSql([
@@ -341,8 +366,8 @@ class QueryFilterHelperTest extends TestCase
             ['operator' => 'empty', 'filter_value' => null, 'field' => (string) $fieldId, 'type' => $type, 'cmo_filter' => false],
         ]);
 
-        $this->assertStringContainsString("cix_{$fieldId}_{$type}_value.value IS NULL", $sql);
-        $this->assertStringNotContainsString("= ''", $sql);
+        $this->assertMatchesRegularExpression("/custom_field_value_{$type} (\\w+) WHERE .*\\1\\.value IS NOT NULL\\)/", $sql);
+        $this->assertStringNotContainsString("<> ''", $sql);
     }
 
     /**
@@ -366,7 +391,7 @@ class QueryFilterHelperTest extends TestCase
         $empty    = $this->mergedSql([['operator' => 'empty', 'filter_value' => null, 'field' => '14', 'type' => 'text', 'cmo_filter' => false]]);
         $notEmpty = $this->mergedSql([['operator' => 'notEmpty', 'filter_value' => null, 'field' => '14', 'type' => 'text', 'cmo_filter' => false]]);
 
-        $this->assertStringContainsString("cix_14_text_value.value = ''", $empty);
+        $this->assertMatchesRegularExpression("/custom_field_value_text (\\w+) WHERE .*\\1\\.value IS NOT NULL AND \\1\\.value <> ''\\)/", $empty);
         $this->assertStringContainsString("cix_14_text_value.value <> ''", $notEmpty);
     }
 
