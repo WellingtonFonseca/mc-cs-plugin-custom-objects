@@ -377,6 +377,20 @@ class QueryFilterHelper
                 continue;
             }
 
+            if (!$isCmoFilter
+                && AbstractMultivalueType::TABLE_NAME !== $dataTable
+                && 'empty' === $segmentFilterFieldOperator
+            ) {
+                $this->addMergeEmptyCondition(
+                    $qb,
+                    $customItemXrefContactAlias,
+                    $dataTable,
+                    $segmentFilterFieldId,
+                    $valueParameter
+                );
+                continue;
+            }
+
             if ($isCmoFilter && !in_array($cinAliasItem, $joinedAlias, true)) {
                 $this->joinMergeCustomItem($qb, $customItemXrefContactAlias, $cinAliasItem, $segmentFilterFieldId);
                 $joinedAlias[] = $cinAliasItem;
@@ -482,6 +496,37 @@ class QueryFilterHelper
         }
 
         return true;
+    }
+
+    /**
+     * "Empty" on a field value: an item of the field's own object that has no filled
+     * value. An item with no row in the value table (created before the field existed,
+     * or saved without it) is empty too, so this cannot be an inner join on that table.
+     */
+    private function addMergeEmptyCondition(
+        SegmentQueryBuilder $qb,
+        string $customItemXrefContactAlias,
+        string $dataTable,
+        int $fieldId,
+        string $valueParameter
+    ): void {
+        $fieldAlias = "cef_{$valueParameter}";
+        $itemAlias  = "cei_{$valueParameter}";
+        $valueAlias = "cev_{$valueParameter}";
+        // Only text-like values are stored as '' when unfilled; a numeric or date column
+        // compared with '' is true for 0 in MySQL, so there only NULL counts.
+        $emptyString = AbstractTextType::TABLE_NAME === $dataTable ? " AND {$valueAlias}.value <> ''" : '';
+
+        $qb->andWhere(
+            'EXISTS (SELECT 1 FROM '.MAUTIC_TABLE_PREFIX."custom_field {$fieldAlias}"
+            .' INNER JOIN '.MAUTIC_TABLE_PREFIX."custom_item {$itemAlias} ON {$itemAlias}.custom_object_id = {$fieldAlias}.custom_object_id"
+            ." WHERE {$fieldAlias}.id = {$fieldId} AND {$itemAlias}.id = {$customItemXrefContactAlias}.custom_item_id)"
+        );
+        $qb->andWhere(
+            'NOT EXISTS (SELECT 1 FROM '.MAUTIC_TABLE_PREFIX."{$dataTable} {$valueAlias}"
+            ." WHERE {$valueAlias}.custom_item_id = {$customItemXrefContactAlias}.custom_item_id"
+            ." AND {$valueAlias}.custom_field_id = {$fieldId} AND {$valueAlias}.value IS NOT NULL{$emptyString})"
+        );
     }
 
     private function joinMergeCustomItem(
