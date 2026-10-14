@@ -86,3 +86,13 @@ This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
+
+## Mautic 7 (branch `mautic7-base`)
+
+This branch is the fork's port to Mautic 7.2 (PHP 8.2+, Symfony 7, MySQL 8.4). It also runs on the Mautic 5.2 core.
+
+- Signatures follow Symfony 6/7 (`mixed`, return types); the session comes from `request_stack`; controller references use `Class::action`.
+- The API Platform 2 classes (`DataPersister`, `Extension/CustomItemListeningExtension`, `Serializer/ApiNormalizer`) do not load on Mautic 7, and the Mautic 5.2 image does not have API Platform either: `Config/config.php` registers them only when `ApiPlatform\Core` exists. The routes `/api/customobjects/{alias}/items` do not use it.
+- A segment filter on an item name has the field `cmo_<object id>` (Mautic 7 drops the `cmo_filter` mark of merged filters). **Deploy it together with, or after, the matching n8n-dispatch-bundle** (its `SegmentItemMatcher` reads that field).
+- Live checks: `scripts/test-all.sh mautic7` in the workspace (operators, decimal, item search, segments for each field type).
+- Not sent upstream (acquia): this branch lives only in this fork.
