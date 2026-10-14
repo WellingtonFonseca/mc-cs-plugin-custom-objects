@@ -36,9 +36,10 @@ class CustomItemNameFilterQueryBuilder extends BaseFilterQueryBuilder
     public function applyQuery(QueryBuilder $queryBuilder, ContactSegmentFilter $filter): QueryBuilder
     {
         $leadsTableAlias = $queryBuilder->getTableAlias(MAUTIC_TABLE_PREFIX.'leads');
-        $customObjectId  = $filter->getField();
+        // getField() is 'cmo_<object id>' (SegmentFiltersDictionarySubscriber)
+        $customObjectId  = (int) preg_replace('/\D/', '', (string) $filter->getField());
 
-        $tableAlias = 'cin_'.(int) $filter->getField();
+        $tableAlias = 'cin_'.$customObjectId;
 
         $filterQueryBuilder = $this->filterHelper->createItemNameQueryBuilder($tableAlias);
 

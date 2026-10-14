@@ -69,9 +69,11 @@ class SegmentFiltersDictionarySubscriber implements EventSubscriberInterface
         foreach ($fields as $field) {
             $COId = $field['custom_object_id'];
             if (!in_array($COId, $registeredObjects, true)) {
+                // 'cmo_<id>', not the bare id: Mautic 7 rebuilds a merged filter's entries from getField() and drops any other
+                // mark, so this prefix is the only thing that still tells an item name from a Custom Field there.
                 $event->addTranslation('cmo_'.$COId, [
                     'type'          => $cmoType,
-                    'field'         => $COId,
+                    'field'         => 'cmo_'.$COId,
                     'foreign_table' => 'custom_objects',
                 ]);
                 $registeredObjects[] = $COId;

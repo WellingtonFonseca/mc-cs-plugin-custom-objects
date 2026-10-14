@@ -345,8 +345,10 @@ class QueryFilterHelper
         $joinedAlias = [];
 
         foreach ($segmentFilter->contactSegmentFilterCrate->getMergedProperty() as $filter) {
-            $segmentFilterFieldId       = (int) $filter['field'];
-            $isCmoFilter                = $filter['cmo_filter'] ?? false;
+            // 'field' is 'cmo_<object id>' for an item name, the bare field id otherwise (SegmentFiltersDictionarySubscriber). Mautic 7
+            // keeps only filter_value / operator / field / type of each entry, so 'cmo_filter' is not always there.
+            $segmentFilterFieldId       = (int) preg_replace('/\D/', '', (string) $filter['field']);
+            $isCmoFilter                = $filter['cmo_filter'] ?? str_starts_with((string) $filter['field'], 'cmo_');
             // The type saved with a segment filter is the one the segment screen
             // uses ('select' for every choice field, multiselect included), not the
             // one that decides where the value is stored. The real field type does.
