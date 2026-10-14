@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Provider;
 
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
-use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 class SessionProviderFactory
 {
-    public function __construct(private Session $session, private CoreParametersHelper $coreParametersHelper)
+    public function __construct(private RequestStack $requestStack, private CoreParametersHelper $coreParametersHelper)
     {
     }
 
@@ -27,6 +27,6 @@ class SessionProviderFactory
 
     private function createProvider(string $namespace): SessionProvider
     {
-        return new SessionProvider($this->session, $namespace, (int) $this->coreParametersHelper->get('default_pagelimit'));
+        return new SessionProvider($this->requestStack->getSession(), $namespace, (int) $this->coreParametersHelper->get('default_pagelimit'));
     }
 }

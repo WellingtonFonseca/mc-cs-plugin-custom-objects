@@ -27,7 +27,7 @@ class DeleteController extends CommonController
         EventDispatcherInterface $eventDispatcher,
         int $objectId
     ): Response {
-        $controller = 'MauticPlugin\CustomObjectsBundle\Controller\CustomObject\ListController:listAction';
+        $controller = 'MauticPlugin\CustomObjectsBundle\Controller\CustomObject\ListController::listAction';
         $page       = [
             'page' => $sessionProviderFactory->createObjectProvider()->getPage(),
         ];

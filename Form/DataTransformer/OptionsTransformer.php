@@ -16,7 +16,7 @@ class OptionsTransformer implements DataTransformerInterface
      *
      * @return string[]
      */
-    public function transform($value): array
+    public function transform(mixed $value): array
     {
         if (!$value || !$value->count()) {
             return ['list' => []];
@@ -36,7 +36,7 @@ class OptionsTransformer implements DataTransformerInterface
     /**
      * @param string[] $value
      */
-    public function reverseTransform($value): ArrayCollection
+    public function reverseTransform(mixed $value): ArrayCollection
     {
         $values  = [];
         $options = [];

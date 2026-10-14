@@ -29,7 +29,7 @@ class CancelController extends CommonController
             [
                 'returnUrl'       => $routeProvider->buildListRoute($page),
                 'viewParameters'  => ['page' => $page],
-                'contentTemplate' => 'MauticPlugin\CustomObjectsBundle\Controller\CustomObject\ListController:listAction',
+                'contentTemplate' => 'MauticPlugin\CustomObjectsBundle\Controller\CustomObject\ListController::listAction',
                 'passthroughVars' => [
                     'mauticContent' => 'customObject',
                 ],

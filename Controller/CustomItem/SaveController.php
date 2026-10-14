@@ -105,8 +105,8 @@ class SaveController extends AbstractFormController
             );
 
             $saveClicked = $form->get('buttons')->get('save')->isClicked();
-            $detailView  = 'MauticPlugin\CustomObjectsBundle\Controller\CustomItem\ViewController:viewAction';
-            $formView    = 'MauticPlugin\CustomObjectsBundle\Controller\CustomItem\FormController:editAction';
+            $detailView  = 'MauticPlugin\CustomObjectsBundle\Controller\CustomItem\ViewController::viewAction';
+            $formView    = 'MauticPlugin\CustomObjectsBundle\Controller\CustomItem\FormController::editAction';
 
             $pathParameters = [
                 'objectId' => $objectId,
@@ -127,7 +127,7 @@ class SaveController extends AbstractFormController
                     return $this->redirectToRoute('mautic_contact_action', ['objectAction' => 'view', 'objectId' => $contactId]);
                 }
 
-                $formView                    = 'MauticPlugin\CustomObjectsBundle\Controller\CustomItem\FormController:editWithRedirectToContactAction';
+                $formView                    = 'MauticPlugin\CustomObjectsBundle\Controller\CustomItem\FormController::editWithRedirectToContactAction';
                 $pathParameters['contactId'] = $contactId;
             }
 

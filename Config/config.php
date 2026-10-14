@@ -579,7 +579,7 @@ $coParams = [
             'custom_object.session.provider_factory' => [
                 'class'     => MauticPlugin\CustomObjectsBundle\Provider\SessionProviderFactory::class,
                 'arguments' => [
-                    'session',
+                    'request_stack',
                     'mautic.helper.core_parameters',
                 ],
             ],
@@ -672,13 +672,6 @@ $coParams = [
             'custom_object.helper.token_formatter' => [
                 'class'     => MauticPlugin\CustomObjectsBundle\Helper\TokenFormatter::class,
             ],
-            'custom_object.data_persister.custom_item' => [
-                'class'     => MauticPlugin\CustomObjectsBundle\DataPersister\CustomItemDataPersister::class,
-                'tag'       => 'api_platform.data_persister',
-                'arguments' => [
-                    'mautic.custom.model.item',
-                ],
-            ],
         ],
     ],
     'parameters' => [
@@ -690,7 +683,17 @@ $coParams = [
     ],
 ];
 
+// The API Platform integration (the /api/custom_items style resources) is written for API Platform 2 (ApiPlatform\Core).
+// Mautic 7 ships API Platform 4, where that namespace is gone: the services are only registered when it exists.
+// The REST routes /api/customobjects/{alias}/items are plain controllers and do not depend on it.
 if (interface_exists('ApiPlatform\\Core\\Api\\IriConverterInterface')) {
+    $coParams['services']['other']['custom_object.data_persister.custom_item'] = [
+        'class'     => MauticPlugin\CustomObjectsBundle\DataPersister\CustomItemDataPersister::class,
+        'tag'       => 'api_platform.data_persister',
+        'arguments' => [
+            'mautic.custom.model.item',
+        ],
+    ];
     $coParams['services']['other']['api_platform.custom_object.serializer.api_normalizer_jsonld'] = [
         'class'            => MauticPlugin\CustomObjectsBundle\Serializer\ApiNormalizer::class,
         'decoratedService' => ['api_platform.jsonld.normalizer.item', 'api_platform.jsonld.normalizer.item.inner'],
