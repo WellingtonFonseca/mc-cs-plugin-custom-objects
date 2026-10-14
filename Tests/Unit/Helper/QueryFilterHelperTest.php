@@ -34,6 +34,7 @@ use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterFactory;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterHelper;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomFieldRepository;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -226,6 +227,31 @@ class QueryFilterHelperTest extends TestCase
         $this->assertMatchesRegularExpression('/AND \(NOT EXISTS \(SELECT 1 FROM custom_field_value_option (\w+) WHERE \1\.custom_item_id = cix\.custom_item_id AND \1\.custom_field_id = 15\)\)/', $sql);
     }
 
+    /**
+     * An item with no row in the value table at all (created before the field
+     * existed, or saved without it) is empty too: "empty" cannot be an inner join
+     * on the value table, it is "an item of the field's object that has no filled value".
+     */
+    public function testMergedEmptyOnADecimalAlsoMatchesAnItemWithoutRow(): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'empty', 'filter_value' => null, 'field' => '18', 'type' => 'decimal', 'cmo_filter' => false],
+        ]);
+
+        $this->assertDoesNotMatchRegularExpression('/JOIN custom_field_value_decimal/', $sql);
+        $this->assertMatchesRegularExpression('/EXISTS \(SELECT 1 FROM custom_field (\w+) INNER JOIN custom_item (\w+) ON \2\.custom_object_id = \1\.custom_object_id WHERE \1\.id = 18 AND \2\.id = cix\.custom_item_id\)/', $sql);
+        $this->assertMatchesRegularExpression('/NOT EXISTS \(SELECT 1 FROM custom_field_value_decimal (\w+) WHERE \1\.custom_item_id = cix\.custom_item_id AND \1\.custom_field_id = 18 AND \1\.value IS NOT NULL\)/', $sql);
+    }
+
+    public function testMergedEmptyOnATextAlsoCountsTheEmptyString(): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'empty', 'filter_value' => null, 'field' => '14', 'type' => 'text', 'cmo_filter' => false],
+        ]);
+
+        $this->assertMatchesRegularExpression('/NOT EXISTS \(SELECT 1 FROM custom_field_value_text (\w+) WHERE \1\.custom_item_id = cix\.custom_item_id AND \1\.custom_field_id = 14 AND \1\.value IS NOT NULL AND \1\.value <> \'\'\)/', $sql);
+    }
+
     public function testMergedNotEmptyOnAMultiselectIsExistsOfAnyOption(): void
     {
         $sql = $this->mergedSql([
@@ -297,8 +323,8 @@ class QueryFilterHelperTest extends TestCase
      * Whatever type the segment filter carries, the value is read from the table
      * of the REAL field type, for every field type of the plugin.
      *
-     * @dataProvider fieldTypeTables
      */
+    #[DataProvider('fieldTypeTables')]
     public function testMergedReadsTheValueTableOfTheRealFieldType(string $typeClass, string $expectedTable): void
     {
         $this->assertContains($typeClass, self::FIELD_TYPE_CLASSES);
@@ -333,21 +359,21 @@ class QueryFilterHelperTest extends TestCase
      * 0 is a value, not "empty": comparing a numeric (or date) column with ''
      * is true for 0 in MySQL, so only IS NULL may be used on those columns.
      *
-     * @dataProvider nonTextColumns
      */
+    #[DataProvider('nonTextColumns')]
     public function testMergedEmptyOnANonTextColumnOnlyChecksNull(string $type, int $fieldId): void
     {
         $sql = $this->mergedSql([
             ['operator' => 'empty', 'filter_value' => null, 'field' => (string) $fieldId, 'type' => $type, 'cmo_filter' => false],
         ]);
 
-        $this->assertStringContainsString("cix_{$fieldId}_{$type}_value.value IS NULL", $sql);
-        $this->assertStringNotContainsString("= ''", $sql);
+        $this->assertMatchesRegularExpression("/custom_field_value_{$type} (\\w+) WHERE .*\\1\\.value IS NOT NULL\\)/", $sql);
+        $this->assertStringNotContainsString("<> ''", $sql);
     }
 
     /**
-     * @dataProvider nonTextColumns
      */
+    #[DataProvider('nonTextColumns')]
     public function testMergedNotEmptyOnANonTextColumnOnlyChecksNotNull(string $type, int $fieldId): void
     {
         $sql = $this->mergedSql([
@@ -366,7 +392,7 @@ class QueryFilterHelperTest extends TestCase
         $empty    = $this->mergedSql([['operator' => 'empty', 'filter_value' => null, 'field' => '14', 'type' => 'text', 'cmo_filter' => false]]);
         $notEmpty = $this->mergedSql([['operator' => 'notEmpty', 'filter_value' => null, 'field' => '14', 'type' => 'text', 'cmo_filter' => false]]);
 
-        $this->assertStringContainsString("cix_14_text_value.value = ''", $empty);
+        $this->assertMatchesRegularExpression("/custom_field_value_text (\\w+) WHERE .*\\1\\.value IS NOT NULL AND \\1\\.value <> ''\\)/", $empty);
         $this->assertStringContainsString("cix_14_text_value.value <> ''", $notEmpty);
     }
 
@@ -458,8 +484,8 @@ class QueryFilterHelperTest extends TestCase
      * one: "empty" / "not empty" compared a numeric column with '', and 0 = ''
      * in MySQL, so 0 read as empty.
      *
-     * @dataProvider singleFilterEmptyCases
      */
+    #[DataProvider('singleFilterEmptyCases')]
     public function testSingleFilterEmptyOnANumericColumnOnlyChecksNull(string $type, int $fieldId, string $alias): void
     {
         $sql = $this->singleFilterSql($type, $fieldId, $alias, 'notEmpty');
