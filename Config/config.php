@@ -48,6 +48,10 @@ $coParams = [
                 'path'       => '/custom/object/{objectId}/item/details/{itemId}',
                 'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\CustomItem\ViewController::detailsAction',
                 'method'     => 'GET',
+                'requirements' => [
+                    'objectId' => '\d+',
+                    'itemId'   => '\d+',
+                ],
             ],
             CustomItemRouteProvider::ROUTE_NEW => [
                 'path'       => '/custom/object/{objectId}/item/new',
