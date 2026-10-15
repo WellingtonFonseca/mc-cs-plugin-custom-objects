@@ -48,9 +48,9 @@ class CampaignConditionCriterionType extends AbstractType
     {
         $fields     = $this->customFieldModel->fetchCustomFieldsForObject($customObject);
         $nameOps    = $this->fieldTypeProvider->getType('text')->getOperatorOptions();
-        $choices    = [$this->translator->trans('custom.item.name.label') => MergedItemCriteriaMatcher::ITEM_NAME];
+        $choices    = [$this->translator->trans('custom.item.criterion.name') => MergedItemCriteriaMatcher::ITEM_NAME];
         $optionAttr = [
-            $this->translator->trans('custom.item.name.label') => [
+            $this->translator->trans('custom.item.criterion.name') => [
                 'data-operators'  => json_encode($nameOps),
                 'data-options'    => json_encode([]),
                 'data-field-type' => 'text',

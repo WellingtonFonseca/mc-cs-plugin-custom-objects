@@ -79,10 +79,10 @@ final class CampaignConditionFieldValueTypeTest extends TestCase
         $choices = $form->get('field')->getConfig()->getOption('choices');
 
         $this->assertSame([MergedItemCriteriaMatcher::ITEM_NAME, 42], array_values($choices));
-        $this->assertSame('custom.item.name.label', array_key_first($choices));
+        $this->assertSame('custom.item.criterion.name', array_key_first($choices));
 
         $attr = $form->get('field')->getConfig()->getOption('choice_attr');
-        $this->assertSame('text', $attr['custom.item.name.label']['data-field-type']);
+        $this->assertSame('text', $attr['custom.item.criterion.name']['data-field-type']);
         $this->assertSame('int', $attr['Cheese']['data-field-type']);
     }
 
