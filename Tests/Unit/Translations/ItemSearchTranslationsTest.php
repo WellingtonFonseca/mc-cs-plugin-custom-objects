@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Translations;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class ItemSearchTranslationsTest extends TestCase
@@ -22,9 +23,7 @@ class ItemSearchTranslationsTest extends TestCase
         return ['en_US' => ['en_US'], 'pt_BR' => ['pt_BR']];
     }
 
-    /**
-     * @dataProvider locales
-     */
+    #[DataProvider('locales')]
     public function testWarningsKeepTheAliasPlaceholder(string $locale): void
     {
         $lines = file(__DIR__.'/../../../Translations/'.$locale.'/messages.ini', FILE_IGNORE_NEW_LINES);

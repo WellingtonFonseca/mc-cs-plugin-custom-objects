@@ -34,7 +34,7 @@ class SaveController extends AbstractFormController
     ): Response {
         $request = $this->getCurrentRequest();
 
-        $customItemData = $request->request->get('custom_item');
+        $customItemData = $request->request->all('custom_item');
         $contactId      = intval($customItemData['contact_id'] ?? 0);
 
         try {

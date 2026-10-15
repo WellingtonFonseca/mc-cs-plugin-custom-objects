@@ -52,13 +52,8 @@ class BatchDeleteControllerTest extends ControllerTestCase
             ->willReturn($this->request);
 
         $this->model                  = $this->createMock(NotificationModel::class);
-        $this->modelFactory->expects($this->once())
-            ->method('getModel')
-            ->willReturn($this->model);
-
         $this->batchDeleteController  = new BatchDeleteController(
             $this->managerRegistry,
-            $this->mauticFactory,
             $this->modelFactory,
             $this->userHelper,
             $this->coreParametersHelper,
@@ -74,9 +69,6 @@ class BatchDeleteControllerTest extends ControllerTestCase
         $this->request->method('isXmlHttpRequest')->willReturn(true);
         $this->sessionProviderFactory->method('createItemProvider')->willReturn($this->sessionProvider);
 
-        $this->model->expects($this->once())
-            ->method('getNotificationContent')
-            ->willReturn([[], 'test', 'test']);
     }
 
     public function testDeleteActionIfCustomItemNotFound(): void

@@ -16,6 +16,7 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueText;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Exception\InvalidValueException;
 use MauticPlugin\CustomObjectsBundle\Helper\ItemFieldFilter;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class ItemFieldFilterTest extends TestCase
@@ -57,9 +58,7 @@ class ItemFieldFilterTest extends TestCase
         return [['text'], ['textarea'], ['email'], ['phone'], ['url'], ['hidden']];
     }
 
-    /**
-     * @dataProvider textTypes
-     */
+    #[DataProvider('textTypes')]
     public function testTextFamilyContainsIsCaseInsensitiveOnTheTextTable(string $type): void
     {
         $r = $this->apply($type, 'Disc');
@@ -140,9 +139,7 @@ class ItemFieldFilterTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider numericCases
-     */
+    #[DataProvider('numericCases')]
     public function testDecimalOperatorsAndSeparators(string $input, string $operator, string $number): void
     {
         $r = $this->apply('decimal', $input);
@@ -152,9 +149,7 @@ class ItemFieldFilterTest extends TestCase
         $this->assertSame($number, $r['params']['sval0']);
     }
 
-    /**
-     * @dataProvider numericCases
-     */
+    #[DataProvider('numericCases')]
     public function testIntAcceptsTheSameOperators(string $input, string $operator, string $number): void
     {
         $r = $this->apply('int', $input);
@@ -171,9 +166,7 @@ class ItemFieldFilterTest extends TestCase
         return [['int', 'abc'], ['int', ''], ['decimal', '>=x'], ['decimal', '1,2,3'], ['decimal', '>>1']];
     }
 
-    /**
-     * @dataProvider invalidNumbers
-     */
+    #[DataProvider('invalidNumbers')]
     public function testInvalidNumberThrows(string $type, string $value): void
     {
         $this->expectException(InvalidValueException::class);
@@ -196,9 +189,7 @@ class ItemFieldFilterTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider dateCases
-     */
+    #[DataProvider('dateCases')]
     public function testDateEqualityMatchesTheWholeDay(string $input, string $fragment, string $start, string $end): void
     {
         $r = $this->apply('date', $input);
@@ -224,9 +215,7 @@ class ItemFieldFilterTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider dateComparisons
-     */
+    #[DataProvider('dateComparisons')]
     public function testDateComparisonsWorkOnWholeDays(string $input, string $fragment, string $bound): void
     {
         $r = $this->apply('date', $input);
@@ -244,9 +233,7 @@ class ItemFieldFilterTest extends TestCase
         return [['31/02/2026'], ['2026-13-01'], ['abc'], [''], ['2026/08/23'], ['23-08-2026'], ['>']];
     }
 
-    /**
-     * @dataProvider invalidDates
-     */
+    #[DataProvider('invalidDates')]
     public function testInvalidDateThrows(string $value): void
     {
         $this->expectException(InvalidValueException::class);

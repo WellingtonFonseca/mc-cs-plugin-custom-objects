@@ -22,6 +22,7 @@ use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\Form\FormFactory;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -110,7 +111,6 @@ class FormControllerTest extends ControllerTestCase
 
         $this->formController = new FormController(
             $this->managerRegistry,
-            $this->mauticFactory,
             $this->modelFactory,
             $this->userHelper,
             $this->coreParametersHelper,
@@ -213,14 +213,6 @@ class FormControllerTest extends ControllerTestCase
 
         $this->assertRenderFormForItem($this->customItem);
 
-        $this->modelFactory->expects($this->once())
-            ->method('getModel')
-            ->willReturn($this->model);
-
-        $this->modelFactory->expects($this->once())
-            ->method('getModel')
-            ->willReturn($this->model);
-
         $this->formController->newAction(
             $this->formFactory,
             $this->routeProvider,
@@ -265,10 +257,6 @@ class FormControllerTest extends ControllerTestCase
 
         $this->assertRenderFormForItem($customItem, static::CONTACT_ID);
 
-        $this->modelFactory->expects($this->once())
-            ->method('getModel')
-            ->willReturn($this->model);
-
         $this->formController->newWithRedirectToContactAction(
             $this->formFactory,
             $this->routeProvider,
@@ -309,12 +297,10 @@ class FormControllerTest extends ControllerTestCase
 
         $this->customItemModel->expects($this->exactly(2))
             ->method('populateCustomFields')
-            ->will(
-                $this->returnCallback(
-                    function ($newCustomItem) {
-                        return $newCustomItem;
-                    }
-                )
+            ->willReturnCallback(
+                function ($newCustomItem) {
+                    return $newCustomItem;
+                }
             );
 
         $this->routeProvider->expects($this->once())
@@ -344,10 +330,6 @@ class FormControllerTest extends ControllerTestCase
             )
             ->willReturn($this->form);
 
-        $this->modelFactory->expects($this->once())
-            ->method('getModel')
-            ->willReturn($this->model);
-
         $this->formController->newWithRedirectToContactAction(
             $this->formFactory,
             $this->routeProvider,
@@ -368,11 +350,7 @@ class FormControllerTest extends ControllerTestCase
         $this->routeProvider->expects($this->never())
             ->method('buildEditRoute');
 
-        $post                   = $this->createMock(ParameterBag::class);
-        $this->request->request = $post;
-        $post->expects($this->once())
-            ->method('all')
-            ->willReturn([]);
+        $this->request->request = new InputBag();
 
         $this->formController->editAction(
             $this->formFactory,
@@ -434,10 +412,6 @@ class FormControllerTest extends ControllerTestCase
 
         $this->assertRenderFormForItem($this->customItem);
 
-        $this->modelFactory->expects($this->once())
-            ->method('getModel')
-            ->willReturn($this->model);
-
         $this->formController->editAction(
             $this->formFactory,
             $this->routeProvider,
@@ -485,10 +459,6 @@ class FormControllerTest extends ControllerTestCase
             ->with(self::OBJECT_ID, self::ITEM_ID, static::CONTACT_ID);
 
         $this->assertRenderFormForItem($customItem, static::CONTACT_ID);
-
-        $this->modelFactory->expects($this->once())
-            ->method('getModel')
-            ->willReturn($this->model);
 
         $this->formController->editWithRedirectToContactAction(
             $this->formFactory,
@@ -573,10 +543,6 @@ class FormControllerTest extends ControllerTestCase
 
         $this->assertRenderFormForItem($customItem, static::CONTACT_ID);
 
-        $this->modelFactory->expects($this->once())
-            ->method('getModel')
-            ->willReturn($this->model);
-
         $this->formController->editWithRedirectToContactAction(
             $this->formFactory,
             $this->routeProvider,
@@ -598,11 +564,7 @@ class FormControllerTest extends ControllerTestCase
         $this->routeProvider->expects($this->never())
             ->method('buildEditRouteWithRedirectToContact');
 
-        $post                   = $this->createMock(ParameterBag::class);
-        $this->request->request = $post;
-        $post->expects($this->once())
-            ->method('all')
-            ->willReturn([]);
+        $this->request->request = new InputBag();
 
         $this->formController->editWithRedirectToContactAction(
             $this->formFactory,
@@ -724,10 +686,6 @@ class FormControllerTest extends ControllerTestCase
 
         $this->assertRenderFormForItem($this->customItem);
 
-        $this->modelFactory->expects($this->once())
-            ->method('getModel')
-            ->willReturn($this->model);
-
         $this->formController->cloneAction(
             $this->formFactory,
             $this->routeProvider,
@@ -747,11 +705,7 @@ class FormControllerTest extends ControllerTestCase
         $this->routeProvider->expects($this->never())
             ->method('buildCloneRoute');
 
-        $post                   = $this->createMock(ParameterBag::class);
-        $this->request->request = $post;
-        $post->expects($this->once())
-            ->method('all')
-            ->willReturn([]);
+        $this->request->request = new InputBag();
 
         $this->formController->cloneAction(
             $this->formFactory,

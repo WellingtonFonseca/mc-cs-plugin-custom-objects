@@ -7,6 +7,7 @@ namespace MauticPlugin\CustomObjectsBundle\Model;
 use Doctrine\ORM\EntityManagerInterface;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\CoreBundle\Helper\ExportHelper;
+use Mautic\CoreBundle\Helper\PathsHelper;
 use Mautic\CoreBundle\Helper\UserHelper;
 use Mautic\CoreBundle\Model\AbstractCommonModel;
 use Mautic\CoreBundle\Security\Permissions\CorePermissions;
@@ -49,6 +50,7 @@ class CustomItemExportSchedulerModel extends AbstractCommonModel
         private CustomItemRouteProvider $customItemRouteProvider,
         private CustomItemXrefContactRepository $customItemXrefContactRepository,
         private CustomItemRepository $customItemRepository,
+        private PathsHelper $pathsHelper,
     ) {
         parent::__construct($em, $security, $dispatcher, $router, $translator, $userHelper, $logger, $coreParametersHelper);
     }
@@ -79,12 +81,31 @@ class CustomItemExportSchedulerModel extends AbstractCommonModel
         return $customItemExportScheduler;
     }
 
+    /**
+     * The folder of the export files: the `custom_item_export_dir` setting (MAUTIC_CUSTOM_ITEM_EXPORT_DIR) or, when it
+     * is not set, media/files/temp of the Mautic install. Created when it does not exist yet.
+     */
+    public function getExportDir(): string
+    {
+        $dir = (string) $this->coreParametersHelper->get('custom_item_export_dir');
+
+        if ('' === $dir) {
+            $dir = $this->pathsHelper->getSystemPath('media', true).'/files/temp';
+        }
+
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+
+        return $dir;
+    }
+
     public function processDataAndGetExportFilePath(CustomItemExportScheduler $customItemExportScheduler): string
     {
         $scheduledDateTime = $customItemExportScheduler->getScheduledDateTime();
         $fileName          = 'custom_items_export_'.$scheduledDateTime->format(self::EXPORT_FILE_NAME_DATE_FORMAT).'.csv';
 
-        $filePath    = $this->coreParametersHelper->get('custom_item_export_dir').'/'.$fileName;
+        $filePath    = $this->getExportDir().'/'.$fileName;
 
         $this->filePath = $filePath;
 
@@ -256,7 +277,7 @@ class CustomItemExportSchedulerModel extends AbstractCommonModel
 
     public function getExportFileToDownload(string $fileName): BinaryFileResponse
     {
-        $filePath    = $this->coreParametersHelper->get('custom_item_export_dir').'/'.$fileName;
+        $filePath    = $this->getExportDir().'/'.$fileName;
 
         return new BinaryFileResponse(
             $filePath,

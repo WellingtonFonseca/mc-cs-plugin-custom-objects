@@ -16,6 +16,7 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProviderFactory;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
+use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -56,7 +57,6 @@ class DeleteControllerTest extends ControllerTestCase
 
         $this->deleteController   = new DeleteController(
             $this->managerRegistry,
-            $this->mauticFactory,
             $this->modelFactory,
             $this->userHelper,
             $this->coreParametersHelper,
@@ -88,11 +88,7 @@ class DeleteControllerTest extends ControllerTestCase
         $this->flashBag->expects($this->never())
             ->method('add');
 
-        $post                   = $this->createMock(ParameterBag::class);
-        $this->request->request = $post;
-        $post->expects($this->once())
-            ->method('all')
-            ->willReturn([]);
+        $this->request->request = new InputBag();
 
         $this->deleteController->deleteAction(
             $this->sessionProviderFactory,

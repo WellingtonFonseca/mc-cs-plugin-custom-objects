@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\CustomField;
 
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
+use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -37,19 +38,8 @@ abstract class AbstractFieldControllerTest extends ControllerTestCase
             ->method('get')
             ->willReturnMap($map);
 
-        $query = $this->createMock(ParameterBag::class);
-        $query->method('get')
-            ->willReturn($fieldId);
-        $query->method('all')
-            ->willReturn($map);
-        $request->query = $query;
-
-        $post  = $this->createMock(ParameterBag::class);
-        $post->method('get')
-            ->willReturn($fieldId);
-        $post->method('all')
-            ->willReturn($map);
-        $request->request = $post;
+        $request->query   = new InputBag(array_column($map, 2, 0));
+        $request->request = new InputBag(array_column($map, 2, 0));
 
         $request->expects($this->any())
             ->method('duplicate')

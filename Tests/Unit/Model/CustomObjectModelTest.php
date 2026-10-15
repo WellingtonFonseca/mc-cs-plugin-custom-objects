@@ -172,7 +172,7 @@ class CustomObjectModelTest extends TestCase
 
         $this->customObject->expects($this->exactly(3))
             ->method('getAlias')
-            ->will($this->onConsecutiveCalls(null, 'product', 'product'));
+            ->willReturnOnConsecutiveCalls(null, 'product', 'product');
 
         $this->customObject->expects($this->once())
             ->method('setCreatedBy')
@@ -244,7 +244,7 @@ class CustomObjectModelTest extends TestCase
 
         $this->customObject->expects($this->exactly(3))
             ->method('getAlias')
-            ->will($this->onConsecutiveCalls(null, 'product', 'product'));
+            ->willReturnOnConsecutiveCalls(null, 'product', 'product');
 
         $this->customObjectRepository->expects($this->exactly(2))
             ->method('checkAliasExists')
@@ -312,7 +312,7 @@ class CustomObjectModelTest extends TestCase
 
         $this->customObject->expects($this->exactly(3))
             ->method('getAlias')
-            ->will($this->onConsecutiveCalls('product', 'product', 'product'));
+            ->willReturnOnConsecutiveCalls('product', 'product', 'product');
 
         $this->customObject->expects($this->never())
             ->method('setCreatedBy');

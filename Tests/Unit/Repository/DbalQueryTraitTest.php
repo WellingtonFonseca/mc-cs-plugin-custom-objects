@@ -14,7 +14,9 @@ class DbalQueryTraitTest extends \PHPUnit\Framework\TestCase
     {
         $qb        = $this->createMock(QueryBuilder::class);
         $statement = $this->createMock(Statement::class);
-        $trait     = $this->getMockForTrait(DbalQueryTrait::class);
+        $trait     = new class {
+            use DbalQueryTrait;
+        };
 
         $qb->expects($this->once())
             ->method('execute')
@@ -26,7 +28,9 @@ class DbalQueryTraitTest extends \PHPUnit\Framework\TestCase
     public function testExecuteSelectIfNotSelect(): void
     {
         $qb    = $this->createMock(QueryBuilder::class);
-        $trait = $this->getMockForTrait(DbalQueryTrait::class);
+        $trait = new class {
+            use DbalQueryTrait;
+        };
 
         $qb->expects($this->once())
             ->method('execute')

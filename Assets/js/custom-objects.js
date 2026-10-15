@@ -16,24 +16,51 @@ CustomObjects = {
         })
     },
 
+    /**
+     * The campaign condition "<object> field value": every criterion row (the first one and the additional ones) follows
+     * its own field: the operators and the value control change with it.
+     */
     initCustomFieldConditions() {
-        let form = mQuery('form[name=campaignevent]');
-        let fieldSelect = form.find('#campaignevent_properties_field');
-        let operatorSelect = form.find('#campaignevent_properties_operator');
-
-        CustomObjects.updateFormFieldOptions(fieldSelect, operatorSelect);
-
-        fieldSelect.on('change', function() {
-            CustomObjects.updateFormFieldOptions(fieldSelect, operatorSelect);
-        });
-
-        operatorSelect.on('change', function() {
-            CustomObjects.updateFormFieldOptions(fieldSelect, operatorSelect);
+        mQuery('form[name=campaignevent] #co-criteria .co-criterion').each(function() {
+            CustomObjects.initCriterionRow(mQuery(this));
         });
     },
 
-    updateFormFieldOptions(fieldSelect, operatorSelect) {
-        let valueField = mQuery('#campaignevent_properties_value');
+    initCriterionRow(row) {
+        let fieldSelect = row.find('.co-criterion-field');
+        let operatorSelect = row.find('.co-criterion-operator');
+
+        if (!fieldSelect.length || row.data('co-init')) {
+            return;
+        }
+        row.data('co-init', true);
+
+        CustomObjects.updateFormFieldOptions(fieldSelect, operatorSelect, row.find('.co-criterion-value'));
+
+        fieldSelect.on('change', function() {
+            CustomObjects.updateFormFieldOptions(fieldSelect, operatorSelect, row.find('.co-criterion-value'));
+        });
+
+        operatorSelect.on('change', function() {
+            CustomObjects.updateFormFieldOptions(fieldSelect, operatorSelect, row.find('.co-criterion-value'));
+        });
+    },
+
+    addCriterion() {
+        let container = mQuery('#co-criteria');
+        let index = parseInt(container.attr('data-index'), 10);
+        let row = mQuery(container.attr('data-prototype').replace(/__name__/g, index));
+
+        container.attr('data-index', index + 1);
+        mQuery('#co-criteria-extra').append(row);
+        CustomObjects.initCriterionRow(row);
+    },
+
+    removeCriterion(link) {
+        mQuery(link).closest('.co-criterion').remove();
+    },
+
+    updateFormFieldOptions(fieldSelect, operatorSelect, valueField) {
         let selectedField = fieldSelect.find(':selected');
         let operators = JSON.parse(selectedField.attr('data-operators'));
         let options = JSON.parse(selectedField.attr('data-options'));

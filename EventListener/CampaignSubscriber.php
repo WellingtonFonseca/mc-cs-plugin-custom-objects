@@ -20,6 +20,7 @@ use MauticPlugin\CustomObjectsBundle\Exception\InvalidSegmentFilterException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Form\Type\CampaignActionLinkType;
 use MauticPlugin\CustomObjectsBundle\Form\Type\CampaignConditionFieldValueType;
+use MauticPlugin\CustomObjectsBundle\Helper\MergedItemCriteriaMatcher;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryBuilderManipulatorTrait;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterHelper;
 use MauticPlugin\CustomObjectsBundle\Model\CustomFieldModel;
@@ -45,7 +46,8 @@ class CampaignSubscriber implements EventSubscriberInterface
         private ConfigProvider $configProvider,
         private QueryFilterHelper $queryFilterHelper,
         private QueryFilterFactory $queryFilterFactory,
-        private Connection $connection
+        private Connection $connection,
+        private MergedItemCriteriaMatcher $criteriaMatcher
     ) {
     }
 
@@ -91,7 +93,7 @@ class CampaignSubscriber implements EventSubscriberInterface
                 'description'     => $this->translator->trans('custom.item.events.field.value_descr', ['%customObject%' => $customObject->getNameSingular()]),
                 'eventName'       => CustomItemEvents::ON_CAMPAIGN_TRIGGER_CONDITION,
                 'formType'        => CampaignConditionFieldValueType::class,
-                'formTheme'       => '@MauticForm/FormTheme/FieldValueCondition/_campaignevent_form_field_value_widget.html.twig',
+                'formTheme'       => '@CustomObjects/FormTheme/FieldValueCondition/campaign_condition_field_value_widget.html.twig',
                 'formTypeOptions' => ['customObjectId' => $customObject->getId()],
             ]);
         }
@@ -153,8 +155,29 @@ class CampaignSubscriber implements EventSubscriberInterface
             return;
         }
 
+        $config = $event->getConfig();
+
+        // Several criteria: ONE item must satisfy all of them (the same query as the merged segment filter).
+        $additional = (array) ($config['additionalCriteria'] ?? []);
+        if ([] !== $additional || MergedItemCriteriaMatcher::ITEM_NAME === ($config['field'] ?? null)) {
+            $criteria = array_merge(
+                [['field' => $config['field'], 'operator' => $config['operator'], 'value' => $config['value']]],
+                array_values($additional)
+            );
+            $itemId = $this->criteriaMatcher->findItemId($criteria, (int) $contact->getId(), $this->customObjectIdOf($event));
+
+            if ($itemId) {
+                $event->setChannel('customItem', $itemId);
+                $event->setResult(true);
+            } else {
+                $event->setResult(false);
+            }
+
+            return;
+        }
+
         try {
-            $customField = $this->customFieldModel->fetchEntity((int) $event->getConfig()['field']);
+            $customField = $this->customFieldModel->fetchEntity((int) $config['field']);
         } catch (NotFoundException) {
             $event->setResult(false);
 
@@ -162,8 +185,8 @@ class CampaignSubscriber implements EventSubscriberInterface
         }
 
         $queryAlias        = 'q1';
-        $value             = $event->getConfig()['value'];
-        $operator          = $event->getConfig()['operator'];
+        $value             = $config['value'];
+        $operator          = $config['operator'];
         $innerQueryBuilder = $this->queryFilterFactory->configureQueryBuilderFromSegmentFilter(
             $this->modelSegmentFilterArray($customField, $operator, $value),
             $queryAlias
@@ -241,5 +264,13 @@ class CampaignSubscriber implements EventSubscriberInterface
             'operator' => $operator,
             'display'  => null,
         ];
+    }
+
+    /**
+     * The Custom Object of the event: its type is custom_item.<object id>.fieldvalue.
+     */
+    private function customObjectIdOf(CampaignExecutionEvent $event): int
+    {
+        return preg_match('/custom_item\.(\d+)\./', $event->getEvent()['type'], $matches) ? (int) $matches[1] : 0;
     }
 }

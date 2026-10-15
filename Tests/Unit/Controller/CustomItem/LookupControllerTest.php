@@ -100,10 +100,10 @@ class LookupControllerTest extends ControllerTestCase
         $this->flashBag->expects($this->never())
             ->method('add');
 
-        $this->request->method('get')->will($this->returnValueMap([
+        $this->request->method('get')->willReturnMap([
             ['filterEntityId', null, 45],
             ['filterEntityType', null, 'contact'],
-        ]));
+        ]);
 
         $this->customItemModel->expects($this->once())
             ->method('getLookupData')

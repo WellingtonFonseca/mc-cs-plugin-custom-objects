@@ -6,177 +6,126 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Form\Type;
 
 use Mautic\LeadBundle\Provider\FilterOperatorProviderInterface;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\IntType;
+use MauticPlugin\CustomObjectsBundle\CustomFieldType\TextType as CustomTextType;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
+use MauticPlugin\CustomObjectsBundle\Form\Type\CampaignConditionCriterionType;
 use MauticPlugin\CustomObjectsBundle\Form\Type\CampaignConditionFieldValueType;
+use MauticPlugin\CustomObjectsBundle\Helper\MergedItemCriteriaMatcher;
 use MauticPlugin\CustomObjectsBundle\Model\CustomFieldModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
-use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
-use PHPUnit\Framework\MockObject\MockObject;
+use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
-use Symfony\Component\Form\Extension\Core\Type\HiddenType;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Form\FormConfigBuilderInterface;
-use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Form\Extension\Core\Type\CollectionType;
+use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Component\Form\Forms;
+use Symfony\Component\Form\PreloadedExtension;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+/**
+ * The form of the campaign condition "<object> field value", built with real Symfony forms: the item name offered as a
+ * field, the operators of each field, the one criterion of its own and the `additionalCriteria` collection.
+ */
 final class CampaignConditionFieldValueTypeTest extends TestCase
 {
-    use ConsecutiveCallsTrait;
-
-    /**
-     * @var MockObject|CustomFieldModel
-     */
-    private $customFieldModelMock;
-
-    /**
-     * @var MockObject|CustomObjectModel
-     */
-    private $customObjectModelMock;
-
-    /**
-     * @var MockObject|CustomItemRouteProvider
-     */
-    private $customItemRouterMock;
-
-    /**
-     * @var MockObject|TranslatorInterface
-     */
-    private $translatorMock;
-
-    /**
-     * @var CampaignConditionFieldValueType
-     */
-    private $campaignConditionFieldValueType;
+    private FormFactoryInterface $formFactory;
 
     protected function setUp(): void
     {
-        parent::setUp();
+        $translator = $this->createMock(TranslatorInterface::class);
+        $translator->method('trans')->willReturnArgument(0);
 
-        $this->customFieldModelMock            = $this->createMock(CustomFieldModel::class);
-        $this->customObjectModelMock           = $this->createMock(CustomObjectModel::class);
-        $this->customItemRouterMock            = $this->createMock(CustomItemRouteProvider::class);
-        $this->translatorMock                  = $this->createMock(TranslatorInterface::class);
-        $this->campaignConditionFieldValueType = new CampaignConditionFieldValueType(
-            $this->customFieldModelMock,
-            $this->customObjectModelMock,
-            $this->customItemRouterMock,
-            $this->translatorMock
-        );
-    }
+        $operatorProvider = $this->createMock(FilterOperatorProviderInterface::class);
+        $operatorProvider->method('getAllOperators')->willReturn(['=' => ['label' => 'a'], '!=' => ['label' => 'b'], 'empty' => ['label' => 'c']]);
 
-    public function testBuildForm(): void
-    {
         $customObject = new CustomObject();
         $customObject->setId(42);
         $customField = new CustomField();
         $customField->setId(42);
         $customField->setLabel('Cheese');
         $customField->setType('int');
-        $filterOperatorProviderInterfaceMock = $this->createMock(FilterOperatorProviderInterface::class);
-        $filterOperatorProviderInterfaceMock
-            ->expects(self::any())
-            ->method('getAllOperators')
-            ->willReturn([
-                '='  => ['label' => 'a'],
-                '!=' => ['label' => 'b'],
-            ]);
-        $this->translatorMock
-            ->method('trans')
-            ->willReturnCallback($this->consecutiveCalls([['a'], ['b'], ['a'], ['b']], ['a', 'b', 'a', 'b'], true));
+        $customField->setTypeObject(new IntType($translator, $operatorProvider));
 
-        $customField->setTypeObject(new IntType($this->translatorMock, $filterOperatorProviderInterfaceMock));
-        $customFields = [42 => $customField];
-        $this->customObjectModelMock
-            ->expects(self::once())
-            ->method('fetchEntity')
-            ->with($customObject->getId())
-            ->willReturn($customObject);
-        $this->customFieldModelMock
-            ->expects(self::once())
-            ->method('fetchCustomFieldsForObject')
-            ->with($customObject)
-            ->willReturn($customFields);
-        $formBuilderMock = $this->createMock(FormBuilderInterface::class);
-        $formBuilderMock
-            ->method('add')
-            ->willReturnCallback($this->consecutiveCalls([
-                [
-                    'field',
-                    ChoiceType::class,
-                    [
-                        'required' => true,
-                        'label'    => 'custom.item.field',
-                        'choices'  => [
-                            'Cheese' => 42,
-                        ],
-                        'attr'     => [
-                            'class' => 'form-control',
-                        ],
-                        'choice_attr' => [
-                            'Cheese' => [
-                                'data-operators'  => '{"=":"a","!=":"b"}',
-                                'data-options'    => '[]',
-                                'data-field-type' => 'int',
-                            ],
-                        ],
-                    ],
-                ],
-                [
-                    'operator',
-                    ChoiceType::class,
-                    [
-                        'required' => true,
-                        'label'    => 'custom.item.operator',
-                        'choices'  => [
-                            'a' => '=',
-                            'b' => '!=',
-                        ],
-                        'attr'     => ['class' => 'link-custom-item-id'],
-                    ],
-                ],
-                [
-                    'value',
-                    TextType::class,
-                    [
-                        'required' => true,
-                        'label'    => 'custom.item.field.value',
-                        'attr'     => ['class' => 'form-control'],
-                    ],
-                ],
-                [
-                    'customObjectId',
-                    HiddenType::class,
-                    ['data' => 42],
-                ]
-            ], null, false, $formBuilderMock, 'add'));
-        $options = [
-            'customObjectId' => $customObject->getId(),
-            'data'           => [
-                'field' => 42,
-            ],
-        ];
-        $formConfigBuilderMock = $this->createMock(FormConfigBuilderInterface::class);
-        $formBuilderMock
-            ->expects($this->once())
-            ->method('get')
-            ->with('operator')
-            ->willReturn($formConfigBuilderMock);
+        $objectModel = $this->createMock(CustomObjectModel::class);
+        $objectModel->method('fetchEntity')->with(42)->willReturn($customObject);
+        $fieldModel = $this->createMock(CustomFieldModel::class);
+        $fieldModel->method('fetchCustomFieldsForObject')->with($customObject)->willReturn([42 => $customField]);
+        $typeProvider = $this->createMock(CustomFieldTypeProvider::class);
+        $typeProvider->method('getType')->with('text')->willReturn(new CustomTextType($translator, $operatorProvider));
 
-        $this->campaignConditionFieldValueType->buildForm($formBuilderMock, $options);
+        $criterion = new CampaignConditionCriterionType($fieldModel, $objectModel, $typeProvider, $translator);
+        $condition = new CampaignConditionFieldValueType($objectModel, $criterion);
+
+        $this->formFactory = Forms::createFormFactoryBuilder()
+            ->addExtension(new PreloadedExtension([CampaignConditionCriterionType::class => $criterion, CampaignConditionFieldValueType::class => $condition], []))
+            ->getFormFactory();
     }
 
-    public function testConfigureOptions()
+    public function testTheConditionHasItsOwnCriterionAndTheAdditionalOnes(): void
     {
-        $resolver = $this->createMock(OptionsResolver::class);
-        $resolver
-            ->expects(self::once())
-            ->method('setRequired')
-            ->with(['customObjectId']);
+        $form = $this->formFactory->create(CampaignConditionFieldValueType::class, null, ['customObjectId' => 42]);
 
-        $this->campaignConditionFieldValueType->configureOptions($resolver);
+        foreach (['field', 'operator', 'value', 'additionalCriteria', 'customObjectId'] as $child) {
+            $this->assertTrue($form->has($child), $child);
+        }
+        $this->assertSame(CollectionType::class, $form->get('additionalCriteria')->getConfig()->getType()->getInnerType()::class);
+        $this->assertTrue($form->get('additionalCriteria')->getConfig()->getOption('allow_add'));
+        $this->assertTrue($form->get('additionalCriteria')->getConfig()->getOption('allow_delete'));
+    }
+
+    public function testTheItemNameIsOfferedFirstAsAFieldWithTextOperators(): void
+    {
+        $form    = $this->formFactory->create(CampaignConditionFieldValueType::class, null, ['customObjectId' => 42]);
+        $choices = $form->get('field')->getConfig()->getOption('choices');
+
+        $this->assertSame([MergedItemCriteriaMatcher::ITEM_NAME, 42], array_values($choices));
+        $this->assertSame('custom.item.criterion.name', array_key_first($choices));
+
+        $attr = $form->get('field')->getConfig()->getOption('choice_attr');
+        $this->assertSame('text', $attr['custom.item.criterion.name']['data-field-type']);
+        $this->assertSame('int', $attr['Cheese']['data-field-type']);
+    }
+
+    public function testASavedConditionWithOneCriterionStillFits(): void
+    {
+        $form = $this->formFactory->create(CampaignConditionFieldValueType::class, null, ['customObjectId' => 42]);
+        $form->submit(['field' => '42', 'operator' => '=', 'value' => '7', 'customObjectId' => '42']);
+
+        $this->assertTrue($form->isSynchronized());
+        $this->assertSame(42, $form->get('field')->getData());
+        $this->assertSame('7', $form->get('value')->getData());
+        $this->assertSame([], $form->get('additionalCriteria')->getData() ?? []);
+    }
+
+    public function testSeveralCriteriaAreSubmittedAsAList(): void
+    {
+        $form = $this->formFactory->create(CampaignConditionFieldValueType::class, null, ['customObjectId' => 42]);
+        $form->submit([
+            'field'              => 'name',
+            'operator'           => '=',
+            'value'              => 'Disciplina X',
+            'customObjectId'     => '42',
+            'additionalCriteria' => [
+                ['field' => '42', 'operator' => '>=', 'value' => '-35 days'],
+                ['field' => '42', 'operator' => '<=', 'value' => '+10 days'],
+            ],
+        ]);
+
+        $this->assertTrue($form->isSynchronized());
+        $this->assertSame('name', $form->get('field')->getData());
+        $this->assertSame(
+            [['field' => 42, 'operator' => '>=', 'value' => '-35 days'], ['field' => 42, 'operator' => '<=', 'value' => '+10 days']],
+            $form->get('additionalCriteria')->getData()
+        );
+    }
+
+    public function testTheRowPrototypeExistsForTheBrowserToAddRows(): void
+    {
+        $view = $this->formFactory->create(CampaignConditionFieldValueType::class, null, ['customObjectId' => 42])->createView();
+
+        $this->assertArrayHasKey('prototype', $view['additionalCriteria']->vars);
+        $this->assertArrayHasKey('field', $view['additionalCriteria']->vars['prototype']);
+        $this->assertArrayHasKey('operator', $view['additionalCriteria']->vars['prototype']);
+        $this->assertArrayHasKey('value', $view['additionalCriteria']->vars['prototype']);
     }
 }

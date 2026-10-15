@@ -30,9 +30,7 @@ class CustomFieldTypePassTest extends \PHPUnit\Framework\TestCase
                 ['custom_field.type.provider'],
                 ['int.type'],
                 ['text.type']
-            ], [
-                $definition
-            ], true));
+            ], $definition));
 
         $definition->expects($this->exactly(2))
             ->method('addMethodCall')

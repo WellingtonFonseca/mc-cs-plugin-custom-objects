@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Segment\Query\Filter;
 
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\CustomFieldFilterQueryBuilder;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class CustomFieldFilterQueryBuilderTest extends \PHPUnit\Framework\TestCase
 {
@@ -25,8 +26,9 @@ class CustomFieldFilterQueryBuilderTest extends \PHPUnit\Framework\TestCase
      * A multiselect saved by the segment screen is typed 'select', so core does not
      * turn "not in" into '!multiselect': it stays 'notIn', and it is a negation too.
      *
-     * @dataProvider operators
      */
+
+    #[DataProvider('operators')]
     public function testWhichOperatorsAreNegations(string $operator, bool $negated): void
     {
         $this->assertSame($negated, CustomFieldFilterQueryBuilder::isNegatedOperator($operator));

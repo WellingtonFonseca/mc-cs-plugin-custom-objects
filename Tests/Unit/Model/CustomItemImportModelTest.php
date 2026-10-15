@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Model;
 
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManager;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\CoreBundle\Helper\UserHelper;
@@ -140,6 +141,7 @@ class CustomItemImportModelTest extends \PHPUnit\Framework\TestCase
         $this->import                 = $this->createMock(Import::class);
         $this->customItemModel        = $this->createMock(CustomItemModel::class);
         $this->entityManager          = $this->createMock(EntityManager::class);
+        $this->entityManager->method('getConnection')->willReturn($this->createMock(Connection::class)); // the import runs in a transaction
         $this->security               = $this->createMock(CorePermissions::class);
         $this->dispatcher             = $this->createMock(EventDispatcherInterface::class);
         $this->router                 = $this->createMock(UrlGeneratorInterface::class);
@@ -383,11 +385,6 @@ class CustomItemImportModelTest extends \PHPUnit\Framework\TestCase
             ->with(555)
             ->will($this->throwException(new NotFoundException()));
 
-        $this->formatterHelper->expects($this->once())
-            ->method('simpleCsvToArray')
-            ->with('3262739,3262738,3262737')
-            ->willReturn([3262739, 3262738, 3262737]);
-
         $this->customItemModel->expects($this->exactly(1))
             ->method('linkEntity')
             ->willReturnCallback($this->consecutiveCalls([
@@ -411,12 +408,9 @@ class CustomItemImportModelTest extends \PHPUnit\Framework\TestCase
             ->with(Lead::class)
             ->willReturn($leadRepository);
 
-        $translator = $this->createMock(TranslatorInterface::class);
-        $translator->expects($this->any())
+        $this->translator->expects($this->any())
             ->method('trans')
             ->willReturn('test warning');
-
-        $this->customItemImportModel->setTranslator($translator);
 
         $importLogDto = new ImportLogDTO();
         $this->customItemImportModel->import($this->import, $rowData, $this->customObject, $importLogDto);

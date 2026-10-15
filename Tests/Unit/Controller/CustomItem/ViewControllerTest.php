@@ -17,6 +17,7 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -61,7 +62,6 @@ class ViewControllerTest extends ControllerTestCase
 
         $this->viewController             = new ViewController(
             $this->managerRegistry,
-            $this->mauticFactory,
             $this->modelFactory,
             $this->userHelper,
             $this->coreParametersHelper,
@@ -87,11 +87,7 @@ class ViewControllerTest extends ControllerTestCase
         $this->routeProvider->expects($this->never())
             ->method('buildViewRoute');
 
-        $post                   = $this->createMock(ParameterBag::class);
-        $this->request->request = $post;
-        $post->expects($this->once())
-            ->method('all')
-            ->willReturn([]);
+        $this->request->request = new InputBag();
 
         $this->viewController->viewAction(
             $this->formFactory,

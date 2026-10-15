@@ -50,7 +50,7 @@ class ContactTabSubscriberTest extends TestCase
     private $customItemRouteProvider;
 
     /**
-     * @var MockObject|CustomContentEvent
+     * @var CustomContentEvent
      */
     private $customContentEvent;
 
@@ -73,7 +73,6 @@ class ContactTabSubscriberTest extends TestCase
         $this->configProvider          = $this->createMock(ConfigProvider::class);
         $this->translator              = $this->createMock(TranslatorInterface::class);
         $this->customItemRouteProvider = $this->createMock(CustomItemRouteProvider::class);
-        $this->customContentEvent      = $this->createMock(CustomContentEvent::class);
         $this->sessionProviderFactory  = $this->createMock(SessionProviderFactory::class);
         $this->tabSubscriber           = new ContactTabSubscriber(
             $this->customObjectModel,
@@ -91,10 +90,11 @@ class ContactTabSubscriberTest extends TestCase
             ->method('pluginIsEnabled')
             ->willReturn(false);
 
-        $this->customContentEvent->expects($this->never())
-            ->method('checkContext');
+        $this->customContentEvent = new CustomContentEvent('@MauticLead/Lead/lead.html.twig', 'tabs', ['lead' => $this->createMock(Lead::class)]);
 
         $this->tabSubscriber->injectTabs($this->customContentEvent);
+
+        $this->assertSame([], $this->customContentEvent->getTemplates());
     }
 
     public function testForTabsContext(): void
@@ -122,34 +122,7 @@ class ContactTabSubscriberTest extends TestCase
             ->method('pluginIsEnabled')
             ->willReturn(true);
 
-        $this->customContentEvent
-            ->method('checkContext')
-            ->willReturnMap(
-                [
-                    ['@MauticLead/Lead/lead.html.twig', 'tabs', true],
-                    ['@MauticLead/Lead/lead.html.twig', 'tabs.content', false],
-                ]
-            );
-
-        $this->customContentEvent->expects($this->once())
-            ->method('getVars')
-            ->willReturn(['lead' => $contact]);
-
-        $this->customContentEvent
-            ->method('addTemplate')
-            ->willReturnCallback($this->consecutiveCalls([
-                [
-                    '@CustomObjects/SubscribedEvents/Tab/link.html.twig',
-                    [
-                        'count' => 13,
-                        'title' => 'Object A',
-                        'tabId' => 'custom-object-555',
-                    ],
-                ],
-                [
-                    '@CustomObjects/SubscribedEvents/Tab/modal.html.twig',
-                ]
-            ], null, false, $this->customContentEvent, 'addTemplate'));
+        $this->customContentEvent = new CustomContentEvent('@MauticLead/Lead/lead.html.twig', 'tabs', ['lead' => $contact]);
 
         $this->customObjectModel->expects($this->once())
             ->method('getMasterCustomObjects')
@@ -161,6 +134,17 @@ class ContactTabSubscriberTest extends TestCase
             ->willReturn(13);
 
         $this->tabSubscriber->injectTabs($this->customContentEvent);
+
+        $this->assertEquals([
+            [
+                'template' => '@CustomObjects/SubscribedEvents/Tab/link.html.twig',
+                'vars'     => ['count' => 13, 'title' => 'Object A', 'tabId' => 'custom-object-555'],
+            ],
+            [
+                'template' => '@CustomObjects/SubscribedEvents/Tab/modal.html.twig',
+                'vars'     => [],
+            ],
+        ], $this->customContentEvent->getTemplates());
     }
 
     public function testForTabContentsContext(): void
@@ -175,18 +159,7 @@ class ContactTabSubscriberTest extends TestCase
             ->method('pluginIsEnabled')
             ->willReturn(true);
 
-        $this->customContentEvent
-            ->method('checkContext')
-            ->willReturnMap(
-                [
-                    ['@MauticLead/Lead/lead.html.twig', 'tabs', false],
-                    ['@MauticLead/Lead/lead.html.twig', 'tabs.content', true],
-                ]
-            );
-
-        $this->customContentEvent->expects($this->once())
-            ->method('getVars')
-            ->willReturn(['lead' => $contact]);
+        $this->customContentEvent = new CustomContentEvent('@MauticLead/Lead/lead.html.twig', 'tabs.content', ['lead' => $contact]);
 
         $this->translator->expects($this->once())
             ->method('trans')
@@ -217,11 +190,16 @@ class ContactTabSubscriberTest extends TestCase
             ->with(555, 'contact', 45)
             ->willReturn($sessionProvider);
 
-        $this->customContentEvent->expects($this->once())
-            ->method('addTemplate')
-            ->with(
-                '@CustomObjects/SubscribedEvents/Tab/content.html.twig',
-                [
+        $this->customObjectModel->expects($this->once())
+            ->method('fetchAllPublishedEntities')
+            ->willReturn([$customObject]);
+
+        $this->tabSubscriber->injectTabs($this->customContentEvent);
+
+        $this->assertEquals([
+            [
+                'template' => '@CustomObjects/SubscribedEvents/Tab/content.html.twig',
+                'vars'     => [
                     'customObjectId'       => 555,
                     'currentEntityId'      => 45,
                     'currentEntityType'    => 'contact',
@@ -233,14 +211,9 @@ class ContactTabSubscriberTest extends TestCase
                     'linkHeader'           => 'translated modal header',
                     'linkRoute'            => 'link/route',
                     'namespace'            => 'Some namespace',
-                ]
-            );
-
-        $this->customObjectModel->expects($this->once())
-            ->method('fetchAllPublishedEntities')
-            ->willReturn([$customObject]);
-
-        $this->tabSubscriber->injectTabs($this->customContentEvent);
+                ],
+            ],
+        ], $this->customContentEvent->getTemplates());
     }
 
     public function testSubscriberEvents()

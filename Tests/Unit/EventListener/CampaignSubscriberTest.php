@@ -20,12 +20,14 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\EventListener\CampaignSubscriber;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
+use MauticPlugin\CustomObjectsBundle\Helper\MergedItemCriteriaMatcher;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterHelper;
 use MauticPlugin\CustomObjectsBundle\Model\CustomFieldModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\QueryFilterFactory;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
@@ -63,6 +65,8 @@ class CampaignSubscriberTest extends TestCase
      */
     private $campaignSubscriber;
 
+    private MergedItemCriteriaMatcher&MockObject $criteriaMatcher;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -75,13 +79,14 @@ class CampaignSubscriberTest extends TestCase
         $this->queryFilterHelper      = $this->createMock(QueryFilterHelper::class);
         $this->queryFilterFactory     = $this->createMock(QueryFilterFactory::class);
         $this->connection             = $this->createMock(Connection::class);
-        $this->campaignBuilderEvent   = $this->createMock(CampaignBuilderEvent::class);
+        $this->campaignBuilderEvent   = new CampaignBuilderEvent($this->translator); // final in Mautic 7: the real event
         $this->campaignExecutionEvent = $this->createMock(CampaignExecutionEvent::class);
         $this->customObject           = $this->createMock(CustomObject::class);
         $this->customField            = $this->createMock(CustomField::class);
         $this->contact                = $this->createMock(Lead::class);
         $this->queryBuilder           = $this->createMock(QueryBuilder::class);
         $this->segmentQueryBuilder    = $this->createMock(SegmentQueryBuilder::class);
+        $this->criteriaMatcher        = $this->createMock(MergedItemCriteriaMatcher::class);
         $this->statement              = $this->createMock(Statement::class);
         $this->result                 = $this->createMock(Result::class);
         $this->campaignSubscriber     = new CampaignSubscriber(
@@ -92,7 +97,8 @@ class CampaignSubscriberTest extends TestCase
             $this->configProvider,
             $this->queryFilterHelper,
             $this->queryFilterFactory,
-            $this->connection
+            $this->connection,
+            $this->criteriaMatcher
         );
 
         $this->customObject->method('getId')->willReturn(self::OBJECT_ID);
@@ -135,11 +141,10 @@ class CampaignSubscriberTest extends TestCase
             ->method('fetchAllPublishedEntities')
             ->willReturn([$this->customObject]);
 
-        $this->campaignBuilderEvent
-            ->method('addAction')
-            ->willReturnCallback($this->consecutiveCalls([['custom_item.63.linkcontact'], ['custom_item.63.fieldvalue']], null, false, $this->campaignBuilderEvent, 'addAction'));
-
         $this->campaignSubscriber->onCampaignBuild($this->campaignBuilderEvent);
+
+        $this->assertSame(['custom_item.63.linkcontact'], array_keys($this->campaignBuilderEvent->getActions()));
+        $this->assertSame(['custom_item.63.fieldvalue'], array_keys($this->campaignBuilderEvent->getConditions()));
     }
 
     public function testOnCampaignBuildNoCustomFieldsDefined(): void
@@ -157,11 +162,9 @@ class CampaignSubscriberTest extends TestCase
             ->method('fetchAllPublishedEntities')
             ->willReturn([$this->customObject]);
 
-        $this->campaignBuilderEvent->expects(self::never())
-            ->method('addAction')
-            ->with('custom_item.63.linkcontact');
-
         $this->campaignSubscriber->onCampaignBuild($this->campaignBuilderEvent);
+
+        $this->assertArrayNotHasKey('custom_item.63.linkcontact', $this->campaignBuilderEvent->getActions());
     }
 
     public function testOnCampaignTriggerActionWhenPluginDisabled(): void
@@ -365,6 +368,72 @@ class CampaignSubscriberTest extends TestCase
         $this->campaignExecutionEvent->expects($this->once())
             ->method('setResult')
             ->with(false);
+
+        $this->campaignSubscriber->onCampaignTriggerCondition($this->campaignExecutionEvent);
+    }
+
+    /**
+     * More than one criterion (or the name of the item): ONE item must satisfy all of them, asked to the merged query
+     * and not answered field by field.
+     */
+    public function testOnCampaignTriggerConditionWithAdditionalCriteriaUsesTheSameItemMatcher(): void
+    {
+        $this->configProvider->method('pluginIsEnabled')->willReturn(true);
+        $this->campaignExecutionEvent->method('getEvent')->willReturn(['type' => 'custom_item.63.fieldvalue']);
+        $this->campaignExecutionEvent->method('getLead')->willReturn($this->contact);
+        $this->campaignExecutionEvent->method('getConfig')->willReturn([
+            'field'              => 'name',
+            'operator'           => 'eq',
+            'value'              => 'Disciplina X',
+            'additionalCriteria' => [
+                ['field' => '33', 'operator' => 'gte', 'value' => '-35 days'],
+                ['field' => '34', 'operator' => 'lte', 'value' => '+10 days'],
+            ],
+        ]);
+
+        $this->customFieldModel->expects($this->never())->method('fetchEntity');
+        $this->queryFilterFactory->expects($this->never())->method('configureQueryBuilderFromSegmentFilter');
+        $this->criteriaMatcher->expects($this->once())->method('findItemId')->with(
+            [
+                ['field' => 'name', 'operator' => 'eq', 'value' => 'Disciplina X'],
+                ['field' => '33', 'operator' => 'gte', 'value' => '-35 days'],
+                ['field' => '34', 'operator' => 'lte', 'value' => '+10 days'],
+            ],
+            $this->anything(),
+            63
+        )->willReturn(12);
+        $this->campaignExecutionEvent->expects($this->once())->method('setChannel')->with('customItem', 12);
+        $this->campaignExecutionEvent->expects($this->once())->method('setResult')->with(true);
+
+        $this->campaignSubscriber->onCampaignTriggerCondition($this->campaignExecutionEvent);
+    }
+
+    public function testOnCampaignTriggerConditionWithAdditionalCriteriaIsFalseWhenNoItemSatisfiesThemAll(): void
+    {
+        $this->configProvider->method('pluginIsEnabled')->willReturn(true);
+        $this->campaignExecutionEvent->method('getEvent')->willReturn(['type' => 'custom_item.63.fieldvalue']);
+        $this->campaignExecutionEvent->method('getLead')->willReturn($this->contact);
+        $this->campaignExecutionEvent->method('getConfig')->willReturn([
+            'field' => '32', 'operator' => 'eq', 'value' => 'x', 'additionalCriteria' => [['field' => '33', 'operator' => 'gte', 'value' => '1']],
+        ]);
+        $this->criteriaMatcher->method('findItemId')->willReturn(null);
+
+        $this->campaignExecutionEvent->expects($this->never())->method('setChannel');
+        $this->campaignExecutionEvent->expects($this->once())->method('setResult')->with(false);
+
+        $this->campaignSubscriber->onCampaignTriggerCondition($this->campaignExecutionEvent);
+    }
+
+    public function testOnCampaignTriggerConditionOnTheItemNameAloneUsesTheMatcherToo(): void
+    {
+        $this->configProvider->method('pluginIsEnabled')->willReturn(true);
+        $this->campaignExecutionEvent->method('getEvent')->willReturn(['type' => 'custom_item.63.fieldvalue']);
+        $this->campaignExecutionEvent->method('getLead')->willReturn($this->contact);
+        $this->campaignExecutionEvent->method('getConfig')->willReturn(['field' => 'name', 'operator' => 'eq', 'value' => 'Disciplina X']);
+
+        $this->customFieldModel->expects($this->never())->method('fetchEntity');
+        $this->criteriaMatcher->expects($this->once())->method('findItemId')->willReturn(5);
+        $this->campaignExecutionEvent->expects($this->once())->method('setResult')->with(true);
 
         $this->campaignSubscriber->onCampaignTriggerCondition($this->campaignExecutionEvent);
     }

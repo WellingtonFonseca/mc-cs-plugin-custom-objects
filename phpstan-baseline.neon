@@ -446,7 +446,7 @@ parameters:
 		-
 			message: "#^Call to method PHPUnit\\\\Framework\\\\Assert\\:\\:assertNotNull\\(\\) with list\\<MauticPlugin\\\\CustomObjectsBundle\\\\Entity\\\\CustomItemExportScheduler\\> and 'Custom Item Export…' will always evaluate to true\\.$#"
 			count: 1
-			path: Tests/Unit/Controller/CustomItem/ExportControllerTest.php
+			path: Tests/Functional/Controller/CustomItem/ExportControllerTest.php
 
 		-
 			message: "#^Access to an undefined property MauticPlugin\\\\CustomObjectsBundle\\\\Tests\\\\Unit\\\\Controller\\\\CustomItem\\\\FormControllerTest\\:\\:\\$model\\.$#"

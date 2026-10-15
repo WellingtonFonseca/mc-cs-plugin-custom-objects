@@ -48,7 +48,7 @@ class CustomFieldValueTypeTest extends \PHPUnit\Framework\TestCase
 
         $this->formBuilder->expects($this->once())
             ->method('getName')
-            ->willReturn(123);
+            ->willReturn('123');
 
         $this->customItem->expects($this->once())
             ->method('findCustomFieldValueForFieldId')
@@ -107,7 +107,7 @@ class CustomFieldValueTypeTest extends \PHPUnit\Framework\TestCase
 
         $this->formBuilder->expects($this->once())
             ->method('getName')
-            ->willReturn(123);
+            ->willReturn('123');
 
         $this->customItem->expects($this->once())
             ->method('findCustomFieldValueForFieldId')
