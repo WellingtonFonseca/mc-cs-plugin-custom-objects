@@ -44,6 +44,11 @@ $coParams = [
                 'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\CustomItem\ViewController::viewAction',
                 'method'     => 'GET|POST',
             ],
+            CustomItemRouteProvider::ROUTE_DETAILS => [
+                'path'       => '/custom/object/{objectId}/item/details/{itemId}',
+                'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\CustomItem\ViewController::detailsAction',
+                'method'     => 'GET',
+            ],
             CustomItemRouteProvider::ROUTE_NEW => [
                 'path'       => '/custom/object/{objectId}/item/new',
                 'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\CustomItem\FormController::newAction',

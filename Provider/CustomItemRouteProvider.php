@@ -13,6 +13,8 @@ class CustomItemRouteProvider
 
     public const ROUTE_VIEW          = 'mautic_custom_item_view';
 
+    public const ROUTE_DETAILS       = 'mautic_custom_item_details';
+
     public const ROUTE_EDIT          = 'mautic_custom_item_edit';
 
     public const ROUTE_NEW_REDIRECT_TO_CONTACT = 'mautic_custom_item_edit_redirect_to_contact';

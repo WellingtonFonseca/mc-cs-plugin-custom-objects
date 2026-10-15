@@ -1,5 +1,6 @@
 {% set tableAlias = constant('MauticPlugin\\CustomObjectsBundle\\Entity\\CustomItem::TABLE_ALIAS') %}
 {% set routeView = constant('MauticPlugin\\CustomObjectsBundle\\Provider\\CustomItemRouteProvider::ROUTE_VIEW') %}
+{% set routeDetails = constant('MauticPlugin\\CustomObjectsBundle\\Provider\\CustomItemRouteProvider::ROUTE_DETAILS') %}
 {% set routeList = constant('MauticPlugin\\CustomObjectsBundle\\Provider\\CustomItemRouteProvider::ROUTE_LIST') %}
 
 {% set routerSelf = path(routeList, {
@@ -61,8 +62,12 @@
                     <td>
                         <div>
                             {{ filterEntityId is empty ? include('@MauticCore/Helper/publishstatus_icon.html.twig', { 'item' : item, 'model' : 'custom.item' }) : ''  }}
+                            {# A plain click shows the item in the shared modal (view only); ctrl/cmd/shift click opens the full page. #}
                             <a href="{{ path(routeView, {'objectId' : customObject.getId(), 'itemId' : item.getId()}) }}"
-                               data-toggle="ajax">
+                               class="custom-item-name-link"
+                               data-details-url="{{ path(routeDetails, {'objectId' : customObject.getId(), 'itemId' : item.getId()}) }}"
+                               data-header="{{ item.getName() }}"
+                               onclick="if(event.button||event.ctrlKey||event.metaKey||event.shiftKey){return true;}var el=document.createElement('a');el.setAttribute('href',this.getAttribute('data-details-url'));el.setAttribute('data-toggle','ajaxmodal');el.setAttribute('data-target','#MauticSharedModal');el.setAttribute('data-header',this.getAttribute('data-header'));Mautic.ajaxifyModal(el,event);return false;">
                                 {{ item.getName() }}
                             </a>
                         </div>

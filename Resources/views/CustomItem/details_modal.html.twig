@@ -1,0 +1,51 @@
+{#
+  Body of the modal opened by a click on an item's name in a list: the field values (the same rows as the item page)
+  and the contacts linked to the item. The shared modal is narrow by default, so only a modal holding this body is
+  widened (:has); every other use of the shared modal keeps its size.
+#}
+<style>
+    .modal-dialog:has(.custom-item-details-modal) {
+        width: 1100px;
+        max-width: 95vw;
+    }
+</style>
+<div class="custom-item-details-modal pa-md">
+    <div class="text-muted mb-sm">{{ item.getCustomObject().getNameSingular()|escape }} #{{ item.getId() }}</div>
+    <div class="panel shd-none mb-md">
+        <table class="table table-bordered table-striped mb-0">
+            <tbody>
+            {% for fieldValue in item.getCustomFieldValues() %}
+                <tr>
+                    <th>{{ fieldValue.getCustomField().getLabel()|escape }}</th>
+                    <td>
+                        {{ include('@CustomObjects/CustomField/value.html.twig', { fieldValue: fieldValue }) }}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if contactCount > 0 %}
+        <h5 class="fw-sb mt-lg mb-md">{{ 'mautic.lead.leads'|trans }} ({{ contactCount }})</h5>
+        <div class="panel shd-none mb-0 custom-item-details-contacts">
+            <table class="table table-bordered table-striped mb-0">
+                <tbody>
+                {% for contact in contacts %}
+                    <tr>
+                        <td>
+                            <a href="{{ path('mautic_contact_action', {'objectAction': 'view', 'objectId': contact.id}) }}" target="_blank" rel="noopener">
+                                {{ (contact.firstname ~ ' ' ~ contact.lastname)|trim ?: contact.email }}
+                            </a>
+                        </td>
+                        <td>{{ contact.email }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% if contactCount > contacts|length %}
+                <div class="panel-footer text-muted">{{ contacts|length }} / {{ contactCount }}</div>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
