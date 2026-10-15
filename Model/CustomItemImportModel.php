@@ -88,12 +88,26 @@ class CustomItemImportModel extends FormModel
 
         $customItem->setDefaultValuesForMissingFields();
 
-        $customItem = $this->customItemModel->save($customItem);
-        if ($customItem->hasBeenUpdated()) {
-            $merged = true;
-        }
+        // One row = one transaction. CustomItemModel::save() writes the item first and validates each value after, so
+        // without this a row with an invalid value would be refused but leave an item with only its name behind.
+        $unsaved    = $customItem;
+        $connection = $this->em->getConnection();
+        $connection->beginTransaction();
 
-        $this->linkContacts($customItem, $contactIds, $importLogDto);
+        try {
+            $customItem = $this->customItemModel->save($customItem);
+            if ($customItem->hasBeenUpdated()) {
+                $merged = true;
+            }
+
+            $this->linkContacts($customItem, $contactIds, $importLogDto);
+            $connection->commit();
+        } catch (\Throwable $e) {
+            $connection->rollBack();
+            $this->em->detach($unsaved);
+
+            throw $e;
+        }
 
         return $merged;
     }

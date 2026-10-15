@@ -28,6 +28,7 @@ class QueryFilterFactory
      */
     public function configureQueryBuilderFromSegmentFilter(array $segmentFilter, string $queryAlias)
     {
+        $isItemName    = str_starts_with((string) ($segmentFilter['field'] ?? ''), 'cmo_');
         $segmentFilter = $this->contactSegmentFilterFactory->factorSegmentFilter($segmentFilter);
 
         if ($segmentFilter->getTable() !== MAUTIC_TABLE_PREFIX.'custom_objects') {
@@ -35,6 +36,13 @@ class QueryFilterFactory
         }
 
         $type = $segmentFilter->getQueryType();
+
+        // With the merge filter ON core hands every Custom Object criterion to the merged builder. A condition outside a
+        // segment (campaign, dynamic content, token) asks about ONE criterion, so it is answered by the single-criterion
+        // query that matches what the criterion is: the item name (cmo_<object id>) or a field value (cmf_<field id>).
+        if (CustomObjectMergedFilterQueryBuilder::getServiceId() === $type) {
+            $type = $isItemName ? CustomItemNameFilterQueryBuilder::getServiceId() : CustomFieldFilterQueryBuilder::getServiceId();
+        }
 
         if (CustomFieldFilterQueryBuilder::getServiceId() === $type) {
             $queryBuilder = $this->queryFilterHelper->createValueQuery(
