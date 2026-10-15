@@ -31,7 +31,7 @@
         </div>
     </div>
     <p class="help-block">{{ 'custom.item.criterion.same_item_help'|trans }}</p>
-    <a href="javascript:void(0);" class="btn btn-default" onclick="CustomObjects.addCriterion()"><i class="ri-add-line"></i> {{ 'custom.item.criterion.add'|trans }}</a>
+    <a href="javascript:void(0);" class="btn btn-tertiary btn-sm btn-add-item" onclick="CustomObjects.addCriterion()"><i class="ri-add-line"></i> {{ 'custom.item.criterion.add'|trans }}</a>
     {{ form_widget(form.customObjectId) }}
     <script>CustomObjects.initCustomFieldConditions();</script>
 {% endblock %}
