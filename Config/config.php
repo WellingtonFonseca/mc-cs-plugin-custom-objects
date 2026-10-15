@@ -324,6 +324,7 @@ $coParams = [
                     'custom_item.route.provider',
                     'custom_item.xref.contact.repository',
                     'custom_item.repository',
+                    'mautic.helper.paths',
                 ],
             ],
         ],
@@ -413,6 +414,7 @@ $coParams = [
                     'custom_object.query.filter.helper',
                     'custom_object.query.filter.factory',
                     'database_connection',
+                    'custom_object.merged.criteria.matcher',
                 ],
             ],
             'custom_object.serializer.subscriber' => [
@@ -667,6 +669,14 @@ $coParams = [
                     'doctrine.orm.entity_manager',
                     'query_filter_factory',
                     'mautic.lead.model.random_parameter_name',
+                ],
+            ],
+            'custom_object.merged.criteria.matcher' => [
+                'class'     => MauticPlugin\CustomObjectsBundle\Helper\MergedItemCriteriaMatcher::class,
+                'arguments' => [
+                    'mautic.lead.model.lead_segment_filter_factory',
+                    'custom_object.query.filter.helper',
+                    'mautic.custom.model.field',
                 ],
             ],
             'custom_object.helper.token_formatter' => [

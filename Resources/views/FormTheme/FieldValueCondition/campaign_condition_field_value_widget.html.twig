@@ -1,15 +1,37 @@
-<?php declare(strict_types=1);
+{#
+  The campaign condition "<object> field value": the first criterion (field, operator, value) and the additional ones.
+  The item has to satisfy ALL of them on the SAME item. The rows are added and removed by custom-objects.js.
+#}
+{% macro criterion(row, removable) %}
+    <div class="row co-criterion" style="margin-bottom: 5px;">
+        <div class="col-xs-4">{{ form_widget(row.field) }}</div>
+        <div class="col-xs-3">{{ form_widget(row.operator) }}</div>
+        <div class="col-xs-4">{{ form_widget(row.value) }}</div>
+        <div class="col-xs-1">
+            {% if removable %}
+                <a href="javascript:void(0);" class="btn btn-ghost btn-icon co-criterion-remove" title="{{ 'custom.item.criterion.remove'|trans }}" onclick="CustomObjects.removeCriterion(this)"><i class="ri-close-line"></i></a>
+            {% endif %}
+        </div>
+    </div>
+{% endmacro %}
 
-?>
-<div class="row">
-    <div class="col-xs-4">
-        {{ form_row(field) }}
+{% block _campaignevent_properties_row %}
+    {% import _self as co %}
+    <div id="co-criteria" data-index="{{ form.additionalCriteria|length }}" data-prototype="{{ co.criterion(form.additionalCriteria.vars.prototype, true)|e('html_attr') }}">
+        <div class="row co-criterion" style="margin-bottom: 5px;">
+            <div class="col-xs-4">{{ form_label(form.field) }}{{ form_widget(form.field) }}</div>
+            <div class="col-xs-3">{{ form_label(form.operator) }}{{ form_widget(form.operator) }}</div>
+            <div class="col-xs-4">{{ form_label(form.value) }}{{ form_widget(form.value) }}</div>
+            <div class="col-xs-1"></div>
+        </div>
+        <div id="co-criteria-extra">
+            {% for row in form.additionalCriteria %}
+                {{ co.criterion(row, true) }}
+            {% endfor %}
+        </div>
     </div>
-    <div class="col-xs-4">
-        {{ form_row(operator) }}
-    </div>
-    <div class="col-xs-4">
-        {{ form_row(value) }}
-    </div>
-</div>
-<script>CustomObjects.initCustomFieldConditions()</script>
+    <p class="help-block">{{ 'custom.item.criterion.same_item_help'|trans }}</p>
+    <a href="javascript:void(0);" class="btn btn-default" onclick="CustomObjects.addCriterion()"><i class="ri-add-line"></i> {{ 'custom.item.criterion.add'|trans }}</a>
+    {{ form_widget(form.customObjectId) }}
+    <script>CustomObjects.initCustomFieldConditions();</script>
+{% endblock %}
