@@ -19,6 +19,7 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
 use Symfony\Component\Form\FormFactory;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -61,7 +62,6 @@ class FormControllerTest extends ControllerTestCase
 
         $this->formController = new FormController(
             $this->managerRegistry,
-            $this->mauticFactory,
             $this->modelFactory,
             $this->userHelper,
             $this->coreParametersHelper,
@@ -124,14 +124,6 @@ class FormControllerTest extends ControllerTestCase
             ->method('buildSaveRoute')
             ->willReturn('https://list.items');
 
-        $this->modelFactory->expects($this->once())
-            ->method('getModel')
-            ->willReturn($this->model);
-
-        $this->modelFactory->expects($this->once())
-            ->method('getModel')
-            ->willReturn($this->model);
-
         $this->formController->newAction(
             $this->permissionProvider,
             $this->formFactory,
@@ -151,11 +143,7 @@ class FormControllerTest extends ControllerTestCase
         $this->routeProvider->expects($this->never())
             ->method('buildEditRoute');
 
-        $post                   = $this->createMock(ParameterBag::class);
-        $this->request->request = $post;
-        $post->expects($this->once())
-            ->method('all')
-            ->willReturn([]);
+        $this->request->request = new InputBag();
 
         $this->formController->editAction(
             $this->customObjectModel,
@@ -240,14 +228,6 @@ class FormControllerTest extends ControllerTestCase
             ->with(self::OBJECT_ID)
             ->willReturn('https://list.items');
 
-        $this->modelFactory->expects($this->once())
-            ->method('getModel')
-            ->willReturn($this->model);
-
-        $this->modelFactory->expects($this->once())
-            ->method('getModel')
-            ->willReturn($this->model);
-
         $this->formController->editAction(
             $this->customObjectModel,
             $this->permissionProvider,
@@ -270,11 +250,7 @@ class FormControllerTest extends ControllerTestCase
         $this->routeProvider->expects($this->never())
             ->method('buildCloneRoute');
 
-        $post                   = $this->createMock(ParameterBag::class);
-        $this->request->request = $post;
-        $post->expects($this->once())
-            ->method('all')
-            ->willReturn([]);
+        $this->request->request = new InputBag();
 
         $this->formController->cloneAction(
             $this->customObjectModel,
@@ -342,14 +318,6 @@ class FormControllerTest extends ControllerTestCase
         $this->routeProvider->expects($this->once())
             ->method('buildSaveRoute')
             ->willReturn('https://list.items');
-
-        $this->modelFactory->expects($this->once())
-            ->method('getModel')
-            ->willReturn($this->model);
-
-        $this->modelFactory->expects($this->once())
-            ->method('getModel')
-            ->willReturn($this->model);
 
         $this->formController->cloneAction(
             $this->customObjectModel,

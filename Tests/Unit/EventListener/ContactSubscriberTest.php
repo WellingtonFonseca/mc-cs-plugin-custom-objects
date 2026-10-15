@@ -30,7 +30,7 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
     private $routeProvider;
     private $customItemModel;
     private $configProvider;
-    private $leadTimelineEvent;
+    private LeadTimelineEvent $leadTimelineEvent;
     private $leadEventLogRepo;
 
     /**
@@ -52,7 +52,7 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
         $this->routeProvider     = $this->createMock(CustomItemRouteProvider::class);
         $this->customItemModel   = $this->createMock(CustomItemModel::class);
         $this->configProvider    = $this->createMock(ConfigProvider::class);
-        $this->leadTimelineEvent = $this->createMock(LeadTimelineEvent::class);
+        $this->leadTimelineEvent = $this->timeline();
         $this->leadEventLogRepo  = $this->createMock(LeadEventLogRepository::class);
         $this->ciXcontactRepo    = $this->createMock(CustomItemXrefContactRepository::class);
         $this->subscriber        = new ContactSubscriber(
@@ -65,26 +65,36 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
         );
     }
 
+    /**
+     * The real event: LeadTimelineEvent is final in Mautic 7, a double cannot be made for it. $include limits the
+     * event types it asks for (what isApplicable() answers).
+     *
+     * @param string[] $include
+     */
+    private function timeline(array $include = []): LeadTimelineEvent
+    {
+        return new LeadTimelineEvent(new Lead(), ['search' => '', 'includeEvents' => $include, 'excludeEvents' => []]);
+    }
+
     public function testPluginDisabled(): void
     {
         $this->configProvider->expects($this->once())
             ->method('pluginIsEnabled')
             ->willReturn(false);
 
-        $this->leadTimelineEvent->expects($this->never())
-            ->method('getEventFilters');
-
         $this->subscriber->onTimelineGenerate($this->leadTimelineEvent);
+
+        $this->assertSame([], $this->leadTimelineEvent->getEventTypes());
+        $this->assertSame([], $this->leadTimelineEvent->getEvents());
     }
 
     public function testPluginEnabledOnPublicPageWhenItemFound(): void
     {
+        $this->leadTimelineEvent = $this->timeline(['customitem.unlinked']);
+
         $this->configProvider->expects($this->once())
             ->method('pluginIsEnabled')
             ->willReturn(true);
-
-        $this->leadTimelineEvent->expects($this->once())
-            ->method('getEventFilters');
 
         $this->translator->expects($this->exactly(3))
             ->method('trans')
@@ -98,28 +108,6 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
                 'CI Unlinked'
             ], true));
 
-        $this->leadTimelineEvent->expects($this->exactly(2))
-            ->method('addEventType')
-            ->willReturnCallback($this->consecutiveCalls([
-                ['customitem.linked', 'CI Linked'],
-                ['customitem.unlinked', 'CI Unlinked']
-            ], null, false, $this->leadTimelineEvent, 'addEventType'));
-
-        $this->leadTimelineEvent->expects($this->exactly(2))
-            ->method('isApplicable')
-            ->willReturnCallback($this->consecutiveCalls([
-                ['customitem.linked'],
-                ['customitem.unlinked']
-            ], [false, true], true));
-
-        $this->leadTimelineEvent->expects($this->once())
-            ->method('getLead')
-            ->willReturn(new Lead());
-
-        $this->leadTimelineEvent->expects($this->once())
-            ->method('getQueryOptions')
-            ->willReturn([]);
-
         $this->entityManager->expects($this->once())
             ->method('getRepository')
             ->with(LeadEventLog::class)
@@ -132,7 +120,7 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
                 'CustomObject',
                 'CustomItem',
                 ['unlink'],
-                []
+                $this->isType('array')
             )
             ->willReturn(['results' => [
                 [
@@ -171,9 +159,12 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
             ->with(111, 222)
             ->willReturn('view/route');
 
-        $this->leadTimelineEvent->expects($this->once())
-            ->method('addEvent')
-            ->with([
+        $this->subscriber->onTimelineGenerate($this->leadTimelineEvent);
+
+        $this->assertSame(['customitem.linked' => 'CI Linked', 'customitem.unlinked' => 'CI Unlinked'], $this->leadTimelineEvent->getEventTypes());
+        $events = $this->leadTimelineEvent->getEvents();
+        $this->assertCount(1, $events);
+        $expected = [
                 'event'           => 'customitem.unlinked',
                 'eventId'         => 'customitem.unlinked.444',
                 'eventType'       => 'CI Unlinked',
@@ -188,19 +179,18 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
                 ],
                 'contactId'       => 333,
                 'contentTemplate' => '@CustomObjects/SubscribedEvents/Timeline/link.html.twig',
-            ]);
-
-        $this->subscriber->onTimelineGenerate($this->leadTimelineEvent);
+            ];
+        $expected['timestamp'] = new \DateTime($expected['timestamp'], new \DateTimeZone('UTC'));
+        $this->assertEquals($expected, $events[0]);
     }
 
     public function testPluginEnabledOnPublicPageWhenItemNotFound(): void
     {
+        $this->leadTimelineEvent = $this->timeline(['customitem.linked']);
+
         $this->configProvider->expects($this->once())
             ->method('pluginIsEnabled')
             ->willReturn(true);
-
-        $this->leadTimelineEvent->expects($this->once())
-            ->method('getEventFilters');
 
         $this->translator->expects($this->exactly(3))
             ->method('trans')
@@ -214,32 +204,6 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
                 'CI Unlinked'
             ], true));
 
-        $this->leadTimelineEvent->expects($this->exactly(2))
-            ->method('addEventType')
-            ->willReturnCallback($this->consecutiveCalls([
-                ['customitem.linked', 'CI Linked'],
-                ['customitem.unlinked', 'CI Unlinked']
-            ], null, false, $this->leadTimelineEvent, 'addEventType'));
-
-        $this->leadTimelineEvent->expects($this->exactly(2))
-            ->method('isApplicable')
-            ->willReturnCallback($this->consecutiveCalls([
-                ['customitem.linked'],
-                ['customitem.unlinked']
-            ], [true, false], true));
-
-        $this->leadTimelineEvent->expects($this->once())
-            ->method('getLead')
-            ->willReturn(new Lead());
-
-        $this->leadTimelineEvent->expects($this->once())
-            ->method('getQueryOptions')
-            ->willReturn([]);
-
-        $this->leadTimelineEvent->expects($this->once())
-            ->method('addToCounter')
-            ->with('customitem.linked');
-
         $this->entityManager->expects($this->once())
             ->method('getRepository')
             ->with(LeadEventLog::class)
@@ -252,7 +216,7 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
                 'CustomObject',
                 'CustomItem',
                 ['link'],
-                []
+                $this->isType('array')
             )
             ->willReturn(['results' => [
                 [
@@ -267,9 +231,12 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
             ->method('fetchEntity')
             ->will($this->throwException(new NotFoundException()));
 
-        $this->leadTimelineEvent->expects($this->once())
-            ->method('addEvent')
-            ->with([
+        $this->subscriber->onTimelineGenerate($this->leadTimelineEvent);
+
+        $this->assertSame(['customitem.linked' => 'CI Linked', 'customitem.unlinked' => 'CI Unlinked'], $this->leadTimelineEvent->getEventTypes());
+        $events = $this->leadTimelineEvent->getEvents();
+        $this->assertCount(1, $events);
+        $expected = [
                 'event'           => 'customitem.linked',
                 'eventId'         => 'customitem.linked.444',
                 'eventType'       => 'CI Linked',
@@ -284,8 +251,8 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
                 ],
                 'contactId'       => 333,
                 'contentTemplate' => '@CustomObjects/SubscribedEvents/Timeline/link.html.twig',
-            ]);
-
-        $this->subscriber->onTimelineGenerate($this->leadTimelineEvent);
+            ];
+        $expected['timestamp'] = new \DateTime($expected['timestamp'], new \DateTimeZone('UTC'));
+        $this->assertEquals($expected, $events[0]);
     }
 }

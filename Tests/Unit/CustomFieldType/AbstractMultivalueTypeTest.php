@@ -41,10 +41,8 @@ class AbstractMultivalueTypeTest extends \PHPUnit\Framework\TestCase
         $this->customField = $this->createMock(CustomField::class);
         $this->customItem  = $this->createMock(CustomItem::class);
         $this->provider    = $this->createMock(FilterOperatorProviderInterface::class);
-        $this->fieldType   = $this->getMockForAbstractClass(
-            AbstractMultivalueType::class,
-            [$this->translator, $this->provider, new CsvHelper()]
-        );
+        $this->fieldType   = new class($this->translator, $this->provider, new CsvHelper()) extends AbstractMultivalueType {
+        };
     }
 
     public function testCreateValueEntity(): void

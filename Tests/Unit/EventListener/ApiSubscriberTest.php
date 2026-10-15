@@ -18,6 +18,7 @@ use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -41,7 +42,9 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
 
     private $customItemModel;
 
-    private $apiEntityEvent;
+    private array $eventParameters = [];
+
+    private ?Lead $eventEntity = null;
 
     private $request;
 
@@ -57,7 +60,6 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
         $this->configProvider    = $this->createMock(ConfigProvider::class);
         $this->customObjectModel = $this->createMock(CustomObjectModel::class);
         $this->customItemModel   = $this->createMock(CustomItemModel::class);
-        $this->apiEntityEvent    = $this->createMock(ApiEntityEvent::class);
         $this->request           = new Request();
         $this->apiSubscriber     = new ApiSubscriber(
             $this->configProvider,
@@ -65,7 +67,14 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
             $this->customItemModel
         );
 
-        $this->apiEntityEvent->method('getRequest')->willReturn($this->request);
+    }
+
+    /**
+     * The real event: ApiEntityEvent is final in Mautic 7, a double cannot be made for it.
+     */
+    private function event(): ApiEntityEvent
+    {
+        return new ApiEntityEvent($this->eventEntity ?? new Lead(), $this->eventParameters, $this->request);
     }
 
     public function testPluginDisabled(): void
@@ -74,20 +83,15 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
             ->method('pluginIsEnabled')
             ->willReturn(false);
 
-        $this->apiEntityEvent->expects($this->once())
-            ->method('getEntityRequestParameters')
-            ->willReturn([]);
+        $this->eventParameters = [];
 
-        $this->apiEntityEvent->expects($this->never())
-            ->method('getEntity');
-
-        $this->apiSubscriber->validateCustomObjectsInContactRequest($this->apiEntityEvent);
+        $this->apiSubscriber->validateCustomObjectsInContactRequest($this->event());
     }
 
     /**
      * @return iterable<string[]>
      */
-    public function dataGetCustomObjectsFromContactCreateRequestForUnsupportedApiEndpoint(): iterable
+    public static function dataGetCustomObjectsFromContactCreateRequestForUnsupportedApiEndpoint(): iterable
     {
         foreach (self::CONTROLLER_METHODS as $method) {
             yield ['Mautic\UnknownBundle\Controller\Api\UnknownController::'.$method];
@@ -97,18 +101,14 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
         yield [self::CONTROLLER_CLASS.'::unknownMethod'];
     }
 
-    /**
-     * @dataProvider dataGetCustomObjectsFromContactCreateRequestForUnsupportedApiEndpoint
-     */
+    #[DataProvider('dataGetCustomObjectsFromContactCreateRequestForUnsupportedApiEndpoint')]
     public function testGetCustomObjectsFromContactCreateRequestForUnsupportedApiEndpoint(string $controller): void
     {
         $this->configProvider->expects($this->once())
             ->method('pluginIsEnabled')
             ->willReturn(true);
 
-        $this->apiEntityEvent->expects($this->once())
-            ->method('getEntityRequestParameters')
-            ->willReturn([
+        $this->eventParameters = [
                 'email'         => 'john@doe.email',
                 'customObjects' => [
                     'data' => [
@@ -118,14 +118,11 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
                         ],
                     ],
                 ],
-            ]);
+            ];
 
         $this->setControllerToRequest($controller);
 
-        $this->apiEntityEvent->expects($this->never())
-            ->method('getEntity');
-
-        $this->apiSubscriber->validateCustomObjectsInContactRequest($this->apiEntityEvent);
+        $this->apiSubscriber->validateCustomObjectsInContactRequest($this->event());
     }
 
     public function testGetCustomObjectsFromContactCreateRequestWithoutCustomObjects(): void
@@ -136,29 +133,22 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
 
         $this->setControllerToRequest();
 
-        $this->apiEntityEvent->expects($this->once())
-            ->method('getEntityRequestParameters')
-            ->willReturn(['email' => 'john@doe.email']);
+        $this->eventParameters = ['email' => 'john@doe.email'];
 
-        $this->apiEntityEvent->expects($this->never())
-            ->method('getEntity');
-
-        $this->apiSubscriber->validateCustomObjectsInContactRequest($this->apiEntityEvent);
+        $this->apiSubscriber->validateCustomObjectsInContactRequest($this->event());
     }
 
     /**
      * @return iterable<string[]>
      */
-    public function dataValidateCustomObjectsInContactRequestWhenCustomObjectNotFoundByAlias(): iterable
+    public static function dataValidateCustomObjectsInContactRequestWhenCustomObjectNotFoundByAlias(): iterable
     {
         foreach (self::CONTROLLER_METHODS as $method) {
             yield [self::CONTROLLER_CLASS.'::'.$method];
         }
     }
 
-    /**
-     * @dataProvider dataValidateCustomObjectsInContactRequestWhenCustomObjectNotFoundByAlias
-     */
+    #[DataProvider('dataValidateCustomObjectsInContactRequestWhenCustomObjectNotFoundByAlias')]
     public function testValidateCustomObjectsInContactRequestWhenCustomObjectNotFoundByAlias(string $controller): void
     {
         $this->configProvider->expects($this->once())
@@ -167,9 +157,7 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
 
         $this->setControllerToRequest($controller);
 
-        $this->apiEntityEvent->expects($this->once())
-            ->method('getEntityRequestParameters')
-            ->willReturn([
+        $this->eventParameters = [
                 'email'         => 'john@doe.email',
                 'customObjects' => [
                     'data' => [
@@ -179,11 +167,9 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
                         ],
                     ],
                 ],
-            ]);
+            ];
 
-        $this->apiEntityEvent->expects($this->once())
-            ->method('getEntity')
-            ->willReturn(new Lead());
+        $this->eventEntity = new Lead();
 
         $this->customObjectModel->expects($this->once())
             ->method('fetchEntityByAlias')
@@ -192,7 +178,7 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
 
         $this->expectException(NotFoundException::class);
         $this->expectExceptionCode(Response::HTTP_BAD_REQUEST);
-        $this->apiSubscriber->validateCustomObjectsInContactRequest($this->apiEntityEvent);
+        $this->apiSubscriber->validateCustomObjectsInContactRequest($this->event());
     }
 
     public function testValidateCustomObjectsInContactRequestWhenCustomObjectNotFoundById(): void
@@ -203,9 +189,7 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
 
         $this->setControllerToRequest();
 
-        $this->apiEntityEvent->expects($this->once())
-            ->method('getEntityRequestParameters')
-            ->willReturn([
+        $this->eventParameters = [
                 'email'         => 'john@doe.email',
                 'customObjects' => [
                     'data' => [
@@ -215,11 +199,9 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
                         ],
                     ],
                 ],
-            ]);
+            ];
 
-        $this->apiEntityEvent->expects($this->once())
-            ->method('getEntity')
-            ->willReturn(new Lead());
+        $this->eventEntity = new Lead();
 
         $this->customObjectModel->expects($this->once())
             ->method('fetchEntity')
@@ -228,7 +210,7 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
 
         $this->expectException(NotFoundException::class);
         $this->expectExceptionCode(Response::HTTP_BAD_REQUEST);
-        $this->apiSubscriber->validateCustomObjectsInContactRequest($this->apiEntityEvent);
+        $this->apiSubscriber->validateCustomObjectsInContactRequest($this->event());
     }
 
     public function testValidateCustomObjectsInContactRequestWhenCustomObjectDoesNotHaveAnyIdentifier(): void
@@ -239,9 +221,7 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
 
         $this->setControllerToRequest();
 
-        $this->apiEntityEvent->expects($this->once())
-            ->method('getEntityRequestParameters')
-            ->willReturn([
+        $this->eventParameters = [
                 'email'         => 'john@doe.email',
                 'customObjects' => [
                     'data' => [
@@ -250,15 +230,13 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
                         ],
                     ],
                 ],
-            ]);
+            ];
 
-        $this->apiEntityEvent->expects($this->once())
-            ->method('getEntity')
-            ->willReturn(new Lead());
+        $this->eventEntity = new Lead();
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionCode(Response::HTTP_BAD_REQUEST);
-        $this->apiSubscriber->validateCustomObjectsInContactRequest($this->apiEntityEvent);
+        $this->apiSubscriber->validateCustomObjectsInContactRequest($this->event());
     }
 
     public function testValidateCustomObjectsInContactRequestWhenCustomItemNotFound(): void
@@ -269,9 +247,7 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
 
         $this->setControllerToRequest();
 
-        $this->apiEntityEvent->expects($this->once())
-            ->method('getEntityRequestParameters')
-            ->willReturn([
+        $this->eventParameters = [
                 'email'         => 'john@doe.email',
                 'customObjects' => [
                     'data' => [
@@ -285,11 +261,9 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
                         ],
                     ],
                 ],
-            ]);
+            ];
 
-        $this->apiEntityEvent->expects($this->once())
-            ->method('getEntity')
-            ->willReturn(new Lead());
+        $this->eventEntity = new Lead();
 
         $this->customObjectModel->expects($this->once())
             ->method('fetchEntityByAlias')
@@ -301,7 +275,7 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
 
         $this->expectException(NotFoundException::class);
         $this->expectExceptionCode(Response::HTTP_BAD_REQUEST);
-        $this->apiSubscriber->validateCustomObjectsInContactRequest($this->apiEntityEvent);
+        $this->apiSubscriber->validateCustomObjectsInContactRequest($this->event());
     }
 
     public function testValidateCustomObjectsInContactRequestForCustomItemEdit(): void
@@ -312,9 +286,7 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
 
         $this->setControllerToRequest();
 
-        $this->apiEntityEvent->expects($this->once())
-            ->method('getEntityRequestParameters')
-            ->willReturn([
+        $this->eventParameters = [
                 'email'         => 'john@doe.email',
                 'customObjects' => [
                     'data' => [
@@ -333,11 +305,9 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
                         ],
                     ],
                 ],
-            ]);
+            ];
 
-        $this->apiEntityEvent->expects($this->once())
-            ->method('getEntity')
-            ->willReturn(new Lead());
+        $this->eventEntity = new Lead();
 
         $this->customObjectModel->expects($this->once())
             ->method('fetchEntityByAlias')
@@ -381,7 +351,7 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
             ->method('save')
             ->with($customItem, true);
 
-        $this->apiSubscriber->validateCustomObjectsInContactRequest($this->apiEntityEvent);
+        $this->apiSubscriber->validateCustomObjectsInContactRequest($this->event());
     }
 
     public function testSaveCustomObjectsInContactRequestForNewCustomItem(): void
@@ -392,9 +362,7 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
 
         $this->setControllerToRequest();
 
-        $this->apiEntityEvent->expects($this->once())
-            ->method('getEntityRequestParameters')
-            ->willReturn([
+        $this->eventParameters = [
                 'email'         => 'john@doe.email',
                 'customObjects' => [
                     'data' => [
@@ -415,11 +383,9 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
                         ],
                     ],
                 ],
-            ]);
+            ];
 
-        $this->apiEntityEvent->expects($this->once())
-            ->method('getEntity')
-            ->willReturn(new Lead());
+        $this->eventEntity = new Lead();
 
         $customObject = new CustomObject();
         $skuField     = new CustomField();
@@ -464,7 +430,7 @@ class ApiSubscriberTest extends \PHPUnit\Framework\TestCase
                 return true;
             }), false);
 
-        $this->apiSubscriber->saveCustomObjectsInContactRequest($this->apiEntityEvent);
+        $this->apiSubscriber->saveCustomObjectsInContactRequest($this->event());
     }
 
     private function setControllerToRequest(string $controller = self::CONTROLLER_CLASS.'::'.self::CONTROLLER_METHODS[0]): void

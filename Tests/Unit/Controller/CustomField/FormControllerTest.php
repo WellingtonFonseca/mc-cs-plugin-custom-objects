@@ -20,6 +20,7 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\Form\FormFactory;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\FormView;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -242,7 +243,7 @@ class FormControllerTest extends AbstractFieldControllerTest
             ->with($customObject->getId())
             ->willReturn($returnUrl);
 
-        $view       = 'view';
+        $view       = new FormView();
         $this->form->expects($this->once())
             ->method('createView')
             ->willReturn($view);
@@ -308,7 +309,7 @@ class FormControllerTest extends AbstractFieldControllerTest
             ->with(null)
             ->willReturn($returnUrl);
 
-        $view       = 'view';
+        $view       = new FormView();
         $this->form->expects($this->once())
             ->method('createView')
             ->willReturn($view);
@@ -341,7 +342,6 @@ class FormControllerTest extends AbstractFieldControllerTest
 
         $this->formController = new FormController(
             $this->managerRegistry,
-            $this->mauticFactory,
             $this->modelFactory,
             $this->userHelper,
             $this->coreParametersHelper,
@@ -353,9 +353,5 @@ class FormControllerTest extends AbstractFieldControllerTest
         );
 
         $this->addSymfonyDependencies($this->formController);
-
-        $this->container->get('http_kernel')->expects($this->any())
-            ->method('handle')
-            ->willreturn(null);
     }
 }

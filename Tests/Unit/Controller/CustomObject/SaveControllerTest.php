@@ -18,10 +18,11 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
-use Symfony\Component\Form\ClickableInterface;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\SubmitButton;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -67,7 +68,6 @@ class SaveControllerTest extends ControllerTestCase
 
         $this->saveController             = new SaveController(
             $this->managerRegistry,
-            $this->mauticFactory,
             $this->modelFactory,
             $this->userHelper,
             $this->coreParametersHelper,
@@ -97,11 +97,7 @@ class SaveControllerTest extends ControllerTestCase
         $this->permissionProvider->expects($this->never())
             ->method('canCreate');
 
-        $post                   = $this->createMock(ParameterBag::class);
-        $this->request->request = $post;
-        $post->expects($this->once())
-            ->method('all')
-            ->willReturn([]);
+        $this->request->request = new InputBag();
 
         $this->saveController->saveAction(
             $this->flashBag,
@@ -201,7 +197,7 @@ class SaveControllerTest extends ControllerTestCase
             ->willReturnMap(
                 [
                     ['buttons', $this->form],
-                    ['save', $this->createMock(ClickableInterface::class)],
+                    ['save', $this->createMock(SubmitButton::class)],
                 ]
             );
 
@@ -299,7 +295,7 @@ class SaveControllerTest extends ControllerTestCase
             ->method('isValid')
             ->willReturn(true);
 
-        $click = $this->createMock(ClickableInterface::class);
+        $click = $this->createMock(SubmitButton::class);
 
         $this->form
             ->method('get')

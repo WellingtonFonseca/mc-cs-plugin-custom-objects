@@ -16,6 +16,7 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProviderFactory;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
+use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -53,7 +54,6 @@ class ListControllerTest extends ControllerTestCase
 
         $this->listController         = new ListController(
             $this->managerRegistry,
-            $this->mauticFactory,
             $this->modelFactory,
             $this->userHelper,
             $this->coreParametersHelper,
@@ -79,11 +79,7 @@ class ListControllerTest extends ControllerTestCase
         $this->customItemModel->expects($this->never())
             ->method('getTableData');
 
-        $post                   = $this->createMock(ParameterBag::class);
-        $this->request->request = $post;
-        $post->expects($this->once())
-            ->method('all')
-            ->willReturn([]);
+        $this->request->request = new InputBag();
 
         $this->listController->listAction(
             $this->sessionProviderFactory,
@@ -127,9 +123,9 @@ class ListControllerTest extends ControllerTestCase
         $pageLimit    = 10;
         $customObject = $this->createMock(CustomObject::class);
 
-        $this->request->method('get')->will($this->returnValueMap([
+        $this->request->method('get')->willReturnMap([
             ['limit', $pageLimit, $pageLimit],
-        ]));
+        ]);
 
         $this->permissionProvider->expects($this->once())
             ->method('canViewAtAll');
@@ -196,16 +192,16 @@ class ListControllerTest extends ControllerTestCase
         $search       = 'Search some';
         $customObject = $this->createMock(CustomObject::class);
 
-        $this->request->query = new ParameterBag(
+        $this->request->query = new InputBag(
             [
                 'orderby' => 'e.name',
             ]
         );
 
-        $this->request->method('get')->will($this->returnValueMap([
+        $this->request->method('get')->willReturnMap([
             ['limit', $pageLimit, $pageLimit],
             ['search', '', $search],
-        ]));
+        ]);
 
         $this->request->method('isXmlHttpRequest')
             ->willReturn(true);

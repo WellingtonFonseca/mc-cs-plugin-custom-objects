@@ -14,6 +14,7 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProviderFactory;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
+use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -45,7 +46,6 @@ class ListControllerTest extends ControllerTestCase
         $this->request                = $this->createMock(Request::class);
         $this->listController         = new ListController(
             $this->managerRegistry,
-            $this->mauticFactory,
             $this->modelFactory,
             $this->userHelper,
             $this->coreParametersHelper,
@@ -86,9 +86,9 @@ class ListControllerTest extends ControllerTestCase
     {
         $pageLimit = 10;
 
-        $this->request->method('get')->will($this->returnValueMap([
+        $this->request->method('get')->willReturnMap([
             ['limit', $pageLimit, $pageLimit],
-        ]));
+        ]);
 
         $this->permissionProvider->expects($this->once())
             ->method('canViewAtAll');
@@ -146,15 +146,15 @@ class ListControllerTest extends ControllerTestCase
     {
         $pageLimit = 10;
 
-        $this->request->query = new ParameterBag(
+        $this->request->query = new InputBag(
             [
                 'orderby' => 'e.name',
             ]
         );
 
-        $this->request->method('get')->will($this->returnValueMap([
+        $this->request->method('get')->willReturnMap([
             ['limit', $pageLimit, $pageLimit],
-        ]));
+        ]);
 
         $this->request->method('isXmlHttpRequest')
             ->willReturn(true);

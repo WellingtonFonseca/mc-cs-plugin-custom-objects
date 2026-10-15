@@ -32,10 +32,17 @@ class AbstractCustomFieldValueTest extends \PHPUnit\Framework\TestCase
         $this->customObject    = new CustomObject();
         $this->customField     = $this->createMock(CustomField::class);
         $this->customItem      = new CustomItem($this->customObject);
-        $this->abstractCFValue = $this->getMockForAbstractClass(
-            AbstractCustomFieldValue::class,
-            [$this->customField, $this->customItem]
-        );
+        $this->abstractCFValue = new class($this->customField, $this->customItem) extends AbstractCustomFieldValue {
+            public function getValue()
+            {
+                return null;
+            }
+
+            public function setValue($value = null)
+            {
+                return $this;
+            }
+        };
     }
 
     public function testGettersSetters(): void

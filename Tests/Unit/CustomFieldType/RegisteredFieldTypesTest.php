@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\CustomFieldType;
 
+use PHPUnit\Framework\Attributes\DataProvider;
+
 /**
  * Guards what a new Custom Field type needs besides its own class: adding
  * one without these breaks the UI, not the code. The "decimal" type first
@@ -38,9 +40,7 @@ class RegisteredFieldTypesTest extends \PHPUnit\Framework\TestCase
         return $keys;
     }
 
-    /**
-     * @dataProvider registeredTypeKeys
-     */
+    #[DataProvider('registeredTypeKeys')]
     public function testTypeHasAFormPanelTemplate(string $key): void
     {
         $this->assertFileExists(
@@ -49,9 +49,7 @@ class RegisteredFieldTypesTest extends \PHPUnit\Framework\TestCase
         );
     }
 
-    /**
-     * @dataProvider registeredTypeKeys
-     */
+    #[DataProvider('registeredTypeKeys')]
     public function testTypeHasATranslatedLabel(string $key): void
     {
         $messages = parse_ini_file(self::BUNDLE_DIR.'/Translations/en_US/messages.ini');

@@ -96,7 +96,6 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
         $customFields = new ArrayCollection([44 => $this->customField, 66 => $noValueField]);
         $customItem   = $this->getMockBuilder(CustomItem::class)
             ->onlyMethods(['getCustomObject', 'getId', 'isNew'])
-            ->addMethods(['getPublishedFields'])
             ->disableOriginalConstructor()
             ->getMock();
 
@@ -170,10 +169,10 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
 
         $this->queryBuilder->expects($this->exactly(2))
             ->method('getSQL')
-            ->will($this->onConsecutiveCalls(
+            ->willReturnOnConsecutiveCalls(
                 'THE TEXT FIELD SQL QUERY',
                 'THE NUMBER FIELD SQL QUERY'
-            ));
+            );
 
         $this->connection->expects($this->once())
             ->method('prepare')

@@ -8,6 +8,8 @@ use Mautic\LeadBundle\Provider\FilterOperatorProviderInterface;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\AbstractCustomFieldType;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\EmailType;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
+use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueInterface;
+use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Exception\UndefinedTransformerException;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -29,10 +31,22 @@ class AbstractCustomFieldTypeTest extends \PHPUnit\Framework\TestCase
         $this->translator             = $this->createMock(TranslatorInterface::class);
         $this->customField            = $this->createMock(CustomField::class);
         $this->filterOperatorProvider = $this->createMock(FilterOperatorProviderInterface::class);
-        $this->fieldType              = $this->getMockForAbstractClass(
-            AbstractCustomFieldType::class,
-            [$this->translator, $this->filterOperatorProvider]
-        );
+        $this->fieldType              = new class($this->translator, $this->filterOperatorProvider) extends AbstractCustomFieldType {
+            public function getSymfonyFormFieldType(): string
+            {
+                return '';
+            }
+
+            public function getEntityClass(): string
+            {
+                return '';
+            }
+
+            public function createValueEntity(CustomField $customField, CustomItem $customItem, $value = null): CustomFieldValueInterface
+            {
+                throw new \LogicException('not used');
+            }
+        };
     }
 
     public function testToString(): void

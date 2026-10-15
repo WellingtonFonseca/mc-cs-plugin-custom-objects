@@ -9,6 +9,7 @@ use MauticPlugin\CustomObjectsBundle\CustomFieldType\IntType;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueInt;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class IntTypeTest extends \PHPUnit\Framework\TestCase
@@ -104,8 +105,9 @@ class IntTypeTest extends \PHPUnit\Framework\TestCase
      *
      * @param mixed $input
      *
-     * @dataProvider storedValues
      */
+
+    #[DataProvider('storedValues')]
     public function testAnUnfilledNumberIsStoredAsNullNotZero($input, ?int $expected): void
     {
         $valueEntity = $this->fieldType->createValueEntity($this->customField, $this->customItem, $input);

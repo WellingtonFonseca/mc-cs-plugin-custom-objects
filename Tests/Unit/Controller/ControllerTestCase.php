@@ -5,20 +5,20 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller;
 
 use Doctrine\Persistence\ManagerRegistry;
-use Mautic\CoreBundle\Factory\MauticFactory;
 use Mautic\CoreBundle\Factory\ModelFactory;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\CoreBundle\Helper\UserHelper;
 use Mautic\CoreBundle\Model\NotificationModel;
 use Mautic\CoreBundle\Security\Permissions\CorePermissions;
 use Mautic\CoreBundle\Service\FlashBag;
+use Mautic\PageBundle\Model\PageModel;
 use Mautic\CoreBundle\Translation\Translator;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\HeaderBag;
-use Symfony\Component\HttpFoundation\ParameterBag;
+use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
@@ -57,11 +57,6 @@ class ControllerTestCase extends \PHPUnit\Framework\TestCase
      * @var MockObject|ManagerRegistry
      */
     protected $managerRegistry;
-
-    /**
-     * @var MockObject|MauticFactory
-     */
-    protected $mauticFactory;
 
     /**
      * @var MockObject|ModelFactory
@@ -107,7 +102,6 @@ class ControllerTestCase extends \PHPUnit\Framework\TestCase
         $this->container            = $this->createMock(ContainerInterface::class);
         $this->router               = $this->createMock(RouterInterface::class);
         $this->managerRegistry      = $this->createMock(ManagerRegistry::class);
-        $this->mauticFactory        = $this->createMock(MauticFactory::class);
         $this->modelFactory         = $this->createMock(ModelFactory::class);
         $this->coreParametersHelper = $this->createMock(CoreParametersHelper::class);
         $this->dispatcher           = $this->createMock(EventDispatcherInterface::class);
@@ -148,7 +142,7 @@ class ControllerTestCase extends \PHPUnit\Framework\TestCase
             ['core.notification', $notificationModel],
         ]);
 
-        $request->query   = new ParameterBag();
+        $request->query   = new InputBag();
         $request->headers = new HeaderBag();
 
         if (method_exists($request, 'method')) { // This is terrible, we should not mock Request at all. Damn you old me!
@@ -159,6 +153,10 @@ class ControllerTestCase extends \PHPUnit\Framework\TestCase
         $notificationModel->method('getNotificationContent')->willReturn([[], '', '']);
         $requestStack->method('getCurrentRequest')->willReturn($request);
 
+        // Mautic 7 hands CommonController its helpers through this setter, not the constructor
+        if (method_exists($controller, 'autowireCommonController')) {
+            $controller->autowireCommonController($this->createMock(PageModel::class), $notificationModel, $this->router, $httpKernel, $twig);
+        }
         $controller->setContainer($this->container);
     }
 }

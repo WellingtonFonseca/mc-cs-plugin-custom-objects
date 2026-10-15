@@ -32,10 +32,8 @@ class AbstractTextTypeTest extends \PHPUnit\Framework\TestCase
         $this->customField            = $this->createMock(CustomField::class);
         $this->customItem             = $this->createMock(CustomItem::class);
         $this->filterOperatorProvider = $this->createMock(FilterOperatorProviderInterface::class);
-        $this->fieldType              = $this->getMockForAbstractClass(
-            AbstractTextType::class,
-            [$this->translator, $this->filterOperatorProvider]
-        );
+        $this->fieldType              = new class($this->translator, $this->filterOperatorProvider) extends AbstractTextType {
+        };
     }
 
     public function testCreateValueEntity(): void

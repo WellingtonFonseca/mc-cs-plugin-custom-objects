@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Command;
+namespace MauticPlugin\CustomObjectsBundle\Tests\Functional\Command;
 
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;

@@ -13,6 +13,7 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -133,9 +134,7 @@ final class CustomItemSearchApiControllerTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider newTypes
-     */
+    #[DataProvider('newTypes')]
     public function testNewTypesAreAccepted(string $type, string $value): void
     {
         $this->objectWithFields(['campo' => $type]);

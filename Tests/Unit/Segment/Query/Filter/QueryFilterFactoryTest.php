@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Segment\Query\Filter;
 
 use Mautic\LeadBundle\Segment\ContactSegmentFilter;
-use Mautic\LeadBundle\Segment\ContactSegmentFilterFactory;
 use Mautic\LeadBundle\Segment\Query\QueryBuilder as SegmentQueryBuilder;
 use MauticPlugin\CustomObjectsBundle\Exception\InvalidSegmentFilterException;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterHelper;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\CustomFieldFilterQueryBuilder;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\CustomItemNameFilterQueryBuilder;
+use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\CustomObjectMergedFilterQueryBuilder;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\QueryFilterFactory;
+use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\SegmentFilterBuilder;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\UnionQueryContainer;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -19,7 +20,7 @@ use PHPUnit\Framework\TestCase;
 class QueryFilterFactoryTest extends TestCase
 {
     /**
-     * @var ContactSegmentFilterFactory|MockObject
+     * @var SegmentFilterBuilder|MockObject
      */
     private $contactSegmentFilterFactory;
 
@@ -52,7 +53,7 @@ class QueryFilterFactoryTest extends TestCase
     {
         parent::setUp();
 
-        $this->contactSegmentFilterFactory = $this->createMock(ContactSegmentFilterFactory::class);
+        $this->contactSegmentFilterFactory = $this->createMock(SegmentFilterBuilder::class);
         $this->queryFilterHelper           = $this->createMock(QueryFilterHelper::class);
         $this->contactSegmentFilter        = $this->createMock(ContactSegmentFilter::class);
         $this->segmentQueryBuilder         = $this->createMock(SegmentQueryBuilder::class);
@@ -69,7 +70,7 @@ class QueryFilterFactoryTest extends TestCase
         $segmentFilter = ['not relevant'];
 
         $this->contactSegmentFilterFactory->expects($this->once())
-            ->method('factorSegmentFilter')
+            ->method('factor')
             ->with($segmentFilter)
             ->willReturn($this->contactSegmentFilter);
 
@@ -101,7 +102,7 @@ class QueryFilterFactoryTest extends TestCase
         ];
 
         $this->contactSegmentFilterFactory->expects($this->once())
-            ->method('factorSegmentFilter')
+            ->method('factor')
             ->with($segmentFilter)
             ->willReturn($this->contactSegmentFilter);
 
@@ -145,7 +146,7 @@ class QueryFilterFactoryTest extends TestCase
         ];
 
         $this->contactSegmentFilterFactory->expects($this->once())
-            ->method('factorSegmentFilter')
+            ->method('factor')
             ->with($segmentFilter)
             ->willReturn($this->contactSegmentFilter);
 
@@ -185,6 +186,38 @@ class QueryFilterFactoryTest extends TestCase
         );
     }
 
+    /**
+     * With the merge filter ON core gives every Custom Object criterion the merged query type. A campaign condition (and a
+     * token / dynamic content) asks about one criterion, so a field value gets the single value query.
+     */
+    public function testMergedQueryTypeOfAFieldValueIsAnsweredByTheValueQuery(): void
+    {
+        $segmentFilter = ['glue' => 'and', 'field' => 'cmf_1', 'object' => 'custom_object', 'type' => 'date', 'filter' => 'today', 'display' => null, 'operator' => '='];
+
+        $this->contactSegmentFilterFactory->method('factor')->willReturn($this->contactSegmentFilter);
+        $this->contactSegmentFilter->method('getTable')->willReturn(MAUTIC_TABLE_PREFIX.'custom_objects');
+        $this->contactSegmentFilter->method('getQueryType')->willReturn(CustomObjectMergedFilterQueryBuilder::getServiceId());
+        $this->queryFilterHelper->expects($this->once())->method('createValueQuery')->with('filter_0', $this->contactSegmentFilter)->willReturn($this->unionQueryContainer);
+        $this->queryFilterHelper->expects($this->never())->method('createItemNameQueryBuilder');
+
+        $this->assertSame($this->unionQueryContainer, $this->factory->configureQueryBuilderFromSegmentFilter($segmentFilter, 'filter_0'));
+    }
+
+    public function testMergedQueryTypeOfAnItemNameIsAnsweredByTheItemNameQuery(): void
+    {
+        $segmentFilter = ['glue' => 'and', 'field' => 'cmo_1', 'object' => 'custom_object', 'type' => 'text', 'filter' => 'x', 'display' => null, 'operator' => '='];
+
+        $this->contactSegmentFilterFactory->method('factor')->willReturn($this->contactSegmentFilter);
+        $this->contactSegmentFilter->method('getTable')->willReturn(MAUTIC_TABLE_PREFIX.'custom_objects');
+        $this->contactSegmentFilter->method('getQueryType')->willReturn(CustomObjectMergedFilterQueryBuilder::getServiceId());
+        $this->contactSegmentFilter->method('getOperator')->willReturn('=');
+        $this->contactSegmentFilter->method('getParameterValue')->willReturn('x');
+        $this->queryFilterHelper->expects($this->once())->method('createItemNameQueryBuilder')->with('filter_0')->willReturn($this->segmentQueryBuilder);
+        $this->queryFilterHelper->expects($this->never())->method('createValueQuery');
+
+        $this->assertSame($this->segmentQueryBuilder, $this->factory->configureQueryBuilderFromSegmentFilter($segmentFilter, 'filter_0'));
+    }
+
     public function testConfigureQueryBuilderFromSegmentFilterForInvalidType(): void
     {
         $queryAlias    = 'filter_0';
@@ -199,7 +232,7 @@ class QueryFilterFactoryTest extends TestCase
         ];
 
         $this->contactSegmentFilterFactory->expects($this->once())
-            ->method('factorSegmentFilter')
+            ->method('factor')
             ->with($segmentFilter)
             ->willReturn($this->contactSegmentFilter);
 

@@ -43,7 +43,7 @@ class CustomItemTabSubscriberTest extends TestCase
     private $customItemRouteProvider;
 
     /**
-     * @var MockObject|CustomContentEvent
+     * @var CustomContentEvent
      */
     private $customContentEvent;
 
@@ -75,7 +75,6 @@ class CustomItemTabSubscriberTest extends TestCase
         $this->customItemRepository    = $this->createMock(CustomItemRepository::class);
         $this->translator              = $this->createMock(TranslatorInterface::class);
         $this->customItemRouteProvider = $this->createMock(CustomItemRouteProvider::class);
-        $this->customContentEvent      = $this->createMock(CustomContentEvent::class);
         $this->customObject            = $this->createMock(CustomObject::class);
         $this->customItem              = $this->createMock(CustomItem::class);
         $this->sessionProviderFactory  = $this->createMock(SessionProviderFactory::class);
@@ -105,32 +104,7 @@ class CustomItemTabSubscriberTest extends TestCase
             ->method('getNamePlural')
             ->willReturn('Object A');
 
-        $this->customContentEvent
-            ->method('checkContext')
-            ->willReturnCallback($this->consecutiveCalls([
-                ['@CustomObjects/CustomItem/detail.html.twig', 'tabs'],
-                ['@CustomObjects/CustomItem/detail.html.twig', 'tabs.content']
-            ], [true, false], true));
-
-        $this->customContentEvent->expects($this->once())
-            ->method('getVars')
-            ->willReturn(['item' => $this->customItem]);
-
-        $this->customContentEvent
-            ->method('addTemplate')
-            ->willReturnCallback($this->consecutiveCalls([
-                [
-                    '@CustomObjects/SubscribedEvents/Tab/link.html.twig',
-                    [
-                        'count' => 13,
-                        'title' => 'Object A',
-                        'tabId' => 'custom-object-555',
-                    ],
-                ],
-                [
-                    '@CustomObjects/SubscribedEvents/Tab/modal.html.twig',
-                ]
-            ], null, false, $this->customContentEvent, 'addTemplate'));
+        $this->customContentEvent = new CustomContentEvent('@CustomObjects/CustomItem/detail.html.twig', 'tabs', ['item' => $this->customItem]);
 
         $this->customObjectModel->expects($this->once())
             ->method('getMasterCustomObjects')
@@ -142,6 +116,17 @@ class CustomItemTabSubscriberTest extends TestCase
             ->willReturn(13);
 
         $this->tabSubscriber->injectTabs($this->customContentEvent);
+
+        $this->assertEquals([
+            [
+                'template' => '@CustomObjects/SubscribedEvents/Tab/link.html.twig',
+                'vars'     => ['count' => 13, 'title' => 'Object A', 'tabId' => 'custom-object-555'],
+            ],
+            [
+                'template' => '@CustomObjects/SubscribedEvents/Tab/modal.html.twig',
+                'vars'     => [],
+            ],
+        ], $this->customContentEvent->getTemplates());
     }
 
     /**
@@ -157,20 +142,7 @@ class CustomItemTabSubscriberTest extends TestCase
             ->method('getCustomObject')
             ->willReturn($this->customObject);
 
-        $this->customContentEvent
-            ->method('checkContext')
-            ->willReturnCallback($this->consecutiveCalls([
-                ['@CustomObjects/CustomItem/detail.html.twig', 'tabs'],
-                ['@CustomObjects/CustomItem/detail.html.twig', 'tabs.content']
-            ], [true, false], true));
-
-        $this->customContentEvent->expects($this->once())
-            ->method('getVars')
-            ->willReturn(['item' => $this->customItem]);
-
-        $this->customContentEvent->expects($this->once())
-            ->method('addTemplate')
-            ->with('@CustomObjects/SubscribedEvents/Tab/modal.html.twig');
+        $this->customContentEvent = new CustomContentEvent('@CustomObjects/CustomItem/detail.html.twig', 'tabs', ['item' => $this->customItem]);
 
         $this->customObjectModel->expects($this->once())
             ->method('getMasterCustomObjects')
@@ -180,6 +152,8 @@ class CustomItemTabSubscriberTest extends TestCase
             ->method('countItemsLinkedToAnotherItem');
 
         $this->tabSubscriber->injectTabs($this->customContentEvent);
+
+        $this->assertEquals([['template' => '@CustomObjects/SubscribedEvents/Tab/modal.html.twig', 'vars' => []]], $this->customContentEvent->getTemplates());
     }
 
     public function testForTabContentsContext(): void
@@ -192,16 +166,7 @@ class CustomItemTabSubscriberTest extends TestCase
             ->willReturn($otherCustomObject);
         $this->customObject->method('getId')->willReturn(555);
 
-        $this->customContentEvent
-            ->method('checkContext')
-            ->willReturnCallback($this->consecutiveCalls([
-                ['@CustomObjects/CustomItem/detail.html.twig', 'tabs'],
-                ['@CustomObjects/CustomItem/detail.html.twig', 'tabs.content']
-            ], [false, true], true));
-
-        $this->customContentEvent->expects($this->once())
-            ->method('getVars')
-            ->willReturn(['item' => $this->customItem]);
+        $this->customContentEvent = new CustomContentEvent('@CustomObjects/CustomItem/detail.html.twig', 'tabs.content', ['item' => $this->customItem]);
 
         $this->translator->expects($this->once())
             ->method('trans')
@@ -232,11 +197,13 @@ class CustomItemTabSubscriberTest extends TestCase
             ->with(555, 'customItem', 45)
             ->willReturn($sessionProvider);
 
-        $this->customContentEvent->expects($this->once())
-            ->method('addTemplate')
-            ->with(
-                '@CustomObjects/SubscribedEvents/Tab/content.html.twig',
-                [
+        $this->customObjectModel->expects($this->once())
+            ->method('fetchAllPublishedEntities')
+            ->willReturn([$this->customObject]);
+
+        $this->tabSubscriber->injectTabs($this->customContentEvent);
+
+        $this->assertEquals([['template' => '@CustomObjects/SubscribedEvents/Tab/content.html.twig', 'vars' => [
                     'customObjectId'    => 555,
                     'currentEntityId'   => 45,
                     'currentEntityType' => 'customItem',
@@ -248,13 +215,6 @@ class CustomItemTabSubscriberTest extends TestCase
                     'linkHeader'        => 'translated modal header',
                     'linkRoute'         => 'link/route',
                     'namespace'         => 'Some namespace',
-                ]
-            );
-
-        $this->customObjectModel->expects($this->once())
-            ->method('fetchAllPublishedEntities')
-            ->willReturn([$this->customObject]);
-
-        $this->tabSubscriber->injectTabs($this->customContentEvent);
+                ]]], $this->customContentEvent->getTemplates());
     }
 }

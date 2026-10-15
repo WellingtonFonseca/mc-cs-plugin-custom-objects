@@ -19,9 +19,9 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
 use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\MockObject\MockObject;
-use Symfony\Component\Form\ClickableInterface;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Component\Form\SubmitButton;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -102,7 +102,6 @@ class SaveControllerTest extends ControllerTestCase
 
         $this->saveController         = new SaveController(
             $this->managerRegistry,
-            $this->mauticFactory,
             $this->modelFactory,
             $this->userHelper,
             $this->coreParametersHelper,
@@ -208,7 +207,7 @@ class SaveControllerTest extends ControllerTestCase
             ->with($this->customItem)
             ->willReturn(false);
 
-        $clickable = $this->createMock(ClickableInterface::class);
+        $clickable = $this->createMock(SubmitButton::class);
         $this->form
             ->method('get')
             ->willReturnMap(
@@ -344,7 +343,7 @@ class SaveControllerTest extends ControllerTestCase
             ->method('isValid')
             ->willReturn(true);
 
-        $clickable = $this->createMock(ClickableInterface::class);
+        $clickable = $this->createMock(SubmitButton::class);
         $this->form
             ->method('get')
             ->willReturnMap(
@@ -632,7 +631,7 @@ class SaveControllerTest extends ControllerTestCase
             ->with($this->customItem)
             ->willReturn(false);
 
-        $clickable = $this->createMock(ClickableInterface::class);
+        $clickable = $this->createMock(SubmitButton::class);
 
         $clickable->expects($this->once())
             ->method('isClicked')

@@ -16,6 +16,7 @@ use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterHelper;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomFieldRepository;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\CustomItemNameFilterQueryBuilder;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -88,9 +89,7 @@ class CustomItemNameFilterQueryBuilderTest extends TestCase
         $this->assertSame('mautic.lead.query.builder.custom_item.value', CustomItemNameFilterQueryBuilder::getServiceId());
     }
 
-    /**
-     * @dataProvider parameterValueProvider
-     */
+    #[DataProvider('parameterValueProvider')]
     public function testApplyQuery($parameterValue): void
     {
         $this->contactSegmentFilter
@@ -118,7 +117,7 @@ class CustomItemNameFilterQueryBuilderTest extends TestCase
         $this->assertEquals($this->queryBuilder, $result);
     }
 
-    public function parameterValueProvider()
+    public static function parameterValueProvider()
     {
         return [
             ['mautic'],

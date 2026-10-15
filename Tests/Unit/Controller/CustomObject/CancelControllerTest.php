@@ -35,7 +35,6 @@ class CancelControllerTest extends ControllerTestCase
 
         $this->cancelController = new CancelController(
             $this->managerRegistry,
-            $this->mauticFactory,
             $this->modelFactory,
             $this->userHelper,
             $this->coreParametersHelper,
