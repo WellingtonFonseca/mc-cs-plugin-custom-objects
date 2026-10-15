@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\CustomItem;
+namespace MauticPlugin\CustomObjectsBundle\Tests\Functional\Controller\CustomItem;
 
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItemExportScheduler;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
