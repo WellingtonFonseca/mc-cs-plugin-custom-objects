@@ -385,13 +385,13 @@ class CustomItemModel extends FormModel
             return [];
         }
 
-        $fields   = $this->getFieldsByAlias($customObjectId);
+        $fields   = $this->getFieldsByAliasOrLabel($customObjectId);
         $filter   = new ItemFieldFilter();
         $probe    = new QueryBuilder($this->em);
         $warnings = [];
 
         foreach ($parsed->getTerms() as $index => $term) {
-            $field = $fields[strtolower($term->alias)] ?? null;
+            $field = $fields[mb_strtolower($term->alias)] ?? null;
 
             if (null === $field) {
                 $warnings[] = ['type' => 'unknown_alias', 'alias' => $term->alias];
@@ -479,11 +479,11 @@ class CustomItemModel extends FormModel
             return;
         }
 
-        $fields = $this->getFieldsByAlias($customObjectId);
+        $fields = $this->getFieldsByAliasOrLabel($customObjectId);
         $filter = new ItemFieldFilter();
 
         foreach ($parsed->getTerms() as $index => $term) {
-            $field = $fields[strtolower($term->alias)] ?? null;
+            $field = $fields[mb_strtolower($term->alias)] ?? null;
 
             if (null === $field) {
                 $queryBuilder->andWhere(CustomItem::TABLE_ALIAS.'.id IS NULL');
@@ -506,16 +506,30 @@ class CustomItemModel extends FormModel
     /**
      * @return array<string, CustomField> by lower-case alias
      */
-    private function getFieldsByAlias(int $customObjectId): array
+    /**
+     * The fields of the object by lower-case alias AND by lower-case label (what the screens show).
+     * An alias wins over a label; between equal labels the first field wins.
+     *
+     * @return array<string, CustomField>
+     */
+    private function getFieldsByAliasOrLabel(int $customObjectId): array
     {
-        $fields = [];
+        $fields = $this->em->getRepository(CustomField::class)->findBy(['customObject' => $customObjectId], ['order' => 'ASC', 'id' => 'ASC']);
+        $byKey  = [];
 
         /** @var CustomField $field */
-        foreach ($this->em->getRepository(CustomField::class)->findBy(['customObject' => $customObjectId]) as $field) {
-            $fields[strtolower((string) $field->getAlias())] = $field;
+        foreach ($fields as $field) {
+            $label = mb_strtolower(trim((string) $field->getLabel()));
+            if ('' !== $label && !isset($byKey[$label])) {
+                $byKey[$label] = $field;
+            }
         }
 
-        return $fields;
+        foreach ($fields as $field) {
+            $byKey[mb_strtolower((string) $field->getAlias())] = $field;
+        }
+
+        return $byKey;
     }
 
     private function applyFullTextSearch(QueryBuilder $queryBuilder, string $search): void
