@@ -54,6 +54,10 @@ The export folder is `custom_item_export_dir` (`MAUTIC_CUSTOM_ITEM_EXPORT_DIR`);
 
 The segment form offers `including` / `excluding` (`in` / `!in`) on the text fields of a Custom Object (text, email, phone, url, textarea) and on the item name, so several values fit in one criterion, joined with `|` (`A|B|C`), instead of one criterion per value joined by OR. The suggestions of the segment form's value chips (from MauticPatchesBundle) come from `GET /s/custom/segment-filter-values.json?field=cmf_<field id>|cmo_<object id>&q=&limit=` (distinct stored values, view access to the object required). Code: `EventListener/SegmentTextInOperatorSubscriber.php`, `Controller/SegmentFilterValuesController.php`, `Helper/SegmentFilterValues.php`.
 
+## Item list: search by label and view modal
+
+The search box of an object's item list takes `field:value` terms where the field is the alias or the label shown on the screens (`Curso:Matematica`, or `"Nome do Curso":Matematica` when the label has spaces; case does not matter). A click on an item's name opens a view-only modal with its field values and its linked contacts (up to 50), in the item list and in the Custom Objects tab of a contact; ctrl / cmd / shift click opens the full page, and editing stays in the three-dots menu. The modal follows the item page's permissions, and shows the contacts only to users who may view contacts.
+
 ## Requirements
 
 - Plugin supports PHP 7.1+.
