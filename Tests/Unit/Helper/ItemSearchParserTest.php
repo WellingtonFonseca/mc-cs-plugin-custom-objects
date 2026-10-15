@@ -115,4 +115,36 @@ class ItemSearchParserTest extends TestCase
         $this->assertSame('>a b', $terms[2]->value);
         $this->assertCount(3, $terms);
     }
+
+    public function testQuotedLabelWithSpacesIsAField(): void
+    {
+        $parsed = $this->parser->parse('"Nome do Curso":Matematica algebra');
+        $terms  = $parsed->getTerms();
+
+        $this->assertCount(1, $terms);
+        $this->assertSame('Nome do Curso', $terms[0]->alias);
+        $this->assertSame('Matematica', $terms[0]->value);
+        $this->assertSame('algebra', $parsed->getFreeText());
+    }
+
+    public function testQuotedLabelAsSavedByInputHelper(): void
+    {
+        $terms = $this->parser->parse('&#34;Situação do Aluno&#34;:&#34;em dia&#34;')->getTerms();
+
+        $this->assertSame('Situação do Aluno', $terms[0]->alias);
+        $this->assertSame('em dia', $terms[0]->value);
+    }
+
+    public function testUnquotedLabelWithAccents(): void
+    {
+        $terms = $this->parser->parse('Situação:ativo')->getTerms();
+
+        $this->assertSame('Situação', $terms[0]->alias);
+        $this->assertSame('ativo', $terms[0]->value);
+    }
+
+    public function testQuotedTextWithoutColonIsNotATerm(): void
+    {
+        $this->assertFalse($this->parser->parse('"duas palavras" outra')->hasTerms());
+    }
 }
