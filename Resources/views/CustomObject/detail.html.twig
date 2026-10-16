@@ -2,6 +2,26 @@
 
 {% block mauticContent %}customObject{% endblock %}
 
+{# core's pt_BR text of the back button names its placeholder %alvo%, not %target%: both are given. indexButton is the block
+   core renders above the page title #}
+{% block indexButton %}
+    {% include '@MauticCore/Helper/button.html.twig' with {
+        buttons: [
+            {
+                label: 'mautic.core.close_back'|trans({'%target%': 'custom.object.title'|trans, '%alvo%': 'custom.object.title'|trans}),
+                size: 'xs',
+                variant: 'tertiary',
+                icon: 'ri-arrow-left-line',
+                href: path('mautic_custom_object_list'),
+                attributes: {
+                    'data-toggle': 'ajax',
+                    'class': 'btn-back mb-lg'
+                }
+            }
+        ]
+    } %}
+{% endblock %}
+
 {% block headerTitle %}
     {{ customObject.getNameSingular() }}
 {% endblock %}
