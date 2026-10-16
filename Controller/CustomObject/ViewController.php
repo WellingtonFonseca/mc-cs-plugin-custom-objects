@@ -74,4 +74,30 @@ class ViewController extends CommonController
             ]
         );
     }
+
+    /**
+     * GET /s/custom/object/details/{objectId}: the body of the modal opened by a click on an object's name in the list:
+     * its fields (label, alias, type, required, unique, default value, options), nothing else. Same access rule as the
+     * object page.
+     */
+    public function detailsAction(
+        CustomObjectModel $customObjectModel,
+        CustomObjectPermissionProvider $permissionProvider,
+        int $objectId
+    ): Response {
+        try {
+            $customObject = $customObjectModel->fetchEntity($objectId);
+            $permissionProvider->canView($customObject);
+        } catch (NotFoundException $e) {
+            return $this->notFound($e->getMessage());
+        } catch (ForbiddenException $e) {
+            return $this->accessDenied(false, $e->getMessage());
+        }
+
+        return $this->delegateView([
+            'viewParameters'  => ['customObject' => $customObject],
+            'contentTemplate' => '@CustomObjects/CustomObject/details_modal.html.twig',
+            'passthroughVars' => ['route' => false],
+        ]);
+    }
 }

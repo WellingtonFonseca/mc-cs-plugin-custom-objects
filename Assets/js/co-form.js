@@ -5,6 +5,12 @@ Mautic.customObjectOnLoad = function() {
     CustomObjectsForm.onLoad();
 };
 
+// Confirm callback of the delete button of a field (called by core's Mautic.showConfirmation with the action and the button)
+Mautic.customObjectsDeleteField = function(action, button) {
+    Mautic.dismissConfirmation();
+    CustomObjectsForm.deleteField(button);
+};
+
 CustomObjectsForm = {
 
     /**
@@ -108,16 +114,26 @@ CustomObjectsForm = {
             .unbind('click')
             .click(function(e) {
                 e.preventDefault();
-                let panel = mQuery(this).closest('.panel');
-                panel.hide('fast');
-                if (panel.find('input[type="hidden"][id*=_id]').val() === '') {
-                    // New unsaved custom field.
-                    panel.remove();
-                    CustomObjectsForm.recalculateOrder();
-                } else {
-                    panel.find('[id*=deleted]').val(1);
-                }
+                // Asks first (core's confirmation modal, read from the button's data-message / data-confirm-text /
+                // data-cancel-text); the field goes away only when it is confirmed (Mautic.customObjectsDeleteField).
+                Mautic.showConfirmation(this);
             });
+    },
+
+    /**
+     * Hide the field's panel and mark it as deleted (or drop it when it was never saved).
+     * @param button the delete button of the panel
+     */
+    deleteField: function(button) {
+        let panel = mQuery(button).closest('.panel');
+        panel.hide('fast');
+        if (panel.find('input[type="hidden"][id*=_id]').val() === '') {
+            // New unsaved custom field.
+            panel.remove();
+            CustomObjectsForm.recalculateOrder();
+        } else {
+            panel.find('[id*=deleted]').val(1);
+        }
     },
 
     showModal: function(element) {

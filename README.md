@@ -58,6 +58,12 @@ The segment form offers `including` / `excluding` (`in` / `!in`) on the text fie
 
 The search box of an object's item list takes `field:value` terms where the field is the alias or the label shown on the screens (`Curso:Matematica`, or `"Nome do Curso":Matematica` when the label has spaces; case does not matter). A click on an item's name opens a view-only modal with its field values and its linked contacts (up to 50), in the item list and in the Custom Objects tab of a contact; ctrl / cmd / shift click opens the full page, and editing stays in the three-dots menu. The modal follows the item page's permissions, and shows the contacts only to users who may view contacts.
 
+## Screens (Custom Objects admin)
+
+- **Lists:** the three-dots menu of a row (objects and items) has "Detalhes" (the page), above Edit. A click on an object's name opens a modal with its fields (label, alias, type, required, unique identifier, default value, options); on an item's name, a modal with its values. Ctrl / cmd / shift click opens the page. Long texts without spaces break inside the cell.
+- **View pages:** a "Back to <list>" button above the title (objects list for an object, items list for an item).
+- **Object edit form:** the edit and delete buttons of a field use core's ghost style (md size, like the form builder of core); delete asks for confirmation first (the field is only removed when the object is saved). The plugin JS is bundled in core's `app.js`: run `mautic:assets:generate` after deploying a change to `Assets/js`.
+
 ## Requirements
 
 - Plugin supports PHP 7.1+.

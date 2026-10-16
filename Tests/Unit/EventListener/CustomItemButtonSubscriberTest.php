@@ -143,6 +143,15 @@ class CustomItemButtonSubscriberTest extends TestCase
             ->willReturn(self::ITEM_ID);
 
         $this->permissionProvider->expects($this->atLeastOnce())
+            ->method('canView')
+            ->with($this->customItem);
+
+        $this->routeProvider->expects($this->atLeastOnce())
+            ->method('buildViewRoute')
+            ->with(self::OBJECT_ID, self::ITEM_ID)
+            ->willReturn('generated/view/route');
+
+        $this->permissionProvider->expects($this->atLeastOnce())
             ->method('canDelete')
             ->with($this->customItem);
 
@@ -207,6 +216,13 @@ class CustomItemButtonSubscriberTest extends TestCase
             ], 'translated string'));
 
         $expected = [[
+                'attr' => [
+                    'href' => 'generated/view/route',
+                ],
+                'btnText'   => 'mautic.core.details',
+                'iconClass' => 'ri-information-line',
+                'priority'  => 600,
+            ], [
                 'attr' => [
                     'href'                  => 'generated/delete/route',
                     'data-toggle'           => 'confirmation',
@@ -287,6 +303,14 @@ class CustomItemButtonSubscriberTest extends TestCase
         $this->customItem->expects($this->any())
             ->method('getId')
             ->willReturn(self::ITEM_ID);
+
+        $this->permissionProvider->expects($this->atLeastOnce())
+            ->method('canView')
+            ->with($this->customItem)
+            ->will($this->throwException(new ForbiddenException('view')));
+
+        $this->routeProvider->expects($this->never())
+            ->method('buildViewRoute');
 
         $this->permissionProvider->expects($this->atLeastOnce())
             ->method('canDelete')

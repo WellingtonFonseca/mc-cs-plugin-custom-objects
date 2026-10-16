@@ -76,6 +76,14 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
             ->willReturn(555);
 
         $this->objectPermissionProvider->expects($this->exactly(2))
+            ->method('canView')
+            ->with($this->customObject);
+        $this->objectRouteProvider->expects($this->exactly(2))
+            ->method('buildViewRoute')
+            ->with(555)
+            ->willReturn('generated/view/route');
+
+        $this->objectPermissionProvider->expects($this->exactly(2))
             ->method('canDelete')
             ->with($this->customObject);
 
@@ -121,6 +129,13 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
             ], 'translated string'));
 
         $expected = [[
+                'attr' => [
+                    'href' => 'generated/view/route',
+                ],
+                'btnText'   => 'mautic.core.details',
+                'iconClass' => 'ri-information-line',
+                'priority'  => 600,
+            ], [
                 'attr' => [
                     'href'                  => 'generated/delete/route',
                     'data-toggle'           => 'confirmation',
@@ -169,6 +184,11 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
         $this->customObject->expects($this->any())
             ->method('getId')
             ->willReturn(555);
+
+        $this->objectPermissionProvider->expects($this->exactly(2))
+            ->method('canView')
+            ->with($this->customObject)
+            ->will($this->throwException(new ForbiddenException('view')));
 
         $this->objectPermissionProvider->expects($this->exactly(2))
             ->method('canDelete')

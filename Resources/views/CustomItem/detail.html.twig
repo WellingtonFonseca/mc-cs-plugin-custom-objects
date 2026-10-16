@@ -2,6 +2,26 @@
 
 {% block mauticContent %}customItem{% endblock %}
 
+{# core's pt_BR text of the back button names its placeholder %alvo%, not %target%: both are given. preHeader is the block (indexButton on Mautic 5)
+   core renders above the page title #}
+{% block preHeader %}
+    {% include '@MauticCore/Helper/button.html.twig' with {
+        buttons: [
+            {
+                label: 'mautic.core.close_back'|trans({'%target%': item.getCustomObject().getNamePlural(), '%alvo%': item.getCustomObject().getNamePlural()}),
+                size: 'xs',
+                variant: 'tertiary',
+                icon: 'ri-arrow-left-line',
+                href: path('mautic_custom_item_list', {'objectId': item.getCustomObject().getId()}),
+                attributes: {
+                    'data-toggle': 'ajax',
+                    'class': 'btn-back mb-lg'
+                }
+            }
+        ]
+    } %}
+{% endblock %}
+
 {% block headerTitle %}
     {{ item.getName() }}
 {% endblock %}

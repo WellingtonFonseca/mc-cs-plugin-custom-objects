@@ -1,0 +1,52 @@
+{#
+  Body of the modal opened by a click on an object's name in the list: the fields of the object, one per row (label,
+  alias, type, required, unique identifier, default value, options). The shared modal is narrow by default, so only a
+  modal holding this body is widened (:has); every other use of the shared modal keeps its size. Long texts break inside
+  their cell instead of pushing the table out of the modal.
+#}
+<style>
+    .modal-dialog:has(.custom-object-details-modal) {
+        width: 1100px;
+        max-width: 95vw;
+    }
+    .custom-object-details-modal td,
+    .custom-object-details-modal th {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+</style>
+<div class="custom-object-details-modal">
+    <div class="panel shd-none mb-0">
+        <table class="table table-bordered table-striped mb-0">
+            <thead>
+            <tr>
+                <th>{{ 'custom.field.label.label'|trans }}</th>
+                <th>{{ 'custom.field.alias.label'|trans }}</th>
+                <th>{{ 'custom.field.type.label'|trans }}</th>
+                <th>{{ 'custom.field.label.required'|trans }}</th>
+                <th>{{ 'custom.field.is_unique_identifier.label'|trans }}</th>
+                <th>{{ 'custom.field.label.default_value'|trans }}</th>
+                <th>{{ 'custom.object.details.options'|trans }}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for field in customObject.getCustomFields() %}
+                {% set default = field.getDefaultValue() %}
+                <tr>
+                    <td>{{ field.getLabel() }}</td>
+                    <td><code>{{ field.getAlias() }}</code></td>
+                    <td>{{ field.getTypeObject() ? field.getTypeObject().getName() : field.getType() }}</td>
+                    <td>{{ (field.isRequired() ? 'mautic.core.form.yes' : 'mautic.core.form.no')|trans }}</td>
+                    <td>{{ (field.getIsUniqueIdentifier() ? 'mautic.core.form.yes' : 'mautic.core.form.no')|trans }}</td>
+                    <td>{{ default is iterable ? default|join(', ') : (default is instanceof('DateTimeInterface') ? default|date('Y-m-d H:i') : default) }}</td>
+                    <td>
+                        {% if field.isChoiceType() %}
+                            {% for label, value in field.getChoices() %}{{ label }}{{ not loop.last ? ', ' : '' }}{% endfor %}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
