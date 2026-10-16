@@ -124,7 +124,7 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
                     'href' => 'generated/view/route',
                 ],
                 'btnText'   => 'mautic.core.details',
-                'iconClass' => 'ri-eye-line',
+                'iconClass' => 'ri-information-line',
                 'priority'  => 600,
             ]], [[
                 'attr' => [

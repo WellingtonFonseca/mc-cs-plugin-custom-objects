@@ -162,6 +162,14 @@ $coParams = [
                 'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\CustomObject\ViewController::viewAction',
                 'method'     => 'GET|POST',
             ],
+            CustomObjectRouteProvider::ROUTE_DETAILS => [
+                'path'         => '/custom/object/details/{objectId}',
+                'controller'   => 'MauticPlugin\CustomObjectsBundle\Controller\CustomObject\ViewController::detailsAction',
+                'method'       => 'GET',
+                'requirements' => [
+                    'objectId' => '\d+',
+                ],
+            ],
             CustomObjectRouteProvider::ROUTE_NEW => [
                 'path'       => '/custom/object/new',
                 'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\CustomObject\FormController::newAction',

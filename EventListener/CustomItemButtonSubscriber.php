@@ -157,7 +157,7 @@ class CustomItemButtonSubscriber implements EventSubscriberInterface
                 'href' => $this->routeProvider->buildViewRoute($customObjectId, $customItem->getId()),
             ],
             'btnText'   => 'mautic.core.details',
-            'iconClass' => 'ri-eye-line',
+            'iconClass' => 'ri-information-line',
             'priority'  => 600,
         ];
     }

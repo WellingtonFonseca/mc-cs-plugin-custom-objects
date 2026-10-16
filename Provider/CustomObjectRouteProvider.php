@@ -12,6 +12,8 @@ class CustomObjectRouteProvider
 
     public const ROUTE_VIEW   = 'mautic_custom_object_view';
 
+    public const ROUTE_DETAILS = 'mautic_custom_object_details';
+
     public const ROUTE_NEW    = 'mautic_custom_object_new';
 
     public const ROUTE_EDIT   = 'mautic_custom_object_edit';
