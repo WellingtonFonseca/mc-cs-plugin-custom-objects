@@ -145,13 +145,10 @@ class QueryFilterHelper
                 $segmentQueryBuilder->setParameter($valueParameter, $value, $valueType);
         }
 
-        switch ($operator) {
-            case 'notIn':
-                break;
-            default:
-                $segmentQueryBuilder->andWhere($expression);
-                break;
-        }
+        // 'notIn' is applied like the others: its expression is the POSITIVE IN condition when the caller wraps it in
+        // NOT EXISTS (single-filter builders), or the real negation when it is built for the merged query. Skipped, the
+        // criterion became "has any item" and "excluding" excluded nobody.
+        $segmentQueryBuilder->andWhere($expression);
     }
 
     /**
@@ -394,7 +391,8 @@ class QueryFilterHelper
             if ($isCmoFilter && !in_array($cinAliasItem, $joinedAlias, true)) {
                 $this->joinMergeCustomItem($qb, $customItemXrefContactAlias, $cinAliasItem, $segmentFilterFieldId);
                 $joinedAlias[] = $cinAliasItem;
-            } elseif (!in_array($aliasValue, $joinedAlias, true)) {
+            } elseif (!$isCmoFilter && !in_array($aliasValue, $joinedAlias, true)) {
+                // (an item name has no value table: a second criterion on it must not join one)
                 $this->joinMergeCustomField(
                     $qb,
                     $customItemXrefContactAlias,
@@ -587,6 +585,13 @@ class QueryFilterHelper
             return $qb->expr()->or(
                 $qb->expr()->isNull($column),
                 $qb->expr()->notLike($column, ":{$valueParameter}")
+            );
+        }
+        // "Excluding" (!in): the same negation as the not-equal criteria it replaces, on the item's own value.
+        if ('notIn' === $criterionOperator) {
+            return $qb->expr()->or(
+                $qb->expr()->isNull($column),
+                $qb->expr()->notIn($column, ":{$valueParameter}")
             );
         }
         if ($isCmoFilter && 'neq' === $criterionOperator) {

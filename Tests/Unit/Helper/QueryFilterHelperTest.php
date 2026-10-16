@@ -183,6 +183,58 @@ class QueryFilterHelperTest extends TestCase
     }
 
     /**
+     * "Excluding" (!in) on a text field: the merged query has no NOT EXISTS around it, so it must be the real negation
+     * on the item's own value, the same as the not-equal criteria it replaces (value <> A AND value <> B = value NOT IN
+     * (A, B)). Left as 'notIn' it was skipped, and the criterion became "has any item".
+     */
+    public function testMergedNotInOnATextFieldNegatesTheValue(): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'notIn', 'filter_value' => ['a', 'b'], 'field' => '14', 'type' => 'text', 'cmo_filter' => false],
+        ]);
+
+        $this->assertMatchesRegularExpression('/\(\(cix_14_text_value\.value IS NULL\) OR \(cix_14_text_value\.value NOT IN \(:par\d+\)\)\)/', $sql);
+    }
+
+    public function testMergedNotInOnAnItemNameNegatesTheName(): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'notIn', 'filter_value' => ['a', 'b'], 'field' => '1', 'type' => 'text', 'cmo_filter' => true],
+        ]);
+
+        $this->assertMatchesRegularExpression('/\(\(cin_1_item\.name IS NULL\) OR \(cin_1_item\.name NOT IN \(:par\d+\)\)\)/', $sql);
+    }
+
+    /**
+     * The single-filter item name builder wraps the positive IN condition in NOT EXISTS: the condition must be there
+     * (it was skipped for 'notIn', so "excluding" matched every contact that has an item).
+     */
+    public function testSingleFilterNotInOnAnItemNameAppliesTheInCondition(): void
+    {
+        $helper = $this->createQueryFilterHelper();
+        $qb     = $helper->createItemNameQueryBuilder('cin_1');
+        $helper->addCustomObjectNameExpression($qb, 'cin_1', 'notIn', 'a|b');
+
+        $this->assertMatchesRegularExpression('/cin_1_item\.name IN \(:par\d+\)/', $qb->getSQL());
+    }
+
+    /**
+     * Two criteria on the item name of one object (name <> A AND name <> B): the item is joined once and no value table
+     * is joined for the second one (the object id was read as a field id: an inner join on nothing, 0 contacts).
+     */
+    public function testMergedTwoCriteriaOnAnItemNameJoinNoValueTable(): void
+    {
+        $sql = $this->mergedSql([
+            ['operator' => 'neq', 'filter_value' => 'A', 'field' => '1', 'type' => 'text', 'cmo_filter' => true],
+            ['operator' => 'neq', 'filter_value' => 'B', 'field' => '1', 'type' => 'text', 'cmo_filter' => true],
+        ]);
+
+        $this->assertSame(1, substr_count($sql, 'custom_item cin_1_item'));
+        $this->assertStringNotContainsString('custom_field_value_', $sql);
+        $this->assertSame(2, substr_count($sql, 'cin_1_item.name <>'));
+    }
+
+    /**
      * Operators that already work in the merged query must stay as they are.
      */
     public function testMergedNotEqualOnAFieldKeepsItsExpression(): void

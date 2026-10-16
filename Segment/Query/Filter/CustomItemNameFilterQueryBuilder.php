@@ -59,7 +59,7 @@ class CustomItemNameFilterQueryBuilder extends BaseFilterQueryBuilder
         $filterQueryBuilder->andWhere($leadsTableAlias.'.id = '.$tableAlias.'_contact.contact_id');
 
         match ($filter->getOperator()) {
-            'empty', 'neq', 'notLike' => $queryBuilder->addLogic($queryBuilder->expr()->notExists($filterQueryBuilder->getSQL()), $filter->getGlue()),
+            'empty', 'neq', 'notLike', 'notIn' => $queryBuilder->addLogic($queryBuilder->expr()->notExists($filterQueryBuilder->getSQL()), $filter->getGlue()),
             default                   => $queryBuilder->addLogic($queryBuilder->expr()->exists($filterQueryBuilder->getSQL()), $filter->getGlue()),
         };
 
