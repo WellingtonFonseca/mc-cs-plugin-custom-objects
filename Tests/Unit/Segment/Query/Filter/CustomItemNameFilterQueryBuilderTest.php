@@ -117,6 +117,23 @@ class CustomItemNameFilterQueryBuilderTest extends TestCase
         $this->assertEquals($this->queryBuilder, $result);
     }
 
+    /**
+     * "Excluding" (!in) on an item name is a NOT EXISTS of the items whose name is in the list.
+     */
+    public function testNotInIsAnNotExistsOfTheItemsInTheList(): void
+    {
+        $this->contactSegmentFilter->method('getField')->willReturn('1');
+        $this->contactSegmentFilter->method('getOperator')->willReturn('notIn');
+        $this->contactSegmentFilter->method('getParameterValue')->willReturn(['a', 'b']);
+        $this->queryBuilder->method('getConnection')->willReturn($this->connection);
+        $this->queryBuilder->method('expr')->willReturn($this->expressionBuilder);
+
+        $this->expressionBuilder->expects($this->once())->method('notExists');
+        $this->expressionBuilder->expects($this->never())->method('exists');
+
+        $this->customItemNameFilterQueryBuilder->applyQuery($this->queryBuilder, $this->contactSegmentFilter);
+    }
+
     public static function parameterValueProvider()
     {
         return [
