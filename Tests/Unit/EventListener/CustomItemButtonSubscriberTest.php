@@ -153,6 +153,15 @@ class CustomItemButtonSubscriberTest extends TestCase
             ->willReturn($this->customItem);
 
         $this->permissionProvider->expects($this->once())
+            ->method('canView')
+            ->with($this->customItem);
+
+        $this->routeProvider->expects($this->once())
+            ->method('buildViewRoute')
+            ->with(self::OBJECT_ID, self::ITEM_ID)
+            ->willReturn('generated/view/route');
+
+        $this->permissionProvider->expects($this->once())
             ->method('canDelete')
             ->with($this->customItem);
 
@@ -216,9 +225,16 @@ class CustomItemButtonSubscriberTest extends TestCase
                 ['mautic.core.form.confirmbatchdelete']
             ], 'translated string'));
 
-        $this->event->expects($this->exactly(8))
+        $this->event->expects($this->exactly(9))
             ->method('addButton')
             ->willReturnCallback($this->consecutiveCalls([[[
+                'attr' => [
+                    'href' => 'generated/view/route',
+                ],
+                'btnText'   => 'mautic.core.details',
+                'iconClass' => 'ri-eye-line',
+                'priority'  => 600,
+            ]], [[
                 'attr' => [
                     'href'                  => 'generated/delete/route',
                     'data-toggle'           => 'confirmation',
@@ -307,6 +323,14 @@ class CustomItemButtonSubscriberTest extends TestCase
         $this->event->expects($this->once())
             ->method('getItem')
             ->willReturn($this->customItem);
+
+        $this->permissionProvider->expects($this->once())
+            ->method('canView')
+            ->with($this->customItem)
+            ->will($this->throwException(new ForbiddenException('view')));
+
+        $this->routeProvider->expects($this->never())
+            ->method('buildViewRoute');
 
         $this->permissionProvider->expects($this->once())
             ->method('canDelete')

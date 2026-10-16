@@ -67,6 +67,15 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
             ->willReturn($this->customObject);
 
         $this->objectPermissionProvider->expects($this->once())
+            ->method('canView')
+            ->with($this->customObject);
+
+        $this->objectRouteProvider->expects($this->once())
+            ->method('buildViewRoute')
+            ->with(555)
+            ->willReturn('generated/view/route');
+
+        $this->objectPermissionProvider->expects($this->once())
             ->method('canDelete')
             ->with($this->customObject);
 
@@ -108,9 +117,16 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
                 ['mautic.core.form.cancel']
             ], 'translated string'));
 
-        $this->event->expects($this->exactly(4))
+        $this->event->expects($this->exactly(5))
             ->method('addButton')
             ->willReturnCallback($this->consecutiveCalls([[[
+                'attr' => [
+                    'href' => 'generated/view/route',
+                ],
+                'btnText'   => 'mautic.core.details',
+                'iconClass' => 'ri-eye-line',
+                'priority'  => 600,
+            ]], [[
                 'attr' => [
                     'href'                  => 'generated/delete/route',
                     'data-toggle'           => 'confirmation',
@@ -162,6 +178,11 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
         $this->event->expects($this->once())
             ->method('getItem')
             ->willReturn($this->customObject);
+
+        $this->objectPermissionProvider->expects($this->once())
+            ->method('canView')
+            ->with($this->customObject)
+            ->will($this->throwException(new ForbiddenException('view')));
 
         $this->objectPermissionProvider->expects($this->once())
             ->method('canDelete')

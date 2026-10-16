@@ -76,6 +76,14 @@ class CustomObjectButtonSubscriber implements EventSubscriberInterface
     {
         $entity = $event->getItem();
         if ($entity && $entity instanceof CustomObject) {
+            // the page itself already is the details: only a row of the list gets the option
+            if (ButtonHelper::LOCATION_LIST_ACTIONS === $location) {
+                try {
+                    $event->addButton($this->defineDetailsButton($entity), $location, $event->getRoute());
+                } catch (ForbiddenException) {
+                }
+            }
+
             try {
                 $event->addButton($this->defineDeleteButton($entity), $location, $event->getRoute());
             } catch (ForbiddenException) {
@@ -91,6 +99,27 @@ class CustomObjectButtonSubscriber implements EventSubscriberInterface
             } catch (ForbiddenException) {
             }
         }
+    }
+
+    /**
+     * The "Detalhes" option of the row's three-dots menu: the page of the object, above Edit.
+     *
+     * @return mixed[]
+     *
+     * @throws ForbiddenException
+     */
+    private function defineDetailsButton(CustomObject $entity): array
+    {
+        $this->permissionProvider->canView($entity);
+
+        return [
+            'attr' => [
+                'href' => $this->routeProvider->buildViewRoute($entity->getId()),
+            ],
+            'btnText'   => 'mautic.core.details',
+            'iconClass' => 'ri-eye-line',
+            'priority'  => 600,
+        ];
     }
 
     /**
