@@ -46,7 +46,11 @@
                     size: 'md',
                     attributes: {
                         'type': 'button',
-                        'data-hide-panel': 'true'
+                        'data-hide-panel': 'true',
+                        'data-message': 'custom.field.delete.confirm'|trans({'%name%': customFieldEntity.getLabel()}),
+                        'data-confirm-text': 'mautic.core.form.delete'|trans,
+                        'data-confirm-callback': 'customObjectsDeleteField',
+                        'data-cancel-text': 'mautic.core.form.cancel'|trans
                     }
                 }
             ]
