@@ -10,22 +10,47 @@
 {% set routeForm = constant('MauticPlugin\\CustomObjectsBundle\\Provider\\CustomFieldRouteProvider::ROUTE_FORM') %}
 
 <div class="panel form-field-wrapper ui-sortable-handle" id="customField_{{ panelId }}" {{ displayStyle }}>
-    <div class="form-buttons btn-group" role="group" aria-label="Field options" style="width: 77px;">
-        <button type="button"
-                data-toggle="ajaxmodal"
-                data-target="#objectFieldModal"
-                href="{{ path(routeForm, {
-                    'fieldId': customFieldEntity.getId(),
-                    'objectId': customObject.getId(),
-                    'fieldType': customFieldEntity.getTypeObject().getKey()
-                }) }}"
-                class="btn btn-default btn-edit">
-            <i class="fa fa-pencil-square-o text-primary"></i>
-        </button>
-
-        <a type="button" data-hide-panel="true" class="btn btn-default">
-            <i class="fa fa-trash-o text-danger"></i>
-        </a>
+    {# Same buttons as the form builder of core (FormBundle Builder/_actions): ghost, small, icon only, ri icons. The script
+       (co-form.js) finds the edit one by `button.btn-edit` and the delete one by [data-hide-panel]. #}
+    <div class="form-buttons btn-group" role="group" aria-label="Field options">
+        {% include '@MauticCore/Helper/button.html.twig' with {
+            buttons: [
+                {
+                    variant: 'ghost',
+                    label: 'mautic.core.form.edit',
+                    icon_only: true,
+                    icon: 'ri-edit-line text-primary',
+                    size: 'sm',
+                    attributes: {
+                        'type': 'button',
+                        'data-toggle': 'ajaxmodal',
+                        'data-target': '#objectFieldModal',
+                        'href': path(routeForm, {
+                            'fieldId': customFieldEntity.getId(),
+                            'objectId': customObject.getId(),
+                            'fieldType': customFieldEntity.getTypeObject().getKey()
+                        }),
+                        'class': 'btn-edit'
+                    }
+                }
+            ]
+        } %}
+        {% include '@MauticCore/Helper/button.html.twig' with {
+            buttons: [
+                {
+                    variant: 'ghost',
+                    label: 'mautic.core.form.delete',
+                    danger: true,
+                    icon_only: true,
+                    icon: 'ri-delete-bin-line text-danger',
+                    size: 'sm',
+                    attributes: {
+                        'type': 'button',
+                        'data-hide-panel': 'true'
+                    }
+                }
+            ]
+        } %}
     </div>
 
     <div class="row ml-0 mr-0">
