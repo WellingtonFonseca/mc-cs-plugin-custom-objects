@@ -159,7 +159,7 @@ class CampaignSubscriber implements EventSubscriberInterface
 
         // Several criteria: ONE item must satisfy all of them (the same query as the merged segment filter).
         $additional = (array) ($config['additionalCriteria'] ?? []);
-        if ([] !== $additional || MergedItemCriteriaMatcher::ITEM_NAME === ($config['field'] ?? null)) {
+        if ([] !== $additional || MergedItemCriteriaMatcher::ITEM_NAME === ($config['field'] ?? null) || $this->isIncludingExcludingOnText($config)) {
             $criteria = array_merge(
                 [['field' => $config['field'], 'operator' => $config['operator'], 'value' => $config['value']]],
                 array_values($additional)
@@ -207,6 +207,26 @@ class CampaignSubscriber implements EventSubscriberInterface
             $event->setResult(true);
         } else {
             $event->setResult(false);
+        }
+    }
+
+    /**
+     * "Including" / "excluding" on a text field is answered by the merged query even for ONE criterion: the single query
+     * builds the positive condition and only the segment wraps it in NOT EXISTS, so "excluding" matched whoever had an item
+     * with any other value.
+     *
+     * @param mixed[] $config
+     */
+    private function isIncludingExcludingOnText(array $config): bool
+    {
+        if (!in_array($config['operator'] ?? null, ['in', '!in'], true) || !is_numeric($config['field'] ?? null)) {
+            return false;
+        }
+
+        try {
+            return !$this->customFieldModel->fetchEntity((int) $config['field'])->canHaveMultipleValues();
+        } catch (NotFoundException) {
+            return false;
         }
     }
 
