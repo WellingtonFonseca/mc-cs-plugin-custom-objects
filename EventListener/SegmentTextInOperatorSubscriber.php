@@ -15,7 +15,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  */
 class SegmentTextInOperatorSubscriber implements EventSubscriberInterface
 {
-    private const TEXT_TYPES = ['text', 'email', 'phone', 'url', 'textarea'];
+    public const TEXT_TYPES = ['text', 'email', 'phone', 'url', 'textarea'];
 
     /**
      * @return mixed[]
