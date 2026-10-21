@@ -84,7 +84,8 @@ class ViewController extends CommonController
     /**
      * GET /s/custom/object/{objectId}/item/details/{itemId}: the body of the modal opened by a click on an item's name
      * in a list: the field values and the contacts linked to the item, nothing else (no chart, no history). Same access
-     * rule as the item page; the contacts only show for who may view contacts.
+     * rule as the item page; the contacts only show for who may view contacts. The footer has Editar (only for who may
+     * edit the item), Detalhes (the item page) and Fechar.
      */
     public function detailsAction(
         CustomItemModel $customItemModel,
@@ -118,8 +119,16 @@ class ViewController extends CommonController
             );
         }
 
+        // Editar in the footer only for who may edit this item (same rule as the edit page)
+        try {
+            $permissionProvider->canEdit($customItem);
+            $canEdit = true;
+        } catch (ForbiddenException) {
+            $canEdit = false;
+        }
+
         return $this->delegateView([
-            'viewParameters'  => ['item' => $customItem, 'contacts' => $contacts, 'contactCount' => $contactCount],
+            'viewParameters'  => ['item' => $customItem, 'contacts' => $contacts, 'contactCount' => $contactCount, 'canEdit' => $canEdit],
             'contentTemplate' => '@CustomObjects/CustomItem/details_modal.html.twig',
             'passthroughVars' => ['route' => false],
         ]);
