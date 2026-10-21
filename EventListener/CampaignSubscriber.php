@@ -31,6 +31,7 @@ use MauticPlugin\CustomObjectsBundle\Repository\DbalQueryTrait;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\QueryFilterFactory;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\UnionQueryContainer;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\Translation\TranslatorBagInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class CampaignSubscriber implements EventSubscriberInterface
@@ -80,8 +81,12 @@ class CampaignSubscriber implements EventSubscriberInterface
                 continue;
             }
 
+            $linkLabel  = $this->translator->trans('custom.item.events.link.contact', ['%customObject%' => $customObject->getNameSingular()]);
+            $fieldLabel = $this->translator->trans('custom.item.events.field.value', ['%customObject%' => $customObject->getNameSingular()]);
+            $this->registerNodeLabels((int) $customObject->getId(), (string) $linkLabel, (string) $fieldLabel);
+
             $event->addAction("custom_item.{$customObject->getId()}.linkcontact", [
-                'label'           => $this->translator->trans('custom.item.events.link.contact', ['%customObject%' => $customObject->getNameSingular()]),
+                'label'           => $linkLabel,
                 'description'     => $this->translator->trans('custom.item.events.link.contact_descr', ['%customObject%' => $customObject->getNameSingular()]),
                 'eventName'       => CustomItemEvents::ON_CAMPAIGN_TRIGGER_ACTION,
                 'formType'        => CampaignActionLinkType::class,
@@ -89,7 +94,7 @@ class CampaignSubscriber implements EventSubscriberInterface
             ]);
 
             $event->addCondition("custom_item.{$customObject->getId()}.fieldvalue", [
-                'label'           => $this->translator->trans('custom.item.events.field.value', ['%customObject%' => $customObject->getNameSingular()]),
+                'label'           => $fieldLabel,
                 'description'     => $this->translator->trans('custom.item.events.field.value_descr', ['%customObject%' => $customObject->getNameSingular()]),
                 'eventName'       => CustomItemEvents::ON_CAMPAIGN_TRIGGER_CONDITION,
                 'formType'        => CampaignConditionFieldValueType::class,
@@ -208,6 +213,26 @@ class CampaignSubscriber implements EventSubscriberInterface
         } else {
             $event->setResult(false);
         }
+    }
+
+    /**
+     * The node of an event in the campaign builder says what the event is with the translation of `mautic.campaign.<type>` (core's
+     * Campaign/_events.html.twig and Event/_generic.html.twig); with no such translation it prints the key. The type of these events holds
+     * the id of the object (custom_item.<id>.fieldvalue), so no translation file can hold them: they are added to the catalogue of the
+     * language in use, for this request, when the events are built (the builder, the campaign page and the ajax answer of a saved node
+     * all ask for them first). A translator that does not keep a catalogue (a test double) is left alone.
+     */
+    private function registerNodeLabels(int $objectId, string $linkLabel, string $fieldLabel): void
+    {
+        if (!$this->translator instanceof TranslatorBagInterface) {
+            return;
+        }
+
+        $locale = method_exists($this->translator, 'getLocale') ? $this->translator->getLocale() : null;
+        $this->translator->getCatalogue($locale)->add([
+            "mautic.campaign.custom_item.{$objectId}.linkcontact" => $linkLabel,
+            "mautic.campaign.custom_item.{$objectId}.fieldvalue"  => $fieldLabel,
+        ]);
     }
 
     /**
