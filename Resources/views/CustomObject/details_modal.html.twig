@@ -1,6 +1,6 @@
 {#
   Body of the modal opened by a click on an object's name in the list: the fields of the object, one per row (label,
-  alias, type, required, unique identifier, default value, options). The shared modal is narrow by default, so only a
+  alias, type, required, unique identifier, default value, options), then the footer (Editar only with permission, Detalhes, Fechar: a .bottom-form-buttons block that core copies into the modal footer, with a single .btn-primary like the contact modal). The shared modal is narrow by default, so only a
   modal holding this body is widened (:has); every other use of the shared modal keeps its size. Long texts break inside
   their cell instead of pushing the table out of the modal.
 #}
@@ -48,5 +48,12 @@
             {% endfor %}
             </tbody>
         </table>
+    </div>
+    <div class="bottom-form-buttons">
+        {% if canEdit %}
+        <button type="button" id="custom-object-details-edit" class="btn btn-primary" onclick="mQuery('#MauticSharedModal').modal('hide'); Mautic.loadContent('{{ path('mautic_custom_object_edit', {'objectId': customObject.getId()})|e('js') }}');">{{ 'mautic.core.form.edit'|trans }}<i class="ri-edit-line"></i></button>
+        {% endif %}
+        <button type="button" id="custom-object-details-page" class="btn btn-secondary" onclick="mQuery('#MauticSharedModal').modal('hide'); Mautic.loadContent('{{ path('mautic_custom_object_view', {'objectId': customObject.getId()})|e('js') }}');">{{ 'mautic.core.details'|trans }}<i class="ri-file-list-line"></i></button>
+        <button type="button" id="custom-object-details-close" class="btn btn-tertiary btn-cancel" data-dismiss="modal">{{ 'mautic.core.close'|trans }}<i class="ri-close-line"></i></button>
     </div>
 </div>

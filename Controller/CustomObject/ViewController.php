@@ -78,7 +78,7 @@ class ViewController extends CommonController
     /**
      * GET /s/custom/object/details/{objectId}: the body of the modal opened by a click on an object's name in the list:
      * its fields (label, alias, type, required, unique, default value, options), nothing else. Same access rule as the
-     * object page.
+     * object page. The footer has Editar (only for who may edit the object), Detalhes (the object page) and Fechar.
      */
     public function detailsAction(
         CustomObjectModel $customObjectModel,
@@ -94,8 +94,16 @@ class ViewController extends CommonController
             return $this->accessDenied(false, $e->getMessage());
         }
 
+        // Editar in the footer only for who may edit this object (same rule as the edit page)
+        try {
+            $permissionProvider->canEdit($customObject);
+            $canEdit = true;
+        } catch (ForbiddenException) {
+            $canEdit = false;
+        }
+
         return $this->delegateView([
-            'viewParameters'  => ['customObject' => $customObject],
+            'viewParameters'  => ['customObject' => $customObject, 'canEdit' => $canEdit],
             'contentTemplate' => '@CustomObjects/CustomObject/details_modal.html.twig',
             'passthroughVars' => ['route' => false],
         ]);
