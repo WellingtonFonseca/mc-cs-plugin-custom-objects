@@ -44,7 +44,9 @@ Once some of your contacts buy a Mautic T-shirt or hoodie you can link them with
 
 ## Campaign condition on several criteria of the same item
 
-The campaign condition "<object> field value" takes more than one criterion: the first (field, operator, value) and any number added with "Adicionar critério". The field is a Custom Field or the name of the item, the values may be relative dates (`-35 days`, `+10 days`). When there is more than one criterion, **one item** has to satisfy all of them (the same query as the merged segment filter), for example "an item named X that started within the last 35 days and ends within 10 days". Two condition nodes in a row would not guarantee the same item. The texts follow the system language (en_US and pt_BR). Needs an action before the condition in the campaign.
+The campaign condition "<object> fields" (pt_BR "Campos de <objeto>") takes more than one criterion: the first (field, operator, value) and any number added with "Adicionar critério". The field is a Custom Field or the name of the item, the values may be relative dates (`-35 days`, `+10 days`). When there is more than one criterion, **one item** has to satisfy all of them (the same query as the merged segment filter), for example "an item named X that started within the last 35 days and ends within 10 days". Two condition nodes in a row would not guarantee the same item. The item name and the text fields (text, email, phone, url, textarea) also offer including / excluding (`in` / `!in`, several values joined with `|`) like the segment filter; the chips for them come from MauticPatchesBundle. The texts follow the system language (en_US and pt_BR). Needs an action before the condition in the campaign.
+
+The node of the condition and of the link action on the canvas is named by translations the plugin adds for each object (`mautic.campaign.custom_item.<id>.fieldvalue` and `.linkcontact`), because core prints the translation of `mautic.campaign.<event type>` and the type holds the id of the object. They are added to the catalogue in use when the events are built (`CampaignSubscriber::registerNodeLabels`).
 
 ## Export and import of items
 
