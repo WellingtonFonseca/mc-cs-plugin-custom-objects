@@ -139,6 +139,9 @@ CustomObjects = {
             Mautic.activateChosenSelect(valueField);
         }
         operatorSelect.trigger("chosen:updated");
+
+        // The value input was replaced: whoever decorates it (the chips of "including" / "excluding") asks for another pass.
+        mQuery(document).trigger('co:criterion-updated');
     },
 
     initCustomItemTypeaheadsOnCampaignEventForm() {

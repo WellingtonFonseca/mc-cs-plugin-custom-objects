@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Form\Type;
 
+use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
+use MauticPlugin\CustomObjectsBundle\EventListener\SegmentTextInOperatorSubscriber;
 use MauticPlugin\CustomObjectsBundle\Helper\MergedItemCriteriaMatcher;
 use MauticPlugin\CustomObjectsBundle\Model\CustomFieldModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
@@ -40,6 +42,40 @@ class CampaignConditionCriterionType extends AbstractType
     }
 
     /**
+     * @return array<string, string>
+     */
+    private function operatorsOf(CustomField $field): array
+    {
+        return $this->withIncludingExcluding($field->getTypeObject()->getOperatorOptions(), $field->getType());
+    }
+
+    /**
+     * "Including" / "excluding" (in / !in) after "not like" on the text fields and the item name, as the segment filter
+     * offers them (SegmentTextInOperatorSubscriber): the value A|B|C holds several values in ONE criterion.
+     *
+     * @param array<string, string> $operators
+     *
+     * @return array<string, string>
+     */
+    private function withIncludingExcluding(array $operators, string $type): array
+    {
+        if (!in_array($type, SegmentTextInOperatorSubscriber::TEXT_TYPES, true) || isset($operators['in'])) {
+            return $operators;
+        }
+
+        $result = [];
+        foreach ($operators as $operator => $label) {
+            $result[$operator] = $label;
+            if ('!like' === $operator) {
+                $result['in']  = $this->translator->trans('mautic.lead.list.form.operator.in');
+                $result['!in'] = $this->translator->trans('mautic.lead.list.form.operator.notin');
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * The field / operator / value controls, shared with the condition's own first criterion.
      *
      * @param int|string|null $selected the field already chosen (a Custom Field id or "name")
@@ -47,7 +83,7 @@ class CampaignConditionCriterionType extends AbstractType
     public function addCriterionFields(FormBuilderInterface $builder, CustomObject $customObject, $selected = null): void
     {
         $fields     = $this->customFieldModel->fetchCustomFieldsForObject($customObject);
-        $nameOps    = $this->fieldTypeProvider->getType('text')->getOperatorOptions();
+        $nameOps    = $this->withIncludingExcluding($this->fieldTypeProvider->getType('text')->getOperatorOptions(), 'text');
         $choices    = [$this->translator->trans('custom.item.criterion.name') => MergedItemCriteriaMatcher::ITEM_NAME];
         $optionAttr = [
             $this->translator->trans('custom.item.criterion.name') => [
@@ -60,7 +96,7 @@ class CampaignConditionCriterionType extends AbstractType
         foreach ($fields as $field) {
             $choices[$field->getLabel()]    = $field->getId();
             $optionAttr[$field->getLabel()] = [
-                'data-operators'  => json_encode($field->getTypeObject()->getOperatorOptions()),
+                'data-operators'  => json_encode($this->operatorsOf($field)),
                 'data-options'    => json_encode($field->getChoices()),
                 'data-field-type' => $field->getType(),
             ];
@@ -75,11 +111,11 @@ class CampaignConditionCriterionType extends AbstractType
         ]);
 
         if (null !== $selected && isset($fields[$selected])) {
-            $operators = $fields[$selected]->getTypeObject()->getOperatorOptions();
+            $operators = $this->operatorsOf($fields[$selected]);
         } elseif (MergedItemCriteriaMatcher::ITEM_NAME === $selected || [] === $fields) {
             $operators = $nameOps;
         } else {
-            $operators = array_values($fields)[0]->getTypeObject()->getOperatorOptions();
+            $operators = $this->operatorsOf(array_values($fields)[0]);
         }
 
         $builder->add('operator', ChoiceType::class, [
