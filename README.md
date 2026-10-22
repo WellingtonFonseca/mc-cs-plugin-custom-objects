@@ -48,6 +48,10 @@ The campaign condition "<object> fields" (pt_BR "Campos de <objeto>") takes more
 
 The node of the condition and of the link action on the canvas is named by translations the plugin adds for each object (`mautic.campaign.custom_item.<id>.fieldvalue` and `.linkcontact`), because core prints the translation of `mautic.campaign.<event type>` and the type holds the id of the object. They are added to the catalogue in use when the events are built (`CampaignSubscriber::registerNodeLabels`).
 
+## Which items a segment points at (SegmentItemResolver)
+
+A contact can have many items of the same object, and a segment only asks whether a matching item EXISTS. `Segment/SegmentItemResolver::resolveItemIds($contact, $segments, $customObject)` answers which items the segments' conditions on that object select: the AND conditions must hold for the SAME item, OR groups add their items together, several segments add together, operators the segment applies as NOT EXISTS keep every other item, and a merged filter (`custom_object_merge_filter`) is applied as written. It returns `null` when no segment the contact is in has a condition on the object (nothing says which items count), an empty list when there is a condition and no item satisfies it, otherwise the sorted item ids. `Segment/SegmentItemMatcher` is its SQL half (it reuses the plugin's own `QueryFilterHelper`, so operators, values and relative dates match the segment). Other plugins use it: the n8n dispatch variables and the campaign action "Wait" of the patches bundle. Tests: `Tests/Unit/Segment`.
+
 ## Export and import of items
 
 The export folder is `custom_item_export_dir` (`MAUTIC_CUSTOM_ITEM_EXPORT_DIR`); when it is not set the export is written to `media/files/temp` of the install. An import row is one transaction: a row with an invalid value is refused and leaves no item behind.
