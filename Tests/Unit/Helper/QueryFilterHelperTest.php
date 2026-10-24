@@ -219,6 +219,29 @@ class QueryFilterHelperTest extends TestCase
     }
 
     /**
+     * With the merge filter OFF the segment hands the list of an in / notIn over as an ARRAY: it must reach the query as
+     * that list (cast to a string it became the name "Array" and "excluding" excluded nobody).
+     *
+     * @dataProvider listOperators
+     */
+    public function testSingleFilterListOperatorsOnAnItemNameKeepTheListAsTheParameter(string $operator): void
+    {
+        $helper = $this->createQueryFilterHelper();
+        $qb     = $helper->createItemNameQueryBuilder('cin_1');
+        $helper->addCustomObjectNameExpression($qb, 'cin_1', $operator, ['a', 'b']);
+
+        $this->assertContains(['a', 'b'], array_values($qb->getParameters()));
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function listOperators(): array
+    {
+        return ['in' => ['in'], 'notIn' => ['notIn']];
+    }
+
+    /**
      * Two criteria on the item name of one object (name <> A AND name <> B): the item is joined once and no value table
      * is joined for the second one (the object id was read as a field id: an inner join on nothing, 0 contacts).
      */

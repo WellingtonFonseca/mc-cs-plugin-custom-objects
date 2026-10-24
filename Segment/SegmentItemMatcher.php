@@ -74,11 +74,12 @@ class SegmentItemMatcher
             $queryBuilder = $this->queryFilterHelper->createItemNameQueryBuilder($alias);
             $queryBuilder->andWhere($queryBuilder->expr()->eq("{$alias}_item.custom_object_id", ':simObjectId'))
                 ->setParameter('simObjectId', $customObjectId);
+            $value = $filter->getParameterValue();
             $this->queryFilterHelper->addCustomObjectNameExpression(
                 $queryBuilder,
                 $alias,
                 (string) $filter->getOperator(),
-                (string) $filter->getParameterValue()
+                is_array($value) ? $value : (string) $value
             );
             $queryBuilder->select("DISTINCT {$alias}_item.id");
         } elseif (CustomFieldFilterQueryBuilder::getServiceId() === $filter->getQueryType()) {
