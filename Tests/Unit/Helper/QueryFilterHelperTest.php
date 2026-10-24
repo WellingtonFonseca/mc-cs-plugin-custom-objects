@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Helper;
 
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManager;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
@@ -239,6 +240,42 @@ class QueryFilterHelperTest extends TestCase
     public static function listOperators(): array
     {
         return ['in' => ['in'], 'notIn' => ['notIn']];
+    }
+
+    /**
+     * The condition of the single item name builder for every operator, with the item joined to its contact: what the
+     * parameter carries and how it is typed.
+     *
+     * @dataProvider itemNameOperators
+     *
+     * @param list<mixed> $parameters
+     */
+    public function testSingleFilterOnAnItemNameBuildsTheConditionOfEachOperator(string $operator, mixed $value, string $where, array $parameters, bool $listType): void
+    {
+        $helper = $this->createQueryFilterHelper();
+        $qb     = $helper->createItemNameQueryBuilder('cin_1');
+        $helper->addCustomObjectNameExpression($qb, 'cin_1', $operator, $value);
+
+        $this->assertSame('SELECT * FROM custom_item_xref_contact cin_1_contact LEFT JOIN custom_item cin_1_item ON cin_1_item.id=cin_1_contact.custom_item_id WHERE '.$where, $qb->getSQL());
+        $this->assertSame($parameters, array_values($qb->getParameters()));
+        $this->assertSame($listType ? ['par0' => ArrayParameterType::STRING] : [], $qb->getParameterTypes());
+    }
+
+    /**
+     * @return array<string, array{string, mixed, string, list<mixed>, bool}>
+     */
+    public static function itemNameOperators(): array
+    {
+        return [
+            'empty'    => ['empty', null, "(cin_1_item.name IS NULL) OR (cin_1_item.name = '')", [], false],
+            'notEmpty' => ['notEmpty', null, "(cin_1_item.name IS NOT NULL) AND (cin_1_item.name <> '')", [], false],
+            'in'       => ['in', ['a', 'b'], 'cin_1_item.name IN (:par0)', [['a', 'b']], true],
+            'notIn'    => ['notIn', ['a', 'b'], 'cin_1_item.name IN (:par0)', [['a', 'b']], true],
+            'neq'      => ['neq', 'x', '(cin_1_item.name = :par0) OR (cin_1_item.name IS NULL)', ['x'], false],
+            'notLike'  => ['notLike', 'x', '(cin_1_item.name IS NULL) OR (cin_1_item.name LIKE :par0)', ['x'], false],
+            'eq'       => ['eq', 'x', 'cin_1_item.name = :par0', ['x'], false],
+            'like'     => ['like', 'x', 'cin_1_item.name LIKE :par0', ['x'], false],
+        ];
     }
 
     /**
@@ -587,6 +624,83 @@ class QueryFilterHelperTest extends TestCase
 
         $this->assertMatchesRegularExpression('/cfwq_15_value\.value IN \(:/', $sql);
         $this->assertStringContainsString('custom_field_value_option', $sql);
+    }
+
+    /**
+     * The condition of the single field builder for every operator, as the filter is asked for it and as the caller that
+     * wraps it in NOT EXISTS asks for it (already negated), with what the parameters carry.
+     *
+     * @dataProvider fieldOperators
+     *
+     * @param list<mixed> $parameters the parameters after the custom field id
+     */
+    public function testSingleFilterOnATextFieldBuildsTheConditionOfEachOperator(string $operator, mixed $value, bool $alreadyNegated, string $where, array $parameters, bool $listType): void
+    {
+        $filter = $this->createMock(ContactSegmentFilter::class);
+        $filter->method('getField')->willReturn(14);
+        $filter->method('getType')->willReturn('text');
+        $filter->method('getOperator')->willReturn($operator);
+        $filter->method('getParameterValue')->willReturn($value);
+        $filter->method('doesColumnSupportEmptyValue')->willReturn(true);
+
+        $union = $this->createQueryFilterHelper()->createValueQuery('cfwq_14', $filter, $alreadyNegated);
+        $union->rewind();
+        $qb = $union->current();
+
+        $this->assertStringEndsWith(' WHERE (cfwq_14_value.custom_field_id = :cfwq_14_custom_field_id) AND '.$where, $union->getSQL());
+        $this->assertSame([14, ...$parameters], array_values($qb->getParameters()));
+        $this->assertSame($listType ? ['par0' => ArrayParameterType::STRING] : [], $qb->getParameterTypes());
+    }
+
+    /**
+     * @return array<string, array{string, mixed, bool, string, list<mixed>, bool}>
+     */
+    public static function fieldOperators(): array
+    {
+        $v = 'cfwq_14_value.value';
+
+        return [
+            'empty'                 => ['empty', null, false, "(($v IS NULL) OR ($v = ''))", [], false],
+            'empty, negated'        => ['empty', null, true, "(($v IS NOT NULL) AND ($v <> ''))", [], false],
+            'notEmpty'              => ['notEmpty', null, false, "(($v IS NOT NULL) AND ($v <> ''))", [], false],
+            'notEmpty, negated'     => ['notEmpty', null, true, "(($v IS NOT NULL) AND ($v <> ''))", [], false],
+            'neq'                   => ['neq', 'x', false, "(($v <> :par0) OR ($v IS NULL))", ['x'], false],
+            'neq, negated'          => ['neq', 'x', true, "($v = :par0)", ['x'], false],
+            'notLike'               => ['notLike', 'x', false, "(($v IS NULL) OR ($v LIKE :par0))", ['x'], false],
+            'in'                    => ['in', ['a', 'b'], false, "($v IN (:par0))", [['a', 'b']], true],
+            'in, negated'           => ['in', ['a', 'b'], true, "($v IN (:par0))", [['a', 'b']], true],
+            'multiselect'           => ['multiselect', ['a'], false, "($v IN (:par0))", [['a']], true],
+            'between'               => ['between', [1, '2'], false, "($v BETWEEN 1 AND '2')", [[1, '2']], false],
+            'notBetween'            => ['notBetween', [1, '2'], false, "(NOT $v BETWEEN 1 AND '2')", [[1, '2']], false],
+            'notBetween, negated'   => ['notBetween', [1, '2'], true, "($v BETWEEN 1 AND '2')", [[1, '2']], false],
+        ];
+    }
+
+    public function testTheValueQueryIsNotNegatedUnlessTheCallerSaysSo(): void
+    {
+        $filter = $this->createMock(ContactSegmentFilter::class);
+        $filter->method('getField')->willReturn(14);
+        $filter->method('getType')->willReturn('text');
+        $filter->method('getOperator')->willReturn('neq');
+        $filter->method('getParameterValue')->willReturn('x');
+        $helper = $this->createQueryFilterHelper();
+
+        $this->assertStringContainsString('<> :par0) OR (cfwq_14_value.value IS NULL', $helper->createValueQuery('cfwq_14', $filter)->getSQL());
+
+        $union = $helper->createValueQuery('cfwq_14', $filter, true);
+        $helper->addCustomFieldValueExpressionFromSegmentFilter($union, 'cfwq_14', $filter);
+        $this->assertStringContainsString('<> :par', $union->getSQL(), 'the default of the public method is not negated either');
+    }
+
+    public function testBetweenTakesTheValuesInOrderWhateverTheirKeys(): void
+    {
+        $filter = $this->createMock(ContactSegmentFilter::class);
+        $filter->method('getField')->willReturn(14);
+        $filter->method('getType')->willReturn('text');
+        $filter->method('getOperator')->willReturn('between');
+        $filter->method('getParameterValue')->willReturn(['from' => 1, 'to' => 5]);
+
+        $this->assertStringContainsString('BETWEEN 1 AND 5', $this->createQueryFilterHelper()->createValueQuery('cfwq_14', $filter)->getSQL());
     }
 
     /**
