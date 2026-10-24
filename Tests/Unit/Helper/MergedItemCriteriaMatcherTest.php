@@ -92,6 +92,8 @@ class MergedItemCriteriaMatcherTest extends TestCase
         $this->assertSame(['cmo_3', 'cmf_33', 'cmf_34'], array_column($filter, 'field'));
         $this->assertSame([3, 33, 34], array_column($merged, 'field'), 'the item name is filtered by the id of its Custom Object');
         $this->assertSame([true, false, false], array_column($merged, 'cmo_filter'));
+        $this->assertSame(['text', 'date', 'date'], array_column($merged, 'type'));
+        $this->assertSame(['and', 'and', 'and'], array_column($filter, 'glue'));
         $this->assertSame(['eq', 'gte', 'lte'], array_column($merged, 'operator'));
         $this->assertSame(['Disciplina X', '-35 days', '+10 days'], array_column($merged, 'filter_value'));
     }
@@ -112,5 +114,43 @@ class MergedItemCriteriaMatcherTest extends TestCase
         $this->helper->method('createMergedItemIdsQuery')->willReturn($query);
 
         $this->assertNull($this->matcher->findItemId([['field' => MergedItemCriteriaMatcher::ITEM_NAME, 'operator' => 'eq', 'value' => 'x']], 7, 3));
+    }
+
+    public function testAValueOfAFieldWithSeveralValuesIsHandedOverAsAList(): void
+    {
+        $this->fieldModel->method('fetchEntity')->willReturnCallback(function (int $id): CustomField {
+            $field = $this->createMock(CustomField::class);
+            $field->method('getId')->willReturn($id);
+            $field->method('getType')->willReturn(33 === $id ? 'multiselect' : 'text');
+            $field->method('canHaveMultipleValues')->willReturn(33 === $id);
+
+            return $field;
+        });
+        $crate  = $this->createMock(ContactSegmentFilterCrate::class);
+        $filter = [];
+        $this->factory->method('factorSegmentFilter')->willReturnCallback(function (array $array) use ($crate, &$filter): ContactSegmentFilter {
+            $filter[] = $array;
+            $mock     = $this->createMock(ContactSegmentFilter::class);
+            $mock->contactSegmentFilterCrate = $crate;
+
+            return $mock;
+        });
+        $result = $this->createMock(Result::class);
+        $result->method('fetchOne')->willReturn(false);
+        $query = $this->createMock(SegmentQueryBuilder::class);
+        $query->method('executeQuery')->willReturn($result);
+        $this->helper->method('createMergedItemIdsQuery')->willReturn($query);
+
+        $this->matcher->findItemId([
+            ['field' => '33', 'operator' => 'in', 'value' => 'a'],
+            ['field' => '33', 'operator' => 'in', 'value' => ['b', 'c']],
+            ['field' => '34', 'operator' => 'eq', 'value' => 'd'],
+            ['field' => MergedItemCriteriaMatcher::ITEM_NAME, 'operator' => 'eq', 'value' => 'e'],
+        ], 7, 3);
+
+        $this->assertSame([['a'], ['b', 'c'], 'd', 'e'], array_column($filter, 'filter'));
+        $this->assertSame(['multiselect', 'multiselect', 'text', 'text'], array_column($filter, 'type'));
+        $this->assertSame(['custom_object', 'custom_object', 'custom_object', 'custom_object'], array_column($filter, 'object'));
+        $this->assertSame(['and', 'and', 'and', 'and'], array_column($filter, 'glue'));
     }
 }

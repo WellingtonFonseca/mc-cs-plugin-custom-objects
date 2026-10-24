@@ -201,6 +201,49 @@ class SegmentItemResolverTest extends TestCase
         $this->assertNull($resolver->resolveItemIds($this->contact, $segments, $this->customObject));
     }
 
+    public function testASegmentTheContactIsNotInDoesNotStopTheNextOne(): void
+    {
+        $other = $this->fieldFilter(2);
+        $first = new LeadList();
+        $first->setName('not in');
+        $second = new LeadList();
+        $second->setName('in');
+        $this->segmentFilterFactory->method('getSegmentFilters')->willReturnCallback(function (LeadList $list) use ($first, $other) {
+            $filters = new ContactSegmentFilters();
+            $filters->addContactSegmentFilter($other);
+
+            return $list === $first ? new ContactSegmentFilters() : $filters;
+        });
+        $this->itemMatcher = $this->createMock(SegmentItemMatcher::class);
+        $this->itemMatcher->method('isContactInSegment')->willReturnCallback(static fn (LeadList $list): bool => $list !== $first);
+        $this->itemMatcher->method('findPositiveItemIds')->willReturn([3]);
+        $resolver = new SegmentItemResolver($this->segmentFilterFactory, $this->itemMatcher);
+
+        $this->assertSame([3], $resolver->resolveItemIds($this->contact, [$first, $second], $this->customObject));
+    }
+
+    public function testTheItemsAreUniqueAndInOrderWhateverTheOrderOfTheGroups(): void
+    {
+        $first    = $this->fieldFilter(2);
+        $second   = $this->fieldFilter(2, 'eq', 'or');
+        $segments = $this->segmentWith([$first, $second]);
+
+        $this->positiveMatches([[$first, [9, 2, 5]], [$second, [5, 1]]]);
+
+        $this->assertSame([1, 2, 5, 9], $this->resolver->resolveItemIds($this->contact, $segments, $this->customObject));
+    }
+
+    public function testTheOrGlueIsReadInAnyCase(): void
+    {
+        $first    = $this->fieldFilter(2);
+        $second   = $this->fieldFilter(2, 'eq', 'OR');
+        $segments = $this->segmentWith([$first, $second]);
+
+        $this->positiveMatches([[$first, [1]], [$second, [2]]]);
+
+        $this->assertSame([1, 2], $this->resolver->resolveItemIds($this->contact, $segments, $this->customObject), 'two groups added, not one group intersected');
+    }
+
     public function testConditionsJoinedByAndMustAllMatchTheSameItem(): void
     {
         // posicao = 10 AND nome = 'xxxx': item 2 is the only one in both.

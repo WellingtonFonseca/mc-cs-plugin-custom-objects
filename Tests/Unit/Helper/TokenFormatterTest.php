@@ -144,4 +144,10 @@ class TokenFormatterTest extends TestCase
         $expected = '<ol><li>value1</li><li>value2</li><li>value3</li></ol>';
         $this->assertEquals($expected, $this->formatter->format($this->manyValues, TokenFormatter::ORDERED_LIST_FORMAT));
     }
+
+    public function testTheValuesAreSortedWithoutRepeatsOrBlanks(): void
+    {
+        $this->assertSame('a, b, c', $this->formatter->format(['c', 'a', 'b', 'a', '', '  '], TokenFormatter::DEFAULT_FORMAT));
+        $this->assertSame('<ul><li>a</li><li>b</li></ul>', $this->formatter->format(['b', ' ', 'a', 'b'], TokenFormatter::BULLET_LIST_FORMAT));
+    }
 }

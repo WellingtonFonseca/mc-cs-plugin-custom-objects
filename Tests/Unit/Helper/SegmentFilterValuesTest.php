@@ -125,4 +125,51 @@ class SegmentFilterValuesTest extends TestCase
         $this->expectException(NotFoundException::class);
         $this->values->find('email', '');
     }
+
+    public function testTheLimitIsAtLeastOneAndTheValuesAreStrings(): void
+    {
+        $this->em->method('find')->willReturn($this->field());
+        $this->connection->expects($this->exactly(2))->method('fetchFirstColumn')
+            ->willReturnCallback(function (string $sql): array {
+                $this->assertStringEndsWith('LIMIT 1', $sql);
+
+                return [5, 'a'];
+            });
+
+        $this->assertSame(['5', 'a'], $this->values->find('cmf_14', '', 0));
+        $this->assertSame(['5', 'a'], $this->values->find('cmf_14', '', -4));
+    }
+
+    public function testTheItemNamesOfAnObjectAreReadByObjectIdAsStrings(): void
+    {
+        $this->permissions->expects($this->once())->method('canViewAtAll')->with(7);
+        $this->connection->expects($this->once())->method('fetchFirstColumn')
+            ->with($this->stringContains('FROM custom_item WHERE custom_object_id = :object'), ['object' => 7, 'search' => '%ab%'])
+            ->willReturn([10, 'b']);
+
+        $this->assertSame(['10', 'b'], $this->values->find('cmo_7', 'ab'));
+    }
+
+    /**
+     * @dataProvider notAFilterField
+     */
+    public function testAFieldNameWithTextAroundItIsRefused(string $field): void
+    {
+        $this->em->method('find')->willReturn($this->field());
+        $this->connection->expects($this->never())->method('fetchFirstColumn');
+
+        $this->expectException(NotFoundException::class);
+        $this->values->find($field, '');
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function notAFilterField(): array
+    {
+        return [
+            'before cmo' => ['xcmo_7'], 'after cmo' => ['cmo_7x'],
+            'before cmf' => ['xcmf_14'], 'after cmf' => ['cmf_14x'],
+        ];
+    }
 }
