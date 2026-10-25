@@ -389,6 +389,103 @@ class CustomItemModelTest extends TestCase
         $this->customItemModel->getTableData($tableConfig);
     }
 
+    /**
+     * A user who may view only his own items sees only the items he created: the restriction has to be a real condition on the
+     * creator, in the ORM list and in the DBAL one (it used to be andWhere(alias.createdBy, <id>), which the ORM refuses and the
+     * list answered 500).
+     */
+    public function testAUserWithoutViewOtherOnlySeesTheItemsHeCreatedInTheOrmList(): void
+    {
+        $realQueryBuilder = new QueryBuilder($this->entityManager);
+        $entityManager    = $this->createMock(EntityManager::class);
+        $entityManager->method('createQueryBuilder')->willReturn($realQueryBuilder);
+        $model = $this->modelWith($entityManager);
+
+        $this->customItemPermissionProvider->method('isGranted')->willThrowException(new ForbiddenException('viewother'));
+        $this->user->method('getId')->willReturn(22);
+        $this->query->method('getResult')->willReturn([]);
+        $tableConfig = new TableConfig(10, 1, 'column');
+        $tableConfig->addParameter('customObjectId', 44);
+
+        $this->queryBuilder = $realQueryBuilder;
+        $realQueryBuilder->setMaxResults(10);
+
+        $dql = $this->listDql($model, $tableConfig, $realQueryBuilder);
+
+        $this->assertStringContainsString('CustomItem.createdBy = :ownerId', $dql);
+        $this->assertSame(22, $realQueryBuilder->getParameter('ownerId')->getValue());
+    }
+
+    public function testAUserWithViewOtherSeesTheItemsOfEveryoneInTheOrmList(): void
+    {
+        $realQueryBuilder = new QueryBuilder($this->entityManager);
+        $entityManager    = $this->createMock(EntityManager::class);
+        $entityManager->method('createQueryBuilder')->willReturn($realQueryBuilder);
+        $model = $this->modelWith($entityManager);
+        $this->user->method('getId')->willReturn(22);
+        $tableConfig = new TableConfig(10, 1, 'column');
+        $tableConfig->addParameter('customObjectId', 44);
+
+        $dql = $this->listDql($model, $tableConfig, $realQueryBuilder);
+
+        $this->assertStringNotContainsString('createdBy', $dql);
+        $this->assertNull($realQueryBuilder->getParameter('ownerId'));
+    }
+
+    public function testAUserWithoutViewOtherOnlySeesTheItemsHeCreatedInTheDbalList(): void
+    {
+        $connection = $this->createMock(Connection::class);
+        $dbal       = new DbalQueryBuilder($connection);
+        $connection->method('createQueryBuilder')->willReturn($dbal);
+        $entityManager = $this->createMock(EntityManager::class);
+        $entityManager->method('getConnection')->willReturn($connection);
+        $model = $this->modelWith($entityManager);
+        $this->customItemPermissionProvider->method('isGranted')->willThrowException(new ForbiddenException('viewother'));
+        $this->user->method('getId')->willReturn(22);
+        $tableConfig = new TableConfig(10, 1, 'column');
+        $tableConfig->addParameter('customObjectId', 44);
+
+        try {
+            $model->getArrayTableData($tableConfig);
+        } catch (\Throwable) {
+            // the connection is a double: only the built query matters
+        }
+
+        $this->assertStringContainsString('CustomItem.created_by = :ownerId', (string) $dbal->getQueryPart('where'));
+        $this->assertSame(22, $dbal->getParameters()['ownerId']);
+    }
+
+    private function listDql(CustomItemModel $model, TableConfig $tableConfig, QueryBuilder $queryBuilder): string
+    {
+        $this->query->method('getResult')->willReturn([]);
+        $queryBuilder->setMaxResults(10);
+        try {
+            $model->getTableData($tableConfig);
+        } catch (\Throwable) {
+            // the query is a double: only the built DQL matters
+        }
+
+        return $queryBuilder->getDQL();
+    }
+
+    private function modelWith(EntityManager $entityManager): CustomItemModel
+    {
+        return new CustomItemModel(
+            $entityManager,
+            $this->security,
+            $this->dispatcher,
+            $this->router,
+            $this->translator,
+            $this->userHelper,
+            $this->logger,
+            $this->coreParametersHelper,
+            $this->customItemRepository,
+            $this->customItemPermissionProvider,
+            $this->customFieldValueModel,
+            $this->validator
+        );
+    }
+
     public function testGetArrayTableDataWithoutCustomObjectId(): void
     {
         $tableConfig = new TableConfig(10, 1, 'column');
@@ -487,11 +584,14 @@ class CustomItemModelTest extends TestCase
 
         $this->queryBuilder->expects($this->once())
             ->method('andWhere')
-            ->with(CustomItem::TABLE_ALIAS.'.createdBy', 22);
+            ->with(CustomItem::TABLE_ALIAS.'.createdBy = :ownerId');
 
-        $this->queryBuilder->expects($this->once())
+        $this->queryBuilder->expects($this->exactly(2))
             ->method('setParameter')
-            ->with('customObjectId', 44);
+            ->willReturnCallback($this->consecutiveCalls([
+                ['customObjectId', 44],
+                ['ownerId', 22],
+            ], null, false, $this->queryBuilder, 'setParameter'));
 
         $this->queryBuilder->expects($this->once())
             ->method('getQuery')
@@ -533,14 +633,17 @@ class CustomItemModelTest extends TestCase
             ->method('andWhere')
             ->willReturnCallback($this->consecutiveCalls([
                 ['MATCH (ValueText.value) AGAINST (:search BOOLEAN) > 0'],
-                ['MATCH (ValueOption.value) AGAINST (:search BOOLEAN) > 0']
+                ['MATCH (ValueOption.value) AGAINST (:search BOOLEAN) > 0'],
+                [$this->isInstanceOf(\Doctrine\ORM\Query\Expr\Orx::class)],
+                [CustomItem::TABLE_ALIAS.'.createdBy = :ownerId'],
             ], null, false, $this->queryBuilder, 'andWhere'));
 
-        $this->queryBuilder->expects($this->exactly(2))
+        $this->queryBuilder->expects($this->exactly(3))
             ->method('setParameter')
             ->willReturnCallback($this->consecutiveCalls([
                 ['customObjectId', 44],
-                ['search', '(+Item* +A*) >"Item A"']
+                ['search', '(+Item* +A*) >"Item A"'],
+                ['ownerId', 22],
             ], null, false, $this->queryBuilder, 'setParameter'));
 
         $this->queryBuilder->expects($this->once())
