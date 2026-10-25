@@ -22,9 +22,11 @@ use MauticPlugin\CustomObjectsBundle\CustomItemEvents;
 use MauticPlugin\CustomObjectsBundle\DTO\TableConfig;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueInterface;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueText;
+use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefInterface;
 use MauticPlugin\CustomObjectsBundle\Event\CustomItemEvent;
+use MauticPlugin\CustomObjectsBundle\Event\CustomItemListQueryEvent;
 use MauticPlugin\CustomObjectsBundle\Event\CustomItemXrefEntityDiscoveryEvent;
 use MauticPlugin\CustomObjectsBundle\Event\CustomItemXrefEntityEvent;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
@@ -168,7 +170,9 @@ class CustomItemModelTest extends TestCase
         $this->customItem->expects($this->once())->method('updateUniqueHash');
         $this->customItem->expects($this->once())->method('getCustomFieldValues')->willReturn(new ArrayCollection());
         $this->customItem->expects($this->never())->method('recordCustomFieldValueChanges');
-        $this->dispatcher->method('dispatch')
+        $this->entityManager->expects($this->once())->method('detach')->with($this->customItem);
+        $this->entityManager->expects($this->never())->method('persist');
+        $this->dispatcher->expects($this->once())->method('dispatch')
             ->willReturnCallback($this->consecutiveCalls([
                 [$this->isInstanceOf(CustomItemEvent::class), CustomItemEvents::ON_CUSTOM_ITEM_PRE_SAVE],
                 [$this->isInstanceOf(CustomItemEvent::class), CustomItemEvents::ON_CUSTOM_ITEM_POST_SAVE]
@@ -192,7 +196,10 @@ class CustomItemModelTest extends TestCase
         $this->customItem->expects($this->once())->method('getCustomFieldValues')->willReturn(new ArrayCollection([$customFieldValue]));
         $this->customItem->expects($this->once())->method('recordCustomFieldValueChanges');
         $this->customFieldValueModel->expects($this->once())->method('save')->with($customFieldValue);
-        $this->dispatcher->method('dispatch')
+        $this->entityManager->expects($this->once())->method('persist')->with($this->customItem);
+        $this->entityManager->expects($this->once())->method('flush');
+        $this->entityManager->expects($this->never())->method('detach');
+        $this->dispatcher->expects($this->exactly(2))->method('dispatch')
             ->willReturnCallback($this->consecutiveCalls([
                 [$this->isInstanceOf(CustomItemEvent::class), CustomItemEvents::ON_CUSTOM_ITEM_PRE_SAVE],
                 [$this->isInstanceOf(CustomItemEvent::class), CustomItemEvents::ON_CUSTOM_ITEM_POST_SAVE]
@@ -205,7 +212,7 @@ class CustomItemModelTest extends TestCase
     public function testDelete(): void
     {
         $this->customItem->expects($this->once())->method('getId')->willReturn(34);
-        $this->dispatcher->method('dispatch')
+        $this->dispatcher->expects($this->exactly(2))->method('dispatch')
             ->willReturnCallback($this->consecutiveCalls([
                 [$this->isInstanceOf(CustomItemEvent::class), CustomItemEvents::ON_CUSTOM_ITEM_PRE_DELETE],
                 [$this->isInstanceOf(CustomItemEvent::class), CustomItemEvents::ON_CUSTOM_ITEM_POST_DELETE]
@@ -214,6 +221,8 @@ class CustomItemModelTest extends TestCase
         $this->entityManager->expects($this->once())->method('flush');
 
         $this->customItemModel->delete($this->customItem);
+
+        $this->assertIsInt($this->customItem->deletedId, 'the id is kept for the listeners of the POST event');
     }
 
     public function testLinkEntityIfXrefNotFound(): void
@@ -451,7 +460,12 @@ class CustomItemModelTest extends TestCase
             // the connection is a double: only the built query matters
         }
 
-        $this->assertStringContainsString('CustomItem.created_by = :ownerId', (string) $dbal->getQueryPart('where'));
+        $where = (string) $dbal->getQueryPart('where');
+        $this->assertStringContainsString('CustomItem.custom_object_id = :customObjectId', $where);
+        $this->assertStringContainsString('CustomItem.created_by = :ownerId', $where);
+        $this->assertSame(['CustomItem.*'], $dbal->getQueryPart('select'));
+        $this->assertSame([['table' => 'custom_item', 'alias' => 'CustomItem']], $dbal->getQueryPart('from'));
+        $this->assertSame(44, $dbal->getParameters()['customObjectId']);
         $this->assertSame(22, $dbal->getParameters()['ownerId']);
     }
 
@@ -658,6 +672,126 @@ class CustomItemModelTest extends TestCase
             [['id' => 123, 'value' => 'Test Item (123)']],
             $this->customItemModel->getLookupData($tableConfig)
         );
+    }
+
+    public function testTheCountAndTheLookupAskTheirOwnEvents(): void
+    {
+        $this->entityManager->method('getExpressionBuilder')->willReturn(new Expr());
+        $query = $this->createMock(AbstractQuery::class);
+        $query->method('getSingleScalarResult')->willReturn(3);
+        $query->method('getArrayResult')->willReturn([['id' => 5, 'value' => 'A'], ['id' => 6, 'value' => 'B']]);
+        $realQueryBuilder = $this->getMockBuilder(QueryBuilder::class)->setConstructorArgs([$this->entityManager])->onlyMethods(['getQuery'])->getMock();
+        $realQueryBuilder->method('getQuery')->willReturn($query);
+        $entityManager = $this->createMock(EntityManager::class);
+        $entityManager->method('createQueryBuilder')->willReturn($realQueryBuilder);
+        $model = $this->modelWith($entityManager);
+        $tableConfig = new TableConfig(10, 1, 'column');
+        $tableConfig->addParameter('customObjectId', 44);
+
+        $events = [];
+        $this->dispatcher->method('dispatch')->willReturnCallback(static function ($event, string $name) use (&$events) {
+            $events[] = [get_class($event), $name];
+
+            return $event;
+        });
+
+        $this->assertSame(3, $model->getCountForTable($tableConfig));
+        $this->assertSame(
+            [['id' => 5, 'value' => 'A (5)'], ['id' => 6, 'value' => 'B (6)']],
+            $model->getLookupData($tableConfig),
+            'every row of the lookup is returned, not only the first'
+        );
+        $this->assertSame([
+            [CustomItemListQueryEvent::class, CustomItemEvents::ON_CUSTOM_ITEM_LIST_ORM_QUERY],
+            [CustomItemListQueryEvent::class, CustomItemEvents::ON_CUSTOM_ITEM_LOOKUP_QUERY],
+        ], $events);
+    }
+
+    public function testFieldValuesAlreadyThereAreNotCreatedAgain(): void
+    {
+        $item = $this->createMock(CustomItem::class);
+        $item->method('getCustomFieldValues')->willReturn(new ArrayCollection([$this->createMock(CustomFieldValueText::class)]));
+        $this->customFieldValueModel->expects($this->never())->method('createValuesForItem');
+        $item->expects($this->never())->method('createFieldValuesSnapshot');
+
+        $this->assertSame($item, $this->customItemModel->populateCustomFields($item));
+    }
+
+    private function field(int $id, string $alias, string $label, string $type = 'text'): CustomField
+    {
+        $field = $this->createMock(CustomField::class);
+        $field->method('getId')->willReturn($id);
+        $field->method('getAlias')->willReturn($alias);
+        $field->method('getLabel')->willReturn($label);
+        $field->method('getType')->willReturn($type);
+
+        return $field;
+    }
+
+    /**
+     * @param CustomField[] $fields
+     */
+    private function modelWithFields(array $fields): CustomItemModel
+    {
+        $repository = $this->createMock(\Doctrine\ORM\EntityRepository::class);
+        $repository->method('findBy')->with(['customObject' => 44], ['order' => 'ASC', 'id' => 'ASC'])->willReturn($fields);
+        $entityManager = $this->createMock(EntityManager::class);
+        $entityManager->method('getRepository')->with(CustomField::class)->willReturn($repository);
+
+        return $this->modelWith($entityManager);
+    }
+
+    public function testASearchWithoutTermsHasNoWarnings(): void
+    {
+        $this->assertSame([], $this->modelWithFields([])->getSearchWarnings(44, 'just words'));
+    }
+
+    public function testAFieldIsFoundByAliasOrByLabelInAnyCaseAndAnAliasWinsOverALabel(): void
+    {
+        $model = $this->modelWithFields([
+            $this->field(1, 'nome', ' Título '),
+            $this->field(2, 'inicio', 'nome'),
+        ]);
+
+        $this->assertSame([], $model->getSearchWarnings(44, 'TÍTULO:abc'), 'by label, trimmed, with accents');
+        $this->assertSame([], $model->getSearchWarnings(44, 'NOME:abc'), 'by alias');
+        $this->assertSame([['type' => 'unknown_alias', 'alias' => 'zzz']], $model->getSearchWarnings(44, 'zzz:abc nome:x'));
+    }
+
+    public function testAnInvalidValueIsWarnedAboutPerTerm(): void
+    {
+        $model = $this->modelWithFields([$this->field(1, 'nome', 'Nome'), $this->field(3, 'posicao', 'Posição', 'int')]);
+
+        $this->assertSame(
+            [['type' => 'invalid_value', 'alias' => 'posicao']],
+            $model->getSearchWarnings(44, 'nome:abc posicao:abc')
+        );
+    }
+
+    public function testATermOfTheSearchNarrowsTheListToTheItemsOfThatField(): void
+    {
+        $realQueryBuilder = new QueryBuilder($this->entityManager);
+        $repository       = $this->createMock(\Doctrine\ORM\EntityRepository::class);
+        $repository->method('findBy')->willReturn([$this->field(1, 'nome', 'Nome'), $this->field(3, 'posicao', 'Posição', 'int')]);
+        $entityManager = $this->createMock(EntityManager::class);
+        $entityManager->method('createQueryBuilder')->willReturn($realQueryBuilder);
+        $entityManager->method('getRepository')->willReturn($repository);
+        $model = $this->modelWith($entityManager);
+        $this->query->method('getResult')->willReturn([]);
+
+        $tableConfig = new TableConfig(10, 1, 'column');
+        $tableConfig->addParameter('customObjectId', 44);
+        $tableConfig->addParameter('search', 'nome:abc zzz:1 posicao:xyz');
+
+        try {
+            $model->getTableData($tableConfig);
+        } catch (\Throwable) {
+            // the query is a double
+        }
+        $dql = $realQueryBuilder->getDQL();
+
+        $this->assertSame(1, substr_count($dql, 'EXISTS (SELECT 1 FROM'), 'only the valid term of the known field becomes a condition');
+        $this->assertSame(2, substr_count($dql, 'CustomItem.id IS NULL'), 'an unknown alias and an invalid value match nothing');
     }
 
     public function testPopulateCustomFields(): void
