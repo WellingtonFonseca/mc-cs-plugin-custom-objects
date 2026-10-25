@@ -731,6 +731,73 @@ class TokenSubscriberTest extends TestCase
         );
     }
 
+    public function testTheEmailBuilderGetsOneTokenForTheNameAndOneForEachField(): void
+    {
+        $this->configProvider->method('pluginIsEnabled')->willReturn(true);
+        $this->builderEvent->method('tokensRequested')->willReturn(true);
+        $customObject = $this->createMock(CustomObject::class);
+        $field1       = $this->createMock(CustomField::class);
+        $field2       = $this->createMock(CustomField::class);
+        $field1->method('getAlias')->willReturn('sku');
+        $field1->method('getLabel')->willReturn('SKU');
+        $field2->method('getAlias')->willReturn('price');
+        $field2->method('getLabel')->willReturn('Price');
+        $customObject->method('getAlias')->willReturn('product');
+        $customObject->method('getName')->willReturn('Product');
+        $customObject->method('getCustomFields')->willReturn([$field1, $field2]);
+        $this->customObjectModel->method('fetchAllPublishedEntities')->willReturn([$customObject]);
+        $this->tokenParser->method('buildTokenWithDefaultOptions')->willReturnCallback(static fn (string $o, string $f): string => "{{$o}:{$f}}");
+        $this->tokenParser->method('buildTokenLabel')->willReturnCallback(static fn (string $o, string $f): string => "{$o} - {$f}");
+        $added = [];
+        $this->builderEvent->method('addToken')->willReturnCallback(function (string $token, string $label) use (&$added): void {
+            $added[$token] = $label;
+        });
+
+        $this->subscriber->onBuilderBuild($this->builderEvent);
+
+        $this->assertSame(
+            ['{product:name}' => 'Product - Name', '{product:sku}' => 'Product - SKU', '{product:price}' => 'Product - Price'],
+            $added
+        );
+    }
+
+    /**
+     * @dataProvider incompleteListQuery
+     *
+     * @param array<string, mixed> $parameters
+     */
+    public function testTheListQueryIsLeftAloneUnlessItIsForAContactWithAnEmailAndAToken(array $parameters): void
+    {
+        $this->constructWithDependencies();
+        $tableConfig = new TableConfig(10, 1, 'CustomItem.dateAdded', 'DESC');
+        foreach ($parameters as $name => $value) {
+            $tableConfig->addParameter($name, $value);
+        }
+        $this->customItemListDbalQueryEvent->method('getTableConfig')->willReturn($tableConfig);
+        $this->customItemListDbalQueryEvent->expects($this->never())->method('getQueryBuilder');
+
+        $this->subscriber->onListQuery($this->customItemListDbalQueryEvent);
+    }
+
+    /**
+     * @return array<string, array{array<string, mixed>}>
+     */
+    public static function incompleteListQuery(): array
+    {
+        $email = new Email();
+        $token = new Token('{custom-object=product:sku}');
+        $full  = ['filterEntityType' => 'contact', 'filterEntityId' => 5, 'email' => $email, 'token' => $token];
+
+        return [
+            'not a contact'     => [['filterEntityType' => 'company'] + $full],
+            'no contact id'     => [['filterEntityId' => 0] + $full],
+            'no email'          => [['email' => null] + $full],
+            'email of a kind'   => [['email' => new \stdClass()] + $full],
+            'no token'          => [['token' => null] + $full],
+            'token of a kind'   => [['token' => new \stdClass()] + $full],
+        ];
+    }
+
     public function testOnListQueryIfNotContactQuery(): void
     {
         $this->constructWithDependencies();

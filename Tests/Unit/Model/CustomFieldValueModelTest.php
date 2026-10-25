@@ -268,6 +268,125 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
         $this->assertSame(1, $item->getCustomFieldValues()->count());
     }
 
+    private function itemOf(CustomObject $object, int $id, bool $isNew = false): CustomItem
+    {
+        $item = $this->getMockBuilder(CustomItem::class)->onlyMethods(['getCustomObject', 'getId', 'isNew'])->disableOriginalConstructor()->getMock();
+        $item->method('getCustomObject')->willReturn($object);
+        $item->method('getId')->willReturn($id);
+        $item->method('isNew')->willReturn($isNew);
+
+        return $item;
+    }
+
+    private function textField(int $id): CustomField
+    {
+        $field = $this->createMock(CustomField::class);
+        $field->method('getId')->willReturn($id);
+        $field->method('getTypeObject')->willReturn(new TextType($this->translator, $this->filterOperatorProvider));
+
+        return $field;
+    }
+
+    public function testTheRowsAreGivenToTheirItemsWhateverTheTypeOfTheIdsTheDriverReturnsAndAnUnknownFieldIsIgnored(): void
+    {
+        $object = $this->createMock(CustomObject::class);
+        $object->method('getPublishedFields')->willReturn(new ArrayCollection([44 => $this->textField(44)]));
+        $first  = $this->itemOf($object, 31);
+        $second = $this->itemOf($object, 32);
+
+        $connection = $this->createMock(Connection::class);
+        $connection->method('createQueryBuilder')->willReturnCallback(fn () => new \Doctrine\DBAL\Query\QueryBuilder($connection));
+        $connection->method('fetchAllAssociative')->willReturn([
+            ['custom_item_id' => '31', 'custom_field_id' => '44', 'value' => 'one'],
+            ['custom_item_id' => '31', 'custom_field_id' => '99', 'value' => 'a field that is not published'],
+        ]);
+        $this->entityManager->method('getConnection')->willReturn($connection);
+
+        $this->customFieldValueModel->createValuesForItems([$first, $second]);
+
+        $this->assertSame('one', $first->getCustomFieldValues()->get(44)->getValue());
+        $this->assertNull($first->getCustomFieldValues()->get(99));
+        $this->assertSame('', $second->getCustomFieldValues()->get(44)->getValue(), 'an item without rows keeps its empty value');
+    }
+
+    public function testOnlyTheSavedItemsAreQueriedAndEachObjectIsReadOnItsOwn(): void
+    {
+        $objectA = $this->createMock(CustomObject::class);
+        $objectA->method('getPublishedFields')->willReturn(new ArrayCollection([44 => $this->textField(44)]));
+        $objectB = $this->createMock(CustomObject::class);
+        $objectB->method('getPublishedFields')->willReturn(new ArrayCollection([55 => $this->textField(55)]));
+        $items = [$this->itemOf($objectA, 1), $this->itemOf($objectA, 2, true), $this->itemOf($objectB, 3)];
+
+        $connection = $this->createMock(Connection::class);
+        $connection->method('createQueryBuilder')->willReturnCallback(fn () => new \Doctrine\DBAL\Query\QueryBuilder($connection));
+        $asked = [];
+        $connection->expects($this->exactly(2))->method('fetchAllAssociative')
+            ->willReturnCallback(function (string $sql, array $params, array $types) use (&$asked): array {
+                $asked[] = [$params, $types];
+
+                return [];
+            });
+        $this->entityManager->method('getConnection')->willReturn($connection);
+
+        $this->customFieldValueModel->createValuesForItems($items);
+
+        $this->assertSame([1], $asked[0][0]['itemIds'], 'the new item is not asked about');
+        $this->assertSame([44], $asked[0][0]['custom_field_value_text']);
+        $this->assertSame([3], $asked[1][0]['itemIds']);
+        $this->assertSame([55], $asked[1][0]['custom_field_value_text']);
+        $this->assertSame(Connection::PARAM_INT_ARRAY, $asked[0][1]['itemIds']);
+        $this->assertSame(Connection::PARAM_INT_ARRAY, $asked[0][1]['custom_field_value_text']);
+    }
+
+    public function testNothingIsQueriedForAnObjectWithoutPublishedFields(): void
+    {
+        $object = $this->createMock(CustomObject::class);
+        $object->method('getPublishedFields')->willReturn(new ArrayCollection());
+        $this->entityManager->expects($this->never())->method('getConnection');
+
+        $this->customFieldValueModel->createValuesForItems([$this->itemOf($object, 1)]);
+    }
+
+    public function testASavedValueOfAnExistingItemIsMergedAndFlushed(): void
+    {
+        $value = $this->createMock(CustomFieldValueInterface::class);
+        $value->method('getCustomField')->willReturn($this->customField);
+        $value->method('getCustomItem')->willReturn($this->customItem);
+        $this->customItem->method('getId')->willReturn(99);
+        $merged = $this->createMock(CustomFieldValueInterface::class);
+        $this->entityManager->method('merge')->with($value)->willReturn($merged);
+        $this->entityManager->expects($this->once())->method('flush')->with($merged);
+        $this->violationList->method('count')->willReturn(0);
+        $this->validator->method('validate')->willReturn($this->violationList);
+
+        $this->customFieldValueModel->save($value);
+    }
+
+    public function testEachOptionIsTrimmedAndSavedAsItsOwnValue(): void
+    {
+        $item  = $this->createMock(CustomItem::class);
+        $item->method('getId')->willReturn(99);
+        $field = $this->createMock(CustomField::class);
+        $field->method('getId')->willReturn(44);
+        $field->method('canHaveMultipleValues')->willReturn(true);
+        $value = new \MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueOption($field, $item, ' red , green ');
+        $query = $this->createMock(AbstractQuery::class);
+        $query->method('execute')->willReturn(0);
+        $this->entityManager->method('createQuery')->willReturn($query);
+        $this->violationList->method('count')->willReturn(0);
+        $this->validator->method('validate')->willReturn($this->violationList);
+        $saved = [];
+        $this->entityManager->method('persist')->willReturnCallback(function ($option) use (&$saved): void {
+            $saved[] = $option;
+        });
+
+        $this->customFieldValueModel->save($value);
+
+        $this->assertSame(['red', 'green'], array_map(static fn ($o) => $o->getValue(), $saved));
+        $this->assertNotSame($saved[0], $saved[1], 'each option is a separate value');
+        $this->assertNotSame($value, $saved[0]);
+    }
+
     public function testSaveForNewCustomItem(): void
     {
         $customFieldValue = $this->createMock(CustomFieldValueInterface::class);
