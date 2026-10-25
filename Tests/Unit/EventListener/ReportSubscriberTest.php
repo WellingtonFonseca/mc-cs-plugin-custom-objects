@@ -221,6 +221,91 @@ class ReportSubscriberTest extends TestCase
         $this->reportSubscriber->onReportBuilder($this->reportBuilderEvent);
     }
 
+    public function testTheTablesAreOnePerObjectSortedWithTheChildAfterItsParent(): void
+    {
+        $this->customObjectRepository->method('findAll')->willReturn(array_reverse($this->getCustomObjectsCollection()));
+        $this->reportBuilderEvent->method('checkContext')->willReturn(true);
+        $this->fieldsBuilder->method('getLeadFieldsColumns')->willReturn([]);
+        $this->companyReportData->method('getCompanyData')->willReturn([]);
+        $this->translatorInterface->method('trans')->willReturnArgument(0);
+
+        $tables = [];
+        $this->reportBuilderEvent->method('addTable')->willReturnCallback(function (string $context, array $table, string $group) use (&$tables) {
+            $tables[] = [$context, $table['display_name'], $group, array_keys($table['columns'])];
+
+            return $this->reportBuilderEvent; // addTable() returns the event on Mautic 7
+        });
+
+        $this->reportSubscriber->onReportBuilder($this->reportBuilderEvent);
+
+        $this->assertSame(
+            [
+                [ReportSubscriber::CUSTOM_OBJECTS_CONTEXT_GROUP.'.1', 'Custom Objects #1'],
+                [ReportSubscriber::CUSTOM_OBJECTS_CONTEXT_GROUP.'.2', 'Custom Objects #2'],
+                [ReportSubscriber::CUSTOM_OBJECTS_CONTEXT_GROUP.'.3', 'Opportunities'],
+                [ReportSubscriber::CUSTOM_OBJECTS_CONTEXT_GROUP.'.4', ReportSubscriber::CHILD_CUSTOM_OBJECT_NAME_PREFIX.'Details'],
+            ],
+            array_map(static fn (array $t): array => [$t[0], $t[1]], $tables)
+        );
+        $this->assertSame([ReportSubscriber::CUSTOM_OBJECTS_CONTEXT_GROUP, ReportSubscriber::CUSTOM_OBJECTS_CONTEXT_GROUP, ReportSubscriber::CUSTOM_OBJECTS_CONTEXT_GROUP, ReportSubscriber::CUSTOM_OBJECTS_CONTEXT_GROUP], array_column($tables, 2));
+    }
+
+    public function testTheColumnsAreTheItemsTheContactsTheCompaniesAndTheParentOnes(): void
+    {
+        $this->customObjectRepository->method('findAll')->willReturn($this->getCustomObjectsCollection());
+        $this->reportBuilderEvent->method('checkContext')->willReturn(true);
+        $this->fieldsBuilder->expects($this->once())->method('getLeadFieldsColumns')->with(ReportSubscriber::LEADS_TABLE_ALIAS.'.')
+            ->willReturn(['l.email' => ['label' => 'Email']]);
+        $this->companyReportData->method('getCompanyData')->willReturn([
+            'comp.companyname'           => ['label' => 'Company name'],
+            'companies_lead.is_primary' => ['label' => 'Primary'],
+        ]);
+        $this->translatorInterface->method('trans')->willReturnArgument(0);
+
+        $tables = [];
+        $this->reportBuilderEvent->method('addTable')->willReturnCallback(function (string $context, array $table) use (&$tables) {
+            $tables[$context] = $table['columns'];
+
+            return $this->reportBuilderEvent;
+        });
+
+        $this->reportSubscriber->onReportBuilder($this->reportBuilderEvent);
+
+        $child = $tables[ReportSubscriber::CUSTOM_OBJECTS_CONTEXT_GROUP.'.4'];
+        $keys  = array_keys($child);
+        $this->assertContains(ReportSubscriber::CUSTOM_ITEM_TABLE_ALIAS.'.name', $keys, 'its own item columns');
+        $this->assertContains(ReportSubscriber::PARENT_CUSTOM_ITEM_TABLE_ALIAS.'.name', $keys, 'the parent object item columns');
+        $this->assertContains('l.email', $keys, 'the contact columns');
+        $this->assertContains('comp.companyname', $keys, 'the company columns');
+        $this->assertNotContains('companies_lead.is_primary', $keys, 'the primary flag is not offered');
+        $this->assertSame('mautic.lead.contact Email', $child['l.email']['label']);
+        $this->assertSame('Company name', $child['comp.companyname']['label'], 'company columns keep their label');
+        $this->assertStringStartsWith('Detail ', $child[ReportSubscriber::CUSTOM_ITEM_TABLE_ALIAS.'.name']['label']);
+        $this->assertStringStartsWith('Opportunitie ', $child[ReportSubscriber::PARENT_CUSTOM_ITEM_TABLE_ALIAS.'.name']['label']);
+
+        $master = $tables[ReportSubscriber::CUSTOM_OBJECTS_CONTEXT_GROUP.'.1'];
+        $this->assertNotContains(ReportSubscriber::PARENT_CUSTOM_ITEM_TABLE_ALIAS.'.name', array_keys($master), 'an object without a parent has no parent columns');
+    }
+
+    public function testALabelThatAlreadyStartsWithThePrefixIsNotPrefixedTwice(): void
+    {
+        $this->customObjectRepository->method('findAll')->willReturn([$this->getCustomObjectsCollection()[0]]);
+        $this->reportBuilderEvent->method('checkContext')->willReturn(true);
+        $this->fieldsBuilder->method('getLeadFieldsColumns')->willReturn(['l.email' => ['label' => 'mautic.lead.contact Email']]);
+        $this->companyReportData->method('getCompanyData')->willReturn([]);
+        $this->translatorInterface->method('trans')->willReturnArgument(0);
+        $columns = [];
+        $this->reportBuilderEvent->method('addTable')->willReturnCallback(function (string $context, array $table) use (&$columns) {
+            $columns = $table['columns'];
+
+            return $this->reportBuilderEvent;
+        });
+
+        $this->reportSubscriber->onReportBuilder($this->reportBuilderEvent);
+
+        $this->assertSame('mautic.lead.contact Email', $columns['l.email']['label']);
+    }
+
     public function testThatWeDontProcessWrongContexts(): void
     {
         $this->customObjectRepository->expects($this->once())

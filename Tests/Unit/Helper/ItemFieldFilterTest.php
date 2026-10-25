@@ -343,4 +343,53 @@ class ItemFieldFilterTest extends TestCase
         $this->assertStringNotContainsString('1=1', $r['dql']);
         $this->assertSame("%x' or 1=1 --%", $r['params']['sval0']);
     }
+
+    public function testTheValueIsTrimmedBeforeItIsUsed(): void
+    {
+        $this->assertSame('Ab', $this->apply('text', "  Ab \n", ItemFieldFilter::TEXT_EQUALS)['params']['sval0']);
+    }
+
+    public function testContainsLowercasesNonAsciiLetters(): void
+    {
+        $this->assertSame('%ábç%', $this->apply('text', 'ÁBÇ')['params']['sval0']);
+    }
+
+    public function testANumberDropsItsPlusSignAndKeepsTheOperator(): void
+    {
+        $r = $this->apply('decimal', '>= +2,5');
+
+        $this->assertStringContainsString('.value >= :sval0', $r['dql']);
+        $this->assertSame('2.5', $r['params']['sval0']);
+        $this->assertSame('-3', $this->apply('int', '-3')['params']['sval0']);
+    }
+
+    public function testAnOperatorNotAtTheStartIsNotAnOperator(): void
+    {
+        $this->expectException(InvalidValueException::class);
+
+        $this->apply('int', 'a>5');
+    }
+
+    public function testTheLastSecondOfTheDayIsAValidTime(): void
+    {
+        $r = $this->apply('datetime', '2026-08-23 23:59:59');
+
+        $this->assertSame('2026-08-23 23:59:59', $r['params']['sval0'], 'the seconds are kept');
+    }
+
+    #[DataProvider('invalidTimes')]
+    public function testOneWrongPartOfTheTimeIsEnoughToRefuseIt(string $value): void
+    {
+        $this->expectException(InvalidValueException::class);
+
+        $this->apply('datetime', $value);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function invalidTimes(): array
+    {
+        return ['hour 24' => ['2026-08-23 24:00:00'], 'minute 60' => ['2026-08-23 10:60:00'], 'second 60' => ['2026-08-23 10:00:60']];
+    }
 }

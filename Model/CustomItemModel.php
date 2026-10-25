@@ -457,7 +457,10 @@ class CustomItemModel extends FormModel
         try {
             $this->permissionProvider->isGranted('viewother', $customObjectId);
         } catch (ForbiddenException) {
-            $queryBuilder->andWhere(CustomItem::TABLE_ALIAS.'.createdBy', $user->getId());
+            // Only the items the user created. The ORM list names the property, the DBAL list the column.
+            $creator = $queryBuilder instanceof QueryBuilder ? 'createdBy' : 'created_by';
+            $queryBuilder->andWhere(CustomItem::TABLE_ALIAS.'.'.$creator.' = :ownerId');
+            $queryBuilder->setParameter('ownerId', $user->getId());
         }
 
         return $queryBuilder;

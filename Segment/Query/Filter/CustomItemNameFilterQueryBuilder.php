@@ -49,11 +49,13 @@ class CustomItemNameFilterQueryBuilder extends BaseFilterQueryBuilder
 
         $filterQueryBuilder->setParameter($tableAlias.'ObjectId', (int) $customObjectId);
 
+        $value = $filter->getParameterValue();
+
         $this->filterHelper->addCustomObjectNameExpression(
             $filterQueryBuilder,
             $tableAlias,
             $filter->getOperator(),
-            (string) $filter->getParameterValue()
+            is_array($value) ? $value : (string) $value
         );
 
         $filterQueryBuilder->select($tableAlias.'_contact.contact_id as lead_id');

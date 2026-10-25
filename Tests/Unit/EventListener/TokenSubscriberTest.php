@@ -35,6 +35,7 @@ use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\QueryFilterFactory;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -728,6 +729,73 @@ class TokenSubscriberTest extends TestCase
             ['{custom-object=product:sku | where=segment-filter |order=latest|limit=1 | default=No thing}' => 'The field value'],
             $emailSendEvent->getTokens()
         );
+    }
+
+    public function testTheEmailBuilderGetsOneTokenForTheNameAndOneForEachField(): void
+    {
+        $this->configProvider->method('pluginIsEnabled')->willReturn(true);
+        $this->builderEvent->method('tokensRequested')->willReturn(true);
+        $customObject = $this->createMock(CustomObject::class);
+        $field1       = $this->createMock(CustomField::class);
+        $field2       = $this->createMock(CustomField::class);
+        $field1->method('getAlias')->willReturn('sku');
+        $field1->method('getLabel')->willReturn('SKU');
+        $field2->method('getAlias')->willReturn('price');
+        $field2->method('getLabel')->willReturn('Price');
+        $customObject->method('getAlias')->willReturn('product');
+        $customObject->method('getName')->willReturn('Product');
+        $customObject->method('getCustomFields')->willReturn([$field1, $field2]);
+        $this->customObjectModel->method('fetchAllPublishedEntities')->willReturn([$customObject]);
+        $this->tokenParser->method('buildTokenWithDefaultOptions')->willReturnCallback(static fn (string $o, string $f): string => "{{$o}:{$f}}");
+        $this->tokenParser->method('buildTokenLabel')->willReturnCallback(static fn (string $o, string $f): string => "{$o} - {$f}");
+        $added = [];
+        $this->builderEvent->method('addToken')->willReturnCallback(function (string $token, string $label) use (&$added): void {
+            $added[$token] = $label;
+        });
+
+        $this->subscriber->onBuilderBuild($this->builderEvent);
+
+        $this->assertSame(
+            ['{product:name}' => 'Product - Name', '{product:sku}' => 'Product - SKU', '{product:price}' => 'Product - Price'],
+            $added
+        );
+    }
+
+    /**
+     *
+     * @param array<string, mixed> $parameters
+     */
+    #[DataProvider('incompleteListQuery')]
+    public function testTheListQueryIsLeftAloneUnlessItIsForAContactWithAnEmailAndAToken(array $parameters): void
+    {
+        $this->constructWithDependencies();
+        $tableConfig = new TableConfig(10, 1, 'CustomItem.dateAdded', 'DESC');
+        foreach ($parameters as $name => $value) {
+            $tableConfig->addParameter($name, $value);
+        }
+        $this->customItemListDbalQueryEvent->method('getTableConfig')->willReturn($tableConfig);
+        $this->customItemListDbalQueryEvent->expects($this->never())->method('getQueryBuilder');
+
+        $this->subscriber->onListQuery($this->customItemListDbalQueryEvent);
+    }
+
+    /**
+     * @return array<string, array{array<string, mixed>}>
+     */
+    public static function incompleteListQuery(): array
+    {
+        $email = new Email();
+        $token = new Token('{custom-object=product:sku}');
+        $full  = ['filterEntityType' => 'contact', 'filterEntityId' => 5, 'email' => $email, 'token' => $token];
+
+        return [
+            'not a contact'     => [['filterEntityType' => 'company'] + $full],
+            'no contact id'     => [['filterEntityId' => 0] + $full],
+            'no email'          => [['email' => null] + $full],
+            'email of a kind'   => [['email' => new \stdClass()] + $full],
+            'no token'          => [['token' => null] + $full],
+            'token of a kind'   => [['token' => new \stdClass()] + $full],
+        ];
     }
 
     public function testOnListQueryIfNotContactQuery(): void

@@ -71,4 +71,26 @@ TEXT;
         $this->assertSame('latest', $token3->getOrder());
         $this->assertSame('', $token3->getWhere());
     }
+
+    public function testAnInvalidTokenDoesNotStopTheNextOnes(): void
+    {
+        $tokens = (new TokenParser())->findTokens('{custom-object=product} then {custom-object=order:total | limit=3}');
+
+        $this->assertCount(1, $tokens);
+        $this->assertSame('total', $tokens->first()->getCustomFieldAlias());
+        $this->assertSame(3, $tokens->first()->getLimit());
+    }
+
+    public function testTextWithoutTokensGivesNone(): void
+    {
+        $this->assertCount(0, (new TokenParser())->findTokens('nothing {here} at all'));
+    }
+
+    public function testOnlyTheFormatKeywordSetsTheFormat(): void
+    {
+        $tokens = (new TokenParser())->findTokens('{custom-object=order:total | limit=3 | order=latest}{custom-object=order:sum | format=or-list}');
+
+        $this->assertSame('', $tokens->first()->getFormat());
+        $this->assertSame('or-list', $tokens->last()->getFormat());
+    }
 }

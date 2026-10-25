@@ -106,11 +106,15 @@ class QueryFilterHelper
         }
     }
 
+    /**
+     * @param array<int, mixed>|string|null $value a list for in / notIn (the segment hands it over as an array when the merge
+     *                                             filter is off), else the name text
+     */
     public function addCustomObjectNameExpression(
         SegmentQueryBuilder $queryBuilder,
         string $tableAlias,
         string $operator,
-        ?string $value
+        array|string|null $value
     ): void {
         $valueParameter = $this->randomParameterNameService->generateRandomParameterName();
         $expression     = $this->getCustomObjectNameExpression($queryBuilder, $tableAlias, $operator, $valueParameter);

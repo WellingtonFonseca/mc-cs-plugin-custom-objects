@@ -1,0 +1,19 @@
+{
+    // Mutation testing of the unit tests, in the Mautic stack. Run from the plugin folder inside the web container:
+    //   infection --configuration=Tests/Infection/infection.json5 --threads=8 --no-progress --initial-tests-php-options='-d pcov.enabled=1' --min-msi=0 [--filter=File.php]
+    "source": {
+        "directories": ["../../Model", "../../EventListener", "../../Helper", "../../Segment", "../../CustomFieldType", "../../Provider", "../../DTO", "../../Repository"]
+    },
+    "bootstrap": "Tests/Infection/bootstrap.php",
+    "phpUnit": {
+        "configDir": ".",
+        "customPath": "/var/www/html/vendor/bin/phpunit"
+    },
+    "tmpDir": "/tmp/infection-co",
+    "logs": {
+        "text": "/tmp/infection-co/infection.log"
+    },
+    "mutators": {
+        "@default": true
+    }
+}
