@@ -22,6 +22,8 @@
     <div class="panel shd-none mb-md">
         <table class="table table-bordered table-striped mb-0">
             <tbody>
+            {# The same rows as the item page (category, created by/on, modified by/on, ID), from core's helper. #}
+            {{ include('@MauticCore/Helper/details.html.twig', { entity: item }) }}
             {% for fieldValue in item.getCustomFieldValues() %}
                 <tr>
                     <th>{{ fieldValue.getCustomField().getLabel()|escape }}</th>
