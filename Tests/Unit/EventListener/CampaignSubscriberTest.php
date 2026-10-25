@@ -321,6 +321,8 @@ class CampaignSubscriberTest extends TestCase
             ->willReturn(['type' => 'whatever.action']);
 
         $this->campaignExecutionEvent->expects($this->never())
+            ->method('getLead');
+        $this->campaignExecutionEvent->expects($this->never())
             ->method('getConfig');
 
         $this->campaignSubscriber->onCampaignTriggerCondition($this->campaignExecutionEvent);
@@ -555,5 +557,149 @@ class CampaignSubscriberTest extends TestCase
             ->with(true);
 
         $this->campaignSubscriber->onCampaignTriggerCondition($this->campaignExecutionEvent);
+    }
+
+    public function testTheActionAndTheConditionAreRegisteredForEachObjectWithFields(): void
+    {
+        $withoutFields = $this->createMock(CustomObject::class);
+        $withoutFields->method('getCustomFields')->willReturn(new ArrayCollection());
+        $withoutFields->method('getId')->willReturn(11);
+
+        $this->customObject->method('getCustomFields')->willReturn(new ArrayCollection([new CustomField()]));
+        $this->customObject->method('getNameSingular')->willReturn('Disciplina');
+
+        $this->configProvider->method('pluginIsEnabled')->willReturn(true);
+        $this->customObjectModel->method('fetchAllPublishedEntities')->willReturn([$withoutFields, $this->customObject]);
+        $this->translator->method('trans')->willReturnCallback(static fn (string $key, array $params = []): string => $key.'|'.implode(',', $params));
+
+        $actions = $conditions = [];
+        $this->campaignBuilderEvent->method('addAction')->willReturnCallback(function (string $key, array $options) use (&$actions): void {
+            $actions[$key] = $options;
+        });
+        $this->campaignBuilderEvent->method('addCondition')->willReturnCallback(function (string $key, array $options) use (&$conditions): void {
+            $conditions[$key] = $options;
+        });
+
+        $this->campaignSubscriber->onCampaignBuild($this->campaignBuilderEvent);
+
+        $this->assertSame(['custom_item.63.linkcontact'], array_keys($actions), 'the object without fields is skipped, the next one is not');
+        $this->assertSame(['custom_item.63.fieldvalue'], array_keys($conditions));
+        $this->assertSame('custom.item.events.link.contact|Disciplina', $actions['custom_item.63.linkcontact']['label']);
+        $this->assertSame('custom.item.events.link.contact_descr|Disciplina', $actions['custom_item.63.linkcontact']['description']);
+        $this->assertSame(['customObjectId' => 63], $actions['custom_item.63.linkcontact']['formTypeOptions']);
+        $this->assertSame('custom.item.events.field.value|Disciplina', $conditions['custom_item.63.fieldvalue']['label']);
+        $this->assertSame('custom.item.events.field.value_descr|Disciplina', $conditions['custom_item.63.fieldvalue']['description']);
+        $this->assertSame(['customObjectId' => 63], $conditions['custom_item.63.fieldvalue']['formTypeOptions']);
+    }
+
+    public function testAContactWithoutAnIdFailsTheCondition(): void
+    {
+        $contact = $this->createMock(Lead::class);
+        $contact->method('getId')->willReturn(0);
+        $this->configProvider->method('pluginIsEnabled')->willReturn(true);
+        $this->campaignExecutionEvent->method('getEvent')->willReturn(['type' => 'custom_item.63.fieldvalue']);
+        $this->campaignExecutionEvent->method('getLead')->willReturn($contact);
+        $this->campaignExecutionEvent->expects($this->never())->method('getConfig');
+        $this->campaignExecutionEvent->expects($this->once())->method('setResult')->with(false);
+
+        $this->campaignSubscriber->onCampaignTriggerCondition($this->campaignExecutionEvent);
+    }
+
+    public function testASingleCriterionIsAskedToTheSegmentQueryAndTheItemIsJoinedToIt(): void
+    {
+        $multi = $this->createMock(CustomField::class);
+        $multi->method('getId')->willReturn(42);
+        $multi->method('getType')->willReturn('multiselect');
+        $multi->method('canHaveMultipleValues')->willReturn(true);
+
+        $this->configProvider->method('pluginIsEnabled')->willReturn(true);
+        $this->campaignExecutionEvent->method('getEvent')->willReturn(['type' => 'custom_item.63.fieldvalue']);
+        $this->campaignExecutionEvent->method('getLead')->willReturn($this->contact);
+        $this->campaignExecutionEvent->method('getConfig')->willReturn(['field' => '42', 'operator' => 'eq', 'value' => 'a']);
+        $this->customFieldModel->method('fetchEntity')->willReturn($multi);
+
+        $this->queryFilterFactory->expects($this->once())->method('configureQueryBuilderFromSegmentFilter')
+            ->with(
+                ['glue' => 'and', 'field' => 'cmf_42', 'object' => 'custom_object', 'type' => 'multiselect', 'filter' => ['a'], 'operator' => 'eq', 'display' => null],
+                'q1'
+            )
+            ->willReturn($this->segmentQueryBuilder);
+        $this->segmentQueryBuilder->method('getSQL')->willReturn('INNER SQL');
+        $this->segmentQueryBuilder->method('getParameters')->willReturn(['p' => 1]);
+        $this->segmentQueryBuilder->method('getParameterTypes')->willReturn(['p' => 2]);
+        $this->segmentQueryBuilder->expects($this->once())->method('select')->with('q1_value.custom_item_id');
+        $this->queryFilterHelper->expects($this->once())->method('addContactIdRestriction')->with($this->segmentQueryBuilder, 'q1', self::CONTACT_ID);
+
+        $this->connection->method('createQueryBuilder')->willReturn($this->queryBuilder);
+        $this->queryBuilder->expects($this->once())->method('select')->with('CustomItem.id');
+        $this->queryBuilder->expects($this->once())->method('from')->with('custom_item', 'CustomItem');
+        $this->queryBuilder->expects($this->once())->method('innerJoin')->with('CustomItem', '(INNER SQL)', 'q1', 'CustomItem.id = q1.custom_item_id');
+        $this->queryBuilder->expects($this->once())->method('setParameters')->with(['p' => 1], ['p' => 2]);
+        $this->queryBuilder->method('execute')->willReturn($this->result);
+        $this->result->method('fetchOne')->willReturn('9');
+        $this->campaignExecutionEvent->expects($this->once())->method('setChannel')->with('customItem', '9');
+
+        $this->campaignSubscriber->onCampaignTriggerCondition($this->campaignExecutionEvent);
+    }
+
+    public function testTheValueOfASingleValueFieldIsKeptAsItIs(): void
+    {
+        $this->configProvider->method('pluginIsEnabled')->willReturn(true);
+        $this->campaignExecutionEvent->method('getEvent')->willReturn(['type' => 'custom_item.63.fieldvalue']);
+        $this->campaignExecutionEvent->method('getLead')->willReturn($this->contact);
+        $this->campaignExecutionEvent->method('getConfig')->willReturn(['field' => '42', 'operator' => 'like', 'value' => 'a']);
+        $this->customField->method('canHaveMultipleValues')->willReturn(false);
+        $this->customField->method('getType')->willReturn('text');
+        $this->customFieldModel->method('fetchEntity')->willReturn($this->customField);
+        $this->connection->method('createQueryBuilder')->willReturn($this->queryBuilder);
+        $this->queryBuilder->method('execute')->willReturn($this->result);
+        $this->segmentQueryBuilder->method('getParameters')->willReturn([]);
+        $this->segmentQueryBuilder->method('getParameterTypes')->willReturn([]);
+
+        $this->queryFilterFactory->expects($this->once())->method('configureQueryBuilderFromSegmentFilter')
+            ->with($this->callback(static fn (array $filter): bool => 'a' === $filter['filter'] && 'text' === $filter['type']), 'q1')
+            ->willReturn($this->segmentQueryBuilder);
+
+        $this->campaignSubscriber->onCampaignTriggerCondition($this->campaignExecutionEvent);
+    }
+
+    /**
+     * @dataProvider includingExcluding
+     *
+     * @param array<string, mixed> $config
+     */
+    public function testIncludingAndExcludingOnATextFieldAreAnsweredByTheMergedQuery(array $config, bool $multipleValues, bool $merged): void
+    {
+        $field = $this->createMock(CustomField::class);
+        $field->method('canHaveMultipleValues')->willReturn($multipleValues);
+        $field->method('getType')->willReturn('text');
+        $this->configProvider->method('pluginIsEnabled')->willReturn(true);
+        $this->campaignExecutionEvent->method('getEvent')->willReturn(['type' => 'custom_item.63.fieldvalue']);
+        $this->campaignExecutionEvent->method('getLead')->willReturn($this->contact);
+        $this->campaignExecutionEvent->method('getConfig')->willReturn($config + ['value' => 'a']);
+        $this->customFieldModel->method('fetchEntity')->willReturn($field);
+        $this->connection->method('createQueryBuilder')->willReturn($this->queryBuilder);
+        $this->queryBuilder->method('execute')->willReturn($this->result);
+        $this->queryFilterFactory->method('configureQueryBuilderFromSegmentFilter')->willReturn($this->segmentQueryBuilder);
+        $this->segmentQueryBuilder->method('getParameters')->willReturn([]);
+        $this->segmentQueryBuilder->method('getParameterTypes')->willReturn([]);
+
+        $this->criteriaMatcher->expects($merged ? $this->once() : $this->never())->method('findItemId')->willReturn(1);
+
+        $this->campaignSubscriber->onCampaignTriggerCondition($this->campaignExecutionEvent);
+    }
+
+    /**
+     * @return array<string, array{array<string, mixed>, bool, bool}>
+     */
+    public static function includingExcluding(): array
+    {
+        return [
+            'in on a text field'          => [['field' => '42', 'operator' => 'in'], false, true],
+            '!in on a text field'         => [['field' => '42', 'operator' => '!in'], false, true],
+            'in on a multiselect'         => [['field' => '42', 'operator' => 'in'], true, false],
+            'eq on a text field'          => [['field' => '42', 'operator' => 'eq'], false, false],
+            'in on something not an id'   => [['field' => 'abc', 'operator' => 'in'], false, false],
+        ];
     }
 }
