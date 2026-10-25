@@ -12,8 +12,10 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProviderFactory;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Component\HttpFoundation\Request;
 
+#[AllowMockObjectsWithoutExpectations]
 class CancelControllerTest extends ControllerTestCase
 {
     private const OBJECT_ID = 33;
@@ -32,11 +34,11 @@ class CancelControllerTest extends ControllerTestCase
     {
         parent::setUp();
 
-        $this->sessionProviderFactory = $this->createMock(SessionProviderFactory::class);
+        $this->sessionProviderFactory = $this->createStub(SessionProviderFactory::class);
         $this->sessionProvider        = $this->createMock(SessionProvider::class);
         $this->routeProvider          = $this->createMock(CustomItemRouteProvider::class);
         $this->customItemModel        = $this->createMock(CustomItemModel::class);
-        $this->request                = $this->createMock(Request::class);
+        $this->request                = $this->createStub(Request::class);
 
         $this->requestStack->expects($this->any())
             ->method('getCurrentRequest')

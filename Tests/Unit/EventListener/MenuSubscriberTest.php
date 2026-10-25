@@ -17,7 +17,9 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\RequestStack;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class MenuSubscriberTest extends TestCase
 {
     use ConsecutiveCallsTrait;
@@ -40,7 +42,7 @@ class MenuSubscriberTest extends TestCase
         $this->customObjectModel = $this->createMock(CustomObjectModel::class);
         $this->configProvider    = $this->createMock(ConfigProvider::class);
         // MenuEvent and MenuHelper are final in Mautic 7: the real ones, over mocked dependencies
-        $security = $this->createMock(CorePermissions::class);
+        $security = $this->createStub(CorePermissions::class);
         $security->method('isGranted')->willReturn(true);
         $this->menuHelper        = new MenuHelper($security, new RequestStack(), $this->createMock(CoreParametersHelper::class), $this->createMock(IntegrationHelper::class));
         $this->menuSubscriber    = new MenuSubscriber($this->customObjectModel, $this->configProvider);
@@ -104,7 +106,7 @@ class MenuSubscriberTest extends TestCase
 
     public function testSomeCustomObjects(): void
     {
-        $customObject1 = $this->createMock(CustomObject::class);
+        $customObject1 = $this->createStub(CustomObject::class);
         $customObject1->method('getName')->willReturn('Test Object 1');
         $customObject1->method('getId')->willReturn(333);
         $customObject1->method('getType')->willReturn(CustomObject::TYPE_MASTER);

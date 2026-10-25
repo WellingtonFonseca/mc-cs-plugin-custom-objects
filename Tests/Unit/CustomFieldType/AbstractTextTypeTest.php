@@ -9,9 +9,11 @@ use MauticPlugin\CustomObjectsBundle\CustomFieldType\AbstractTextType;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueText;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class AbstractTextTypeTest extends \PHPUnit\Framework\TestCase
 {
     private $translator;
@@ -28,9 +30,9 @@ class AbstractTextTypeTest extends \PHPUnit\Framework\TestCase
     {
         parent::setUp();
 
-        $this->translator             = $this->createMock(TranslatorInterface::class);
-        $this->customField            = $this->createMock(CustomField::class);
-        $this->customItem             = $this->createMock(CustomItem::class);
+        $this->translator             = $this->createStub(TranslatorInterface::class);
+        $this->customField            = $this->createStub(CustomField::class);
+        $this->customItem             = $this->createStub(CustomItem::class);
         $this->filterOperatorProvider = $this->createMock(FilterOperatorProviderInterface::class);
         $this->fieldType              = new class($this->translator, $this->filterOperatorProvider) extends AbstractTextType {
         };

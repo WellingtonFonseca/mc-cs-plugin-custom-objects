@@ -48,13 +48,13 @@ class CustomFieldTypeTest extends \PHPUnit\Framework\TestCase
         parent::setUp();
 
         $this->formBuilder      = $this->createMock(FormBuilderInterface::class);
-        $this->customField      = $this->createMock(CustomField::class);
+        $this->customField      = $this->createStub(CustomField::class);
 
-        $this->customObjectRepository     = $this->createMock(CustomObjectRepository::class);
-        $customFieldTypeProvider          = $this->createMock(CustomFieldTypeProvider::class);
-        $paramsToStringTransformer        = $this->createMock(ParamsToStringTransformer::class);
-        $optionsToStringTransformer       = $this->createMock(OptionsToStringTransformer::class);
-        $customFieldFactory               = $this->createMock(CustomFieldFactory::class);
+        $this->customObjectRepository     = $this->createStub(CustomObjectRepository::class);
+        $customFieldTypeProvider          = $this->createStub(CustomFieldTypeProvider::class);
+        $paramsToStringTransformer        = $this->createStub(ParamsToStringTransformer::class);
+        $optionsToStringTransformer       = $this->createStub(OptionsToStringTransformer::class);
+        $customFieldFactory               = $this->createStub(CustomFieldFactory::class);
         $this->formType                   = new CustomFieldType(
             $this->customObjectRepository,
             $customFieldTypeProvider,

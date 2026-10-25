@@ -35,11 +35,13 @@ use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterFactory;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterHelper;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomFieldRepository;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class QueryFilterHelperTest extends TestCase
 {
     /**
@@ -61,7 +63,7 @@ class QueryFilterHelperTest extends TestCase
     {
         parent::setUp();
 
-        $entityManager = $this->createMock(EntityManager::class);
+        $entityManager = $this->createStub(EntityManager::class);
         $entityManager
             ->method('getConnection')
             ->willReturn($this->createMock(Connection::class));
@@ -677,7 +679,7 @@ class QueryFilterHelperTest extends TestCase
 
     public function testTheValueQueryIsNotNegatedUnlessTheCallerSaysSo(): void
     {
-        $filter = $this->createMock(ContactSegmentFilter::class);
+        $filter = $this->createStub(ContactSegmentFilter::class);
         $filter->method('getField')->willReturn(14);
         $filter->method('getType')->willReturn('text');
         $filter->method('getOperator')->willReturn('neq');
@@ -727,7 +729,7 @@ class QueryFilterHelperTest extends TestCase
             define('MAUTIC_TABLE_PREFIX', '');
         }
 
-        $connection = $this->createMock(Connection::class);
+        $connection = $this->createStub(Connection::class);
         $connection->method('getDatabasePlatform')->willReturn(new MySQLPlatform());
         $connection->method('quote')->willReturnCallback(static fn ($value): string => "'{$value}'");
         $entityManager = $this->createMock(EntityManager::class);

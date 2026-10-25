@@ -15,8 +15,10 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefCompany;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefCustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomItemTest extends \PHPUnit\Framework\TestCase
 {
     public function testClone(): void
@@ -55,8 +57,8 @@ class CustomItemTest extends \PHPUnit\Framework\TestCase
     public function testCustomFieldValueChanges(): void
     {
         $item   = new CustomItem(new CustomObject());
-        $fieldA = $this->createMock(CustomField::class);
-        $fieldB = $this->createMock(CustomField::class);
+        $fieldA = $this->createStub(CustomField::class);
+        $fieldB = $this->createStub(CustomField::class);
         $valueA = new CustomFieldValueText($fieldA, $item, 'a value A');
         $valueB = new CustomFieldValueText($fieldB, $item, 'a value B');
 
@@ -85,8 +87,8 @@ class CustomItemTest extends \PHPUnit\Framework\TestCase
     {
         $object = new CustomObject();
         $item   = new CustomItem($object);
-        $field1 = $this->createMock(CustomField::class);
-        $field2 = $this->createMock(CustomField::class);
+        $field1 = $this->createStub(CustomField::class);
+        $field2 = $this->createStub(CustomField::class);
         $value1 = new CustomFieldValueText($field1, $item, 'value1');
         $value2 = new CustomFieldValueText($field2, $item, 'value2');
 
@@ -111,7 +113,7 @@ class CustomItemTest extends \PHPUnit\Framework\TestCase
     {
         $object = new CustomObject();
         $item   = new CustomItem($object);
-        $field  = $this->createMock(CustomField::class);
+        $field  = $this->createStub(CustomField::class);
 
         $field->method('getId')->willReturn(1);
         $field->method('getTypeObject')->willReturn(
@@ -137,7 +139,7 @@ class CustomItemTest extends \PHPUnit\Framework\TestCase
     {
         $object = new CustomObject();
         $item   = new CustomItem($object);
-        $field  = $this->createMock(CustomField::class);
+        $field  = $this->createStub(CustomField::class);
 
         $field->method('getAlias')->willReturn('field-alias-1');
         $field->method('getId')->willReturn(1);
@@ -166,7 +168,7 @@ class CustomItemTest extends \PHPUnit\Framework\TestCase
         $item   = new CustomItem($object);
         $fieldA = $this->createMock(CustomField::class);
         $fieldB = $this->createMock(CustomField::class);
-        $fieldC = $this->createMock(CustomField::class);
+        $fieldC = $this->createStub(CustomField::class);
 
         $fieldA->method('getId')->willReturn(1);
         $fieldA->expects($this->never())->method('getDefaultValue');

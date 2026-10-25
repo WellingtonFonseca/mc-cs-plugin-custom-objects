@@ -18,6 +18,7 @@ use MauticPlugin\CustomObjectsBundle\Model\CustomFieldValueModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomItemRepository;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -28,6 +29,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
  * The item list search with "alias:value" terms. The free-text path
  * (no colon) is covered by CustomItemModelTest.
  */
+#[AllowMockObjectsWithoutExpectations]
 class CustomItemModelFieldSearchTest extends TestCase
 {
     private CustomItemModel $model;
@@ -47,7 +49,7 @@ class CustomItemModelFieldSearchTest extends TestCase
         $this->em->method('getExpressionBuilder')->willReturn(new \Doctrine\ORM\Query\Expr());
         $this->em->method('getRepository')->with(CustomField::class)->willReturn($repository);
 
-        $userHelper = $this->createMock(UserHelper::class);
+        $userHelper = $this->createStub(UserHelper::class);
         $userHelper->method('getUser')->willReturn(null); // CLI: no owner filter
 
         $this->model = new CustomItemModel(

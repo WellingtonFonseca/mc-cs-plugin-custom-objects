@@ -17,6 +17,7 @@ use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\CustomObjectMergedFilt
 use MauticPlugin\CustomObjectsBundle\Segment\SegmentFilterSource;
 use MauticPlugin\CustomObjectsBundle\Segment\SegmentItemMatcher;
 use MauticPlugin\CustomObjectsBundle\Segment\SegmentItemResolver;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -26,6 +27,7 @@ use PHPUnit\Framework\TestCase;
  * Fixture: Custom Object #1 'disciplina' with fields #1 nome (text), #2 posicao (int), #3 inicio (date). Another object's
  * field is #9.
  */
+#[AllowMockObjectsWithoutExpectations]
 class SegmentItemResolverTest extends TestCase
 {
     private const OBJECT_ID = 1;

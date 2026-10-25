@@ -11,7 +11,7 @@ class CustomItemEventTest extends \PHPUnit\Framework\TestCase
 {
     public function testGettersSetters(): void
     {
-        $customItem = $this->createMock(CustomItem::class);
+        $customItem = $this->createStub(CustomItem::class);
         $event      = new CustomItemEvent($customItem);
 
         $this->assertSame($customItem, $event->getCustomItem());

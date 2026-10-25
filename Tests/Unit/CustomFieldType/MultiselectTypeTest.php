@@ -7,8 +7,10 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\CustomFieldType;
 use Mautic\LeadBundle\Provider\FilterOperatorProviderInterface;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\MultiselectType;
 use MauticPlugin\CustomObjectsBundle\Helper\CsvHelper;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class MultiselectTypeTest extends \PHPUnit\Framework\TestCase
 {
     private $translator;
@@ -22,7 +24,7 @@ class MultiselectTypeTest extends \PHPUnit\Framework\TestCase
     {
         parent::setUp();
 
-        $this->translator = $this->createMock(TranslatorInterface::class);
+        $this->translator = $this->createStub(TranslatorInterface::class);
         $this->fieldType  = new MultiselectType(
             $this->translator,
             $this->createMock(FilterOperatorProviderInterface::class),

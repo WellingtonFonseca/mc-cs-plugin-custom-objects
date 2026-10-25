@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Model;
 
+use PHPUnit\Framework\MockObject\Stub;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManager;
@@ -25,6 +26,7 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefContact;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemImportModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -35,6 +37,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
  * How one CSV row becomes an item: which columns are read, how the special ones (name, id, linked contacts) are matched, the owner,
  * the transaction of the row and the contacts it links.
  */
+#[AllowMockObjectsWithoutExpectations]
 class CustomItemImportModelFlowTest extends TestCase
 {
     private EntityManager&MockObject $em;
@@ -45,9 +48,9 @@ class CustomItemImportModelFlowTest extends TestCase
 
     private Import&MockObject $import;
 
-    private CustomObject&MockObject $object;
+    private CustomObject&Stub $object;
 
-    private LeadRepository&MockObject $leads;
+    private LeadRepository&Stub $leads;
 
     private CustomItemImportModel $model;
 
@@ -58,17 +61,17 @@ class CustomItemImportModelFlowTest extends TestCase
         $this->em->method('getConnection')->willReturn($this->connection);
         $this->itemModel = $this->createMock(CustomItemModel::class);
         $this->import    = $this->createMock(Import::class);
-        $this->object    = $this->createMock(CustomObject::class);
-        $field = $this->createMock(CustomField::class);
+        $this->object    = $this->createStub(CustomObject::class);
+        $field = $this->createStub(CustomField::class);
         $field->method('getId')->willReturn(33);
         $field->method('getTypeObject')->willReturn(new TextareaType($this->createMock(Translator::class), $this->createMock(FilterOperatorProviderInterface::class)));
         $this->object->method('getCustomFields')->willReturn(new ArrayCollection([$field]));
-        $this->leads = $this->createMock(LeadRepository::class);
+        $this->leads = $this->createStub(LeadRepository::class);
         $this->leads->method('exists')->willReturn(true); // Mautic 7 has LeadRepository::exists: the contacts are checked
         $this->em->method('getRepository')->with(Lead::class)->willReturn($this->leads);
 
-        $translator = $this->createMock(Translator::class);
-        $params     = $this->createMock(CoreParametersHelper::class);
+        $translator = $this->createStub(Translator::class);
+        $params     = $this->createStub(CoreParametersHelper::class);
         $formatter  = new FormatterHelper(new DateHelper('F j, Y g:i a T', 'D, M d', 'F j, Y', 'g:i a', $translator, $params), $translator);
         $this->model = new CustomItemImportModel(
             $this->em,
@@ -143,7 +146,7 @@ class CustomItemImportModelFlowTest extends TestCase
     public function testAnItemThatWasUpdatedMakesTheRowAnUpdate(): void
     {
         $this->import->method('getMatchedFields')->willReturn([]);
-        $saved = $this->createMock(CustomItem::class);
+        $saved = $this->createStub(CustomItem::class);
         $saved->method('hasBeenUpdated')->willReturn(true);
         $this->itemModel->method('save')->willReturn($saved);
 
@@ -153,11 +156,11 @@ class CustomItemImportModelFlowTest extends TestCase
     public function testAnExistingItemIsAnUpdateEvenWhenNothingSaysSo(): void
     {
         $this->import->method('getMatchedFields')->willReturn(['id' => 'customItemId']);
-        $existing = $this->createMock(CustomItem::class);
+        $existing = $this->createStub(CustomItem::class);
         $existing->method('getId')->willReturn(12);
         $this->itemModel->method('fetchEntity')->willReturn($existing);
         $this->itemModel->method('populateCustomFields')->willReturnArgument(0);
-        $saved = $this->createMock(CustomItem::class);
+        $saved = $this->createStub(CustomItem::class);
         $saved->method('hasBeenUpdated')->willReturn(false);
         $this->itemModel->method('save')->willReturn($saved);
 

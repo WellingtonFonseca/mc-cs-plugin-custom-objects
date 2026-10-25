@@ -23,11 +23,13 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\EventListener\ReportSubscriber;
 use MauticPlugin\CustomObjectsBundle\Helper\CsvHelper;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomObjectRepository;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class ReportSubscriberTest extends TestCase
 {
     /**
@@ -100,16 +102,16 @@ class ReportSubscriberTest extends TestCase
         $this->customObjectRepository          = $this->createMock(CustomObjectRepository::class);
         $this->fieldsBuilder                   = $this->createMock(FieldsBuilder::class);
         $this->companyReportData               = $this->createMock(CompanyReportData::class);
-        $this->dispatcher                      = $this->createMock(EventDispatcherInterface::class);
+        $this->dispatcher                      = $this->createStub(EventDispatcherInterface::class);
         $this->reportHelper                    = new ReportHelper($this->dispatcher);
-        $this->translatorInterface             = $this->createMock(TranslatorInterface::class);
+        $this->translatorInterface             = $this->createStub(TranslatorInterface::class);
         $this->reportSubscriber                = new ReportSubscriber($this->customObjectRepository, $this->fieldsBuilder, $this->companyReportData, $this->reportHelper, $this->translatorInterface);
         $this->reportBuilderEvent              = $this->createMock(ReportBuilderEvent::class);
-        $this->filterOperatorProviderInterface = $this->createMock(FilterOperatorProviderInterface::class);
-        $this->csvHelper                       = $this->createMock(CsvHelper::class);
+        $this->filterOperatorProviderInterface = $this->createStub(FilterOperatorProviderInterface::class);
+        $this->csvHelper                       = $this->createStub(CsvHelper::class);
         $this->reportGeneratorEvent            = $this->createMock(ReportGeneratorEvent::class);
         $this->queryBuilder                    = $this->createMock(QueryBuilder::class);
-        $this->connection                      = $this->createMock(Connection::class);
+        $this->connection                      = $this->createStub(Connection::class);
     }
 
     private function getCustomFieldsCollection(int $batch = 1): ArrayCollection

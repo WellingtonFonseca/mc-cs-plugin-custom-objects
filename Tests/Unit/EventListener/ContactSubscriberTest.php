@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\EventListener;
 
+use PHPUnit\Framework\MockObject\Stub;
 use Doctrine\ORM\EntityManager;
 use Mautic\LeadBundle\Entity\Lead;
 use Mautic\LeadBundle\Entity\LeadEventLog;
@@ -20,7 +21,9 @@ use MauticPlugin\CustomObjectsBundle\Repository\CustomItemXrefContactRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
 {
     use ConsecutiveCallsTrait;
@@ -36,7 +39,7 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
     /**
      * @var MockObject&CustomItemXrefContactRepository
      */
-    private MockObject $ciXcontactRepo;
+    private Stub $ciXcontactRepo;
 
     /**
      * @var ContactSubscriber
@@ -54,7 +57,7 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
         $this->configProvider    = $this->createMock(ConfigProvider::class);
         $this->leadTimelineEvent = $this->timeline();
         $this->leadEventLogRepo  = $this->createMock(LeadEventLogRepository::class);
-        $this->ciXcontactRepo    = $this->createMock(CustomItemXrefContactRepository::class);
+        $this->ciXcontactRepo    = $this->createStub(CustomItemXrefContactRepository::class);
         $this->subscriber        = new ContactSubscriber(
             $this->entityManager,
             $this->translator,
@@ -120,7 +123,7 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
                 'CustomObject',
                 'CustomItem',
                 ['unlink'],
-                $this->isType('array')
+                $this->isArray()
             )
             ->willReturn(['results' => [
                 [
@@ -129,7 +132,7 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
                     'lead_id'    => 333,
                     'id'         => 444,
                 ],
-            ]]);
+            ], 'total' => 1]);
 
         $customItem   = $this->createMock(CustomItem::class);
         $customObject = $this->createMock(CustomObject::class);
@@ -216,7 +219,7 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
                 'CustomObject',
                 'CustomItem',
                 ['link'],
-                $this->isType('array')
+                $this->isArray()
             )
             ->willReturn(['results' => [
                 [
@@ -225,7 +228,7 @@ class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
                     'lead_id'    => 333,
                     'id'         => 444,
                 ],
-            ]]);
+            ], 'total' => 1]);
 
         $this->customItemModel->expects($this->once())
             ->method('fetchEntity')

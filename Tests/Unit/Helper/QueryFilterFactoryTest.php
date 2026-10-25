@@ -11,9 +11,11 @@ use MauticPlugin\CustomObjectsBundle\CustomFieldType\CustomFieldTypeInterface;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterFactory;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomFieldRepository;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class QueryFilterFactoryTest extends TestCase
 {
     /**
@@ -38,7 +40,7 @@ class QueryFilterFactoryTest extends TestCase
 
         $this->prefix = MAUTIC_TABLE_PREFIX;
 
-        $this->segmentFilter = $this->createMock(ContactSegmentFilter::class);
+        $this->segmentFilter = $this->createStub(ContactSegmentFilter::class);
         $this->segmentFilter
             ->method('getField')
             ->willReturn(1);
@@ -176,12 +178,12 @@ SQL;
      */
     public function testQueryReadsTheTableOfTheRealFieldTypeNotTheSavedOne(): void
     {
-        $entityManager = $this->createMock(EntityManager::class);
+        $entityManager = $this->createStub(EntityManager::class);
         $entityManager->method('getConnection')->willReturn($this->createMock(Connection::class));
 
-        $multiselect = $this->createMock(CustomFieldTypeInterface::class);
+        $multiselect = $this->createStub(CustomFieldTypeInterface::class);
         $multiselect->method('getTableName')->willReturn('custom_field_value_option');
-        $fieldTypeProvider = $this->createMock(CustomFieldTypeProvider::class);
+        $fieldTypeProvider = $this->createStub(CustomFieldTypeProvider::class);
         $fieldTypeProvider->method('getType')->willReturnCallback(
             fn (string $type) => 'multiselect' === $type ? $multiselect : $this->fail("table asked for the saved type '{$type}'")
         );
@@ -189,7 +191,7 @@ SQL;
         $repository->method('getCustomFieldTypeById')->with(1)->willReturn('multiselect');
 
         $factory = new QueryFilterFactory($entityManager, $fieldTypeProvider, $repository, new QueryFilterFactory\Calculator(), 1);
-        $filter  = $this->createMock(ContactSegmentFilter::class);
+        $filter  = $this->createStub(ContactSegmentFilter::class);
         $filter->method('getField')->willReturn(1);
         $filter->method('getType')->willReturn('select');
 
@@ -198,12 +200,12 @@ SQL;
 
     private function constructWithExpectedLimit(int $limit): void
     {
-        $entityManager = $this->createMock(EntityManager::class);
+        $entityManager = $this->createStub(EntityManager::class);
         $entityManager
             ->method('getConnection')
             ->willReturn($this->createMock(Connection::class));
 
-        $customField = $this->createMock(CustomFieldTypeInterface::class);
+        $customField = $this->createStub(CustomFieldTypeInterface::class);
         $customField
             ->method('getTableName')
             ->willReturn('custom_field_value_int');

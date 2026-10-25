@@ -28,8 +28,8 @@ class CustomItemPermissionProviderTest extends \PHPUnit\Framework\TestCase
         parent::setUp();
 
         $this->corePermissions = $this->createMock(CorePermissions::class);
-        $this->customItem      = $this->createMock(CustomItem::class);
-        $this->customObject    = $this->createMock(CustomObject::class);
+        $this->customItem      = $this->createStub(CustomItem::class);
+        $this->customObject    = $this->createStub(CustomObject::class);
         $this->provider        = new CustomItemPermissionProvider($this->corePermissions);
 
         $this->customObject->method('getId')->willReturn(self::OBJECT_ID);

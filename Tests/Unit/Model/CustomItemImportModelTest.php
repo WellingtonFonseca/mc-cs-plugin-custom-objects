@@ -33,7 +33,9 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomItemImportModelTest extends \PHPUnit\Framework\TestCase
 {
     use ConsecutiveCallsTrait;
@@ -135,20 +137,20 @@ class CustomItemImportModelTest extends \PHPUnit\Framework\TestCase
     {
         parent::setUp();
 
-        $this->descriptionField       = $this->createMock(CustomField::class);
-        $this->dateField              = $this->createMock(CustomField::class);
+        $this->descriptionField       = $this->createStub(CustomField::class);
+        $this->dateField              = $this->createStub(CustomField::class);
         $this->customObject           = $this->createMock(CustomObject::class);
         $this->import                 = $this->createMock(Import::class);
         $this->customItemModel        = $this->createMock(CustomItemModel::class);
         $this->entityManager          = $this->createMock(EntityManager::class);
         $this->entityManager->method('getConnection')->willReturn($this->createMock(Connection::class)); // the import runs in a transaction
-        $this->security               = $this->createMock(CorePermissions::class);
-        $this->dispatcher             = $this->createMock(EventDispatcherInterface::class);
-        $this->router                 = $this->createMock(UrlGeneratorInterface::class);
+        $this->security               = $this->createStub(CorePermissions::class);
+        $this->dispatcher             = $this->createStub(EventDispatcherInterface::class);
+        $this->router                 = $this->createStub(UrlGeneratorInterface::class);
         $this->translator             = $this->createMock(Translator::class);
-        $this->userHelper             = $this->createMock(UserHelper::class);
-        $this->logger                 = $this->createMock(LoggerInterface::class);
-        $this->coreParametersHelper   = $this->createMock(CoreParametersHelper::class);
+        $this->userHelper             = $this->createStub(UserHelper::class);
+        $this->logger                 = $this->createStub(LoggerInterface::class);
+        $this->coreParametersHelper   = $this->createStub(CoreParametersHelper::class);
 
         $this->dateHelper             = new DateHelper(
             'F j, Y g:i a T',
@@ -163,7 +165,7 @@ class CustomItemImportModelTest extends \PHPUnit\Framework\TestCase
             $this->dateHelper,
             $this->translator,
         );
-        $this->filterOperatorProvider = $this->createMock(FilterOperatorProviderInterface::class);
+        $this->filterOperatorProvider = $this->createStub(FilterOperatorProviderInterface::class);
         $this->customItemImportModel  = new CustomItemImportModel(
             $this->entityManager,
             $this->security,
@@ -221,7 +223,7 @@ class CustomItemImportModelTest extends \PHPUnit\Framework\TestCase
             }))
             ->willReturn($customItem);
 
-        $leadRepository = $this->createMock(LeadRepository::class);
+        $leadRepository = $this->createStub(LeadRepository::class);
         $this->entityManager->expects($this->any())
             ->method('getRepository')
             ->with(Lead::class)

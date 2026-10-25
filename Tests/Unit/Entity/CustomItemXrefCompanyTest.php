@@ -12,8 +12,8 @@ class CustomItemXrefCompanyTest extends \PHPUnit\Framework\TestCase
 {
     public function testGetters(): void
     {
-        $customItem = $this->createMock(CustomItem::class);
-        $company    = $this->createMock(Company::class);
+        $customItem = $this->createStub(CustomItem::class);
+        $company    = $this->createStub(Company::class);
         $dateAdded  = new \DateTimeImmutable('2019-03-04 12:34:56');
         $xref       = new CustomItemXrefCompany(
             $customItem,

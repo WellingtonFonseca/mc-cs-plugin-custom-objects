@@ -14,6 +14,7 @@ use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\InputBag;
@@ -23,6 +24,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 #[\AllowDynamicProperties]
+#[AllowMockObjectsWithoutExpectations]
 class ViewControllerTest extends ControllerTestCase
 {
     private const OBJECT_ID = 33;
@@ -49,9 +51,9 @@ class ViewControllerTest extends ControllerTestCase
         $this->permissionProvider = $this->createMock(CustomObjectPermissionProvider::class);
         $this->routeProvider      = $this->createMock(CustomObjectRouteProvider::class);
         $this->requestStack       = $this->createMock(RequestStack::class);
-        $this->request            = $this->createMock(Request::class);
+        $this->request            = $this->createStub(Request::class);
         $this->formFactory        = $this->createMock(FormFactoryInterface::class);
-        $this->form               = $this->createMock(FormInterface::class);
+        $this->form               = $this->createStub(FormInterface::class);
         $this->customObject       = $this->createMock(CustomObject::class);
 
         $this->viewController     = new ViewController(

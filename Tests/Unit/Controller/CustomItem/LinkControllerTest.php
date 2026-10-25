@@ -14,7 +14,9 @@ use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class LinkControllerTest extends ControllerTestCase
 {
     private const ITEM_ID = 22;
@@ -125,7 +127,7 @@ class LinkControllerTest extends ControllerTestCase
 
     public function testSaveActionIfCustomItemLinkedToUnknownEntityType(): void
     {
-        $customItem = $this->createMock(CustomItem::class);
+        $customItem = $this->createStub(CustomItem::class);
 
         $this->customItemModel->expects($this->once())
             ->method('fetchEntity')
@@ -155,7 +157,7 @@ class LinkControllerTest extends ControllerTestCase
 
     public function testSaveAction(): void
     {
-        $customItem = $this->createMock(CustomItem::class);
+        $customItem = $this->createStub(CustomItem::class);
 
         $this->customItemModel->expects($this->once())
             ->method('fetchEntity')

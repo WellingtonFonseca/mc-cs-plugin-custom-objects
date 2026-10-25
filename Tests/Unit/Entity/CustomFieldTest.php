@@ -27,7 +27,9 @@ use Symfony\Component\Validator\Mapping\ClassMetadata;
 use Symfony\Component\Validator\Violation\ConstraintViolationBuilderInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomFieldTest extends \PHPUnit\Framework\TestCase
 {
     use ConsecutiveCallsTrait;
@@ -72,8 +74,8 @@ class CustomFieldTest extends \PHPUnit\Framework\TestCase
     public function testValidateValueWhenValid(): void
     {
         $context     = $this->createMock(ExecutionContextInterface::class);
-        $translator  = $this->createMock(TranslatorInterface::class);
-        $provider    = $this->createMock(FilterOperatorProviderInterface::class);
+        $translator  = $this->createStub(TranslatorInterface::class);
+        $provider    = $this->createStub(FilterOperatorProviderInterface::class);
         $customField = new CustomField();
 
         $context->expects($this->never())
@@ -87,9 +89,9 @@ class CustomFieldTest extends \PHPUnit\Framework\TestCase
     public function testValidateValueWhenInvalid(): void
     {
         $context     = $this->createMock(ExecutionContextInterface::class);
-        $translator  = $this->createMock(TranslatorInterface::class);
+        $translator  = $this->createStub(TranslatorInterface::class);
         $violation   = $this->createMock(ConstraintViolationBuilderInterface::class);
-        $provider    = $this->createMock(FilterOperatorProviderInterface::class);
+        $provider    = $this->createStub(FilterOperatorProviderInterface::class);
         $customField = new CustomField();
 
         $translator->method('trans')->willReturn('a validation message');
@@ -118,7 +120,7 @@ class CustomFieldTest extends \PHPUnit\Framework\TestCase
 
     public function testToArray(): void
     {
-        $customObject = $this->createMock(CustomObject::class);
+        $customObject = $this->createStub(CustomObject::class);
         $customObject->method('getId')->willReturn(34);
 
         $customField = new CustomField();

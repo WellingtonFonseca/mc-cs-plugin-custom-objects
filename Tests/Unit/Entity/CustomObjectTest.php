@@ -63,7 +63,7 @@ class CustomObjectTest extends \PHPUnit\Framework\TestCase
         $object->setType(1);
         $this->assertSame(1, $object->getType());
 
-        $co = $this->createMock(CustomObject::class);
+        $co = $this->createStub(CustomObject::class);
         $object->setMasterObject($co);
         $this->assertSame($co, $object->getMasterObject());
     }
@@ -71,9 +71,9 @@ class CustomObjectTest extends \PHPUnit\Framework\TestCase
     public function testCustomFieldChanges(): void
     {
         $object        = new CustomObject();
-        $modifiedField = $this->createMock(CustomField::class);
-        $createdField  = $this->createMock(CustomField::class);
-        $deletedField  = $this->createMock(CustomField::class);
+        $modifiedField = $this->createStub(CustomField::class);
+        $createdField  = $this->createStub(CustomField::class);
+        $deletedField  = $this->createStub(CustomField::class);
 
         $modifiedField->method('getId')->willReturn(13);
         $modifiedField->method('toArray')->willReturnOnConsecutiveCalls(
@@ -114,8 +114,8 @@ class CustomObjectTest extends \PHPUnit\Framework\TestCase
     public function testGetPublishedFields(): void
     {
         $object           = new CustomObject();
-        $publishedField   = $this->createMock(CustomField::class);
-        $unpublishedField = $this->createMock(CustomField::class);
+        $publishedField   = $this->createStub(CustomField::class);
+        $unpublishedField = $this->createStub(CustomField::class);
 
         $publishedField->method('isPublished')->willReturn(true);
         $unpublishedField->method('isPublished')->willReturn(false);
@@ -132,8 +132,8 @@ class CustomObjectTest extends \PHPUnit\Framework\TestCase
     public function testGetCfByOrder()
     {
         $object = new CustomObject();
-        $field1 = $this->createMock(CustomField::class);
-        $field2 = $this->createMock(CustomField::class);
+        $field1 = $this->createStub(CustomField::class);
+        $field2 = $this->createStub(CustomField::class);
 
         $field1->method('getOrder')->willReturn(1);
         $field2->method('getOrder')->willReturn(2);

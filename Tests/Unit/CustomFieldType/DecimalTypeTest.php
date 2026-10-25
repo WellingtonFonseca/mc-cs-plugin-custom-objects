@@ -9,8 +9,10 @@ use MauticPlugin\CustomObjectsBundle\CustomFieldType\DecimalType;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueDecimal;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class DecimalTypeTest extends \PHPUnit\Framework\TestCase
 {
     private $translator;
@@ -27,9 +29,9 @@ class DecimalTypeTest extends \PHPUnit\Framework\TestCase
     {
         parent::setUp();
 
-        $this->translator             = $this->createMock(TranslatorInterface::class);
-        $this->customField            = $this->createMock(CustomField::class);
-        $this->customItem             = $this->createMock(CustomItem::class);
+        $this->translator             = $this->createStub(TranslatorInterface::class);
+        $this->customField            = $this->createStub(CustomField::class);
+        $this->customItem             = $this->createStub(CustomItem::class);
         $this->filterOperatorProvider = $this->createMock(FilterOperatorProviderInterface::class);
         $this->fieldType              = new DecimalType(
             $this->translator,

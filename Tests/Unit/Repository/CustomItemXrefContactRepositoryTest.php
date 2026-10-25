@@ -22,7 +22,9 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomItemXrefContactRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomItemXrefContactRepositoryTest extends \PHPUnit\Framework\TestCase
 {
     use ConsecutiveCallsTrait;
@@ -52,17 +54,17 @@ class CustomItemXrefContactRepositoryTest extends \PHPUnit\Framework\TestCase
     {
         parent::setUp();
 
-        $this->entityManager        = $this->createMock(EntityManager::class);
-        $this->classMetadata        = $this->createMock(ClassMetadata::class);
+        $this->entityManager        = $this->createStub(EntityManager::class);
+        $this->classMetadata        = $this->createStub(ClassMetadata::class);
         $this->contact              = $this->createMock(Lead::class);
         $this->queryBuilder         = $this->createMock(QueryBuilder::class);
-        $this->queryBuilderDbal     = $this->createMock(DbalQueryBuilder::class);
-        $this->connection           = $this->createMock(Connection::class);
-        $this->statement            = $this->createMock(Statement::class);
-        $this->expr                 = $this->createMock(Expr::class);
-        $this->expressionBuilder    = $this->createMock(ExpressionBuilder::class);
+        $this->queryBuilderDbal     = $this->createStub(DbalQueryBuilder::class);
+        $this->connection           = $this->createStub(Connection::class);
+        $this->statement            = $this->createStub(Statement::class);
+        $this->expr                 = $this->createStub(Expr::class);
+        $this->expressionBuilder    = $this->createStub(ExpressionBuilder::class);
         $this->query                = $this->createMock(AbstractQuery::class);
-        $this->registry             = $this->createMock(ManagerRegistry::class);
+        $this->registry             = $this->createStub(ManagerRegistry::class);
         $this->repository           = new CustomItemXrefContactRepository(
             $this->registry,
         );

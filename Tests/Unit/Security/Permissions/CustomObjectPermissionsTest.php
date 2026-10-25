@@ -14,7 +14,9 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomObjectPermissionsTest extends TestCase
 {
     use ConsecutiveCallsTrait;
@@ -58,7 +60,7 @@ class CustomObjectPermissionsTest extends TestCase
     {
         parent::setUp();
 
-        $this->coreParametersHelper = $this->createMock(CoreParametersHelper::class);
+        $this->coreParametersHelper = $this->createStub(CoreParametersHelper::class);
         $this->customObjectModel    = $this->createMock(CustomObjectModel::class);
         $this->customObject         = $this->createMock(CustomObject::class);
         $this->configProvider       = $this->createMock(ConfigProvider::class);

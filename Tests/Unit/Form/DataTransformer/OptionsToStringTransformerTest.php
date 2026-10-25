@@ -10,14 +10,16 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldOption;
 use MauticPlugin\CustomObjectsBundle\Form\DataTransformer\OptionsToStringTransformer;
 use MauticPlugin\CustomObjectsBundle\Model\CustomFieldModel;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class OptionsToStringTransformerTest extends \PHPUnit\Framework\TestCase
 {
     public function testTransformWithEmptyOptions(): void
     {
         $options    = null;
         $serializer = $this->createMock(SerializerInterface::class);
-        $model      = $this->createMock(CustomFieldModel::class);
+        $model      = $this->createStub(CustomFieldModel::class);
         $serializer
             ->expects($this->never())
             ->method('serialize');
@@ -44,7 +46,7 @@ class OptionsToStringTransformerTest extends \PHPUnit\Framework\TestCase
             ]])
             ->willReturn('{"some": "json"}');
 
-        $model = $this->createMock(CustomFieldModel::class);
+        $model = $this->createStub(CustomFieldModel::class);
 
         $transformer = new OptionsToStringTransformer($serializer, $model);
         $this->assertSame('{"some": "json"}', $transformer->transform($options));
@@ -53,7 +55,7 @@ class OptionsToStringTransformerTest extends \PHPUnit\Framework\TestCase
     public function testReverseTransform(): void
     {
         $options     = '[]';
-        $serializer  = $this->createMock(SerializerInterface::class);
+        $serializer  = $this->createStub(SerializerInterface::class);
         $model       = $this->createMock(CustomFieldModel::class);
         $transformer = new OptionsToStringTransformer($serializer, $model);
         $options     = $transformer->reverseTransform($options);
@@ -70,7 +72,7 @@ class OptionsToStringTransformerTest extends \PHPUnit\Framework\TestCase
             'value'       => $value,
         ]]);
 
-        $serializer  = $this->createMock(SerializerInterface::class);
+        $serializer  = $this->createStub(SerializerInterface::class);
         $model       = $this->createMock(CustomFieldModel::class);
         $model
             ->expects($this->once())
@@ -95,7 +97,7 @@ class OptionsToStringTransformerTest extends \PHPUnit\Framework\TestCase
             'value'       => $value,
         ]]);
 
-        $serializer  = $this->createMock(SerializerInterface::class);
+        $serializer  = $this->createStub(SerializerInterface::class);
         $model       = $this->createMock(CustomFieldModel::class);
 
         $transformer = new OptionsToStringTransformer($serializer, $model);

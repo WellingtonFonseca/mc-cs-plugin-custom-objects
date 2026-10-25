@@ -11,7 +11,7 @@ class CustomItemXrefEntityEventTest extends \PHPUnit\Framework\TestCase
 {
     public function testGettersSetters(): void
     {
-        $xref  = $this->createMock(CustomItemXrefContact::class);
+        $xref  = $this->createStub(CustomItemXrefContact::class);
         $event = new CustomItemXrefEntityEvent($xref);
 
         $this->assertSame($xref, $event->getXref());

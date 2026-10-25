@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Model;
 
+use PHPUnit\Framework\MockObject\Stub;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManager;
@@ -19,6 +20,7 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\InvalidValueException;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemImportModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -31,32 +33,33 @@ use Mautic\CoreBundle\Helper\UserHelper;
  * to be refused but leave an item with only its name behind. A row is one transaction: rolled back when the save fails.
  * (CustomItemImportModelTest skips itself on a core without LeadRepository::exists, so these live apart.)
  */
+#[AllowMockObjectsWithoutExpectations]
 class CustomItemImportModelTransactionTest extends TestCase
 {
-    private CustomItemModel&MockObject $customItemModel;
+    private CustomItemModel&Stub $customItemModel;
 
     private EntityManager&MockObject $entityManager;
 
-    private Import&MockObject $import;
+    private Import&Stub $import;
 
-    private CustomObject&MockObject $customObject;
+    private CustomObject&Stub $customObject;
 
     private CustomItemImportModel $model;
 
     protected function setUp(): void
     {
-        $this->customItemModel = $this->createMock(CustomItemModel::class);
+        $this->customItemModel = $this->createStub(CustomItemModel::class);
         $this->entityManager   = $this->createMock(EntityManager::class);
-        $this->import          = $this->createMock(Import::class);
-        $this->customObject    = $this->createMock(CustomObject::class);
+        $this->import          = $this->createStub(Import::class);
+        $this->customObject    = $this->createStub(CustomObject::class);
 
         $this->customObject->method('getCustomFields')->willReturn(new ArrayCollection());
 
         // only the name is mapped: no field value is needed to reach the save
         $this->import->method('getMatchedFields')->willReturn(['name' => 'customItemName']);
 
-        $translator = $this->createMock(Translator::class);
-        $parameters = $this->createMock(CoreParametersHelper::class);
+        $translator = $this->createStub(Translator::class);
+        $parameters = $this->createStub(CoreParametersHelper::class);
         $formatter  = new FormatterHelper(new DateHelper('F j, Y g:i a T', 'D, M d', 'F j, Y', 'g:i a', $translator, $parameters), $translator);
 
         $this->model = new CustomItemImportModel(

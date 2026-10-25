@@ -36,7 +36,9 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomObjectModelTest extends TestCase
 {
     use ConsecutiveCallsTrait;
@@ -105,26 +107,26 @@ class CustomObjectModelTest extends TestCase
         parent::setUp();
 
         $this->customObject                   = $this->createMock(CustomObject::class);
-        $this->customField                    = $this->createMock(CustomField::class);
+        $this->customField                    = $this->createStub(CustomField::class);
         $this->user                           = $this->createMock(User::class);
         $this->entityManager                  = $this->createMock(EntityManager::class);
         $this->translator                     = $this->createMock(Translator::class);
-        $this->security                       = $this->createMock(CorePermissions::class);
-        $this->dispatcher                     = $this->createMock(EventDispatcherInterface::class);
-        $this->router                         = $this->createMock(UrlGeneratorInterface::class);
+        $this->security                       = $this->createStub(CorePermissions::class);
+        $this->dispatcher                     = $this->createStub(EventDispatcherInterface::class);
+        $this->router                         = $this->createStub(UrlGeneratorInterface::class);
         $this->userHelper                     = $this->createMock(UserHelper::class);
-        $this->logger                         = $this->createMock(LoggerInterface::class);
-        $this->coreParametersHelper           = $this->createMock(CoreParametersHelper::class);
+        $this->logger                         = $this->createStub(LoggerInterface::class);
+        $this->coreParametersHelper           = $this->createStub(CoreParametersHelper::class);
         $this->queryBuilder                   = $this->createMock(QueryBuilder::class);
-        $this->queryBuilderDbal               = $this->createMock(QueryBuilderDbal::class);
-        $this->statement                      = $this->createMock(Statement::class);
+        $this->queryBuilderDbal               = $this->createStub(QueryBuilderDbal::class);
+        $this->statement                      = $this->createStub(Statement::class);
         $this->query                          = $this->createMock(AbstractQuery::class);
-        $this->connection                     = $this->createMock(Connection::class);
-        $this->databasePlatform               = $this->createMock(AbstractMySQLPlatform::class);
+        $this->connection                     = $this->createStub(Connection::class);
+        $this->databasePlatform               = $this->createStub(AbstractMySQLPlatform::class);
         $this->customObjectRepository         = $this->createMock(CustomObjectRepository::class);
         $this->customObjectPermissionProvider = $this->createMock(CustomObjectPermissionProvider::class);
         $this->customFieldModel               = $this->createMock(CustomFieldModel::class);
-        $this->listModel                      = $this->createMock(ListModel::class);
+        $this->listModel                      = $this->createStub(ListModel::class);
         $this->customObjectModel              = new CustomObjectModel(
             $this->entityManager,
             $this->security,
@@ -633,8 +635,8 @@ class CustomObjectModelTest extends TestCase
 
     public function testRemoveCustomFieldById(): void
     {
-        $customField5 = $this->createMock(CustomField::class);
-        $customField6 = $this->createMock(CustomField::class);
+        $customField5 = $this->createStub(CustomField::class);
+        $customField6 = $this->createStub(CustomField::class);
         $customField5->method('getId')->willReturn(5);
         $customField6->method('getId')->willReturn(6);
 
@@ -660,7 +662,7 @@ class CustomObjectModelTest extends TestCase
 
     public function testIgnoreRemoveNotExistingCustomFieldById(): void
     {
-        $customField1 = $this->createMock(CustomField::class);
+        $customField1 = $this->createStub(CustomField::class);
         $customField1->method('getId')->willReturn(1);
 
         $this->customObject->expects($this->once())

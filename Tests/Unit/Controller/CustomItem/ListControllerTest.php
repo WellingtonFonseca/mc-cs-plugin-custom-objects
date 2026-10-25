@@ -16,12 +16,14 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProviderFactory;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 #[\AllowDynamicProperties]
+#[AllowMockObjectsWithoutExpectations]
 class ListControllerTest extends ControllerTestCase
 {
     private const OBJECT_ID = 33;
@@ -44,13 +46,13 @@ class ListControllerTest extends ControllerTestCase
     {
         parent::setUp();
 
-        $this->sessionProviderFactory = $this->createMock(SessionProviderFactory::class);
+        $this->sessionProviderFactory = $this->createStub(SessionProviderFactory::class);
         $this->customItemModel        = $this->createMock(CustomItemModel::class);
         $this->customObjectModel      = $this->createMock(CustomObjectModel::class);
         $this->sessionProvider        = $this->createMock(SessionProvider::class);
         $this->permissionProvider     = $this->createMock(CustomItemPermissionProvider::class);
-        $this->routeProvider          = $this->createMock(CustomItemRouteProvider::class);
-        $this->request                = $this->createMock(Request::class);
+        $this->routeProvider          = $this->createStub(CustomItemRouteProvider::class);
+        $this->request                = $this->createStub(Request::class);
 
         $this->listController         = new ListController(
             $this->managerRegistry,
@@ -121,7 +123,7 @@ class ListControllerTest extends ControllerTestCase
     public function testListAction(): void
     {
         $pageLimit    = 10;
-        $customObject = $this->createMock(CustomObject::class);
+        $customObject = $this->createStub(CustomObject::class);
 
         $this->request->method('get')->willReturnMap([
             ['limit', $pageLimit, $pageLimit],
@@ -190,7 +192,7 @@ class ListControllerTest extends ControllerTestCase
     {
         $pageLimit    = 10;
         $search       = 'Search some';
-        $customObject = $this->createMock(CustomObject::class);
+        $customObject = $this->createStub(CustomObject::class);
 
         $this->request->query = new InputBag(
             [

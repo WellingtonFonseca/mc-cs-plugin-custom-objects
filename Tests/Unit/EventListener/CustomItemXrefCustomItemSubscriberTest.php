@@ -20,7 +20,9 @@ use MauticPlugin\CustomObjectsBundle\Repository\CustomItemRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomItemXrefCustomItemSubscriberTest extends TestCase
 {
     use ConsecutiveCallsTrait;
@@ -66,13 +68,13 @@ class CustomItemXrefCustomItemSubscriberTest extends TestCase
         $this->entityManager        = $this->createMock(EntityManager::class);
         $this->queryBuilder         = $this->createMock(QueryBuilder::class);
         $this->query                = $this->createMock(AbstractQuery::class);
-        $this->expr                 = $this->createMock(Expr::class);
+        $this->expr                 = $this->createStub(Expr::class);
         $this->event                = $this->createMock(CustomItemXrefEntityEvent::class);
         $this->listEvent            = $this->createMock(CustomItemListQueryEvent::class);
         $this->discoveryEvent       = $this->createMock(CustomItemXrefEntityDiscoveryEvent::class);
         $this->customItemA          = $this->createMock(CustomItem::class);
-        $this->customItemB          = $this->createMock(CustomItem::class);
-        $this->xref                 = $this->createMock(CustomItemXrefCustomItem::class);
+        $this->customItemB          = $this->createStub(CustomItem::class);
+        $this->xref                 = $this->createStub(CustomItemXrefCustomItem::class);
         $this->customItemRepository = $this->createMock(CustomItemRepository::class);
         $this->xrefSubscriber       = new CustomItemXrefCustomItemSubscriber(
             $this->entityManager,

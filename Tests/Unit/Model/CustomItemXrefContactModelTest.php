@@ -15,11 +15,13 @@ use Mautic\CoreBundle\Security\Permissions\CorePermissions;
 use Mautic\CoreBundle\Translation\Translator;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemXrefContactModel;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomItemXrefContactModelTest extends \PHPUnit\Framework\TestCase
 {
     private $customItem;
@@ -74,17 +76,17 @@ class CustomItemXrefContactModelTest extends \PHPUnit\Framework\TestCase
     {
         parent::setUp();
 
-        $this->customItem                   = $this->createMock(CustomItem::class);
+        $this->customItem                   = $this->createStub(CustomItem::class);
         $this->entityManager                = $this->createMock(EntityManager::class);
-        $this->queryBuilder                 = $this->createMock(QueryBuilder::class);
-        $this->query                        = $this->createMock(AbstractQuery::class);
-        $this->translator                   = $this->createMock(Translator::class);
-        $this->security                     = $this->createMock(CorePermissions::class);
-        $this->dispatcher                   = $this->createMock(EventDispatcherInterface::class);
-        $this->router                       = $this->createMock(UrlGeneratorInterface::class);
-        $this->userHelper                   = $this->createMock(UserHelper::class);
-        $this->logger                       = $this->createMock(LoggerInterface::class);
-        $this->coreParametersHelper         = $this->createMock(CoreParametersHelper::class);
+        $this->queryBuilder                 = $this->createStub(QueryBuilder::class);
+        $this->query                        = $this->createStub(AbstractQuery::class);
+        $this->translator                   = $this->createStub(Translator::class);
+        $this->security                     = $this->createStub(CorePermissions::class);
+        $this->dispatcher                   = $this->createStub(EventDispatcherInterface::class);
+        $this->router                       = $this->createStub(UrlGeneratorInterface::class);
+        $this->userHelper                   = $this->createStub(UserHelper::class);
+        $this->logger                       = $this->createStub(LoggerInterface::class);
+        $this->coreParametersHelper         = $this->createStub(CoreParametersHelper::class);
         $this->customItemXrefContactModel   = new CustomItemXrefContactModel(
             $this->entityManager,
             $this->security,
@@ -105,7 +107,7 @@ class CustomItemXrefContactModelTest extends \PHPUnit\Framework\TestCase
         $from         = new \DateTime('2019-03-02 12:30:00');
         $to           = new \DateTime('2019-04-02 12:30:00');
         $connection   = $this->createMock(Connection::class);
-        $queryBuilder = $this->createMock(DBALQueryBuilder::class);
+        $queryBuilder = $this->createStub(DBALQueryBuilder::class);
 
         $this->entityManager->expects($this->once())
             ->method('getConnection')

@@ -26,7 +26,9 @@ use MauticPlugin\CustomObjectsBundle\Repository\CustomItemRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomItemXrefContactSubscriberTest extends TestCase
 {
     use ConsecutiveCallsTrait;
@@ -79,16 +81,16 @@ class CustomItemXrefContactSubscriberTest extends TestCase
         $this->queryBuilder         = $this->createMock(QueryBuilder::class);
         $this->queryBuilderDbal     = $this->createMock(DbalQueryBuilder::class);
         $this->query                = $this->createMock(AbstractQuery::class);
-        $userHelper                 = $this->createMock(UserHelper::class);
+        $userHelper                 = $this->createStub(UserHelper::class);
         $this->customItemRepository = $this->createMock(CustomItemRepository::class);
-        $user                       = $this->createMock(User::class);
+        $user                       = $this->createStub(User::class);
         $this->event                = $this->createMock(CustomItemXrefEntityEvent::class);
         $this->listEvent            = $this->createMock(CustomItemListQueryEvent::class);
         $this->listDbalEvent        = $this->createMock(CustomItemListDbalQueryEvent::class);
         $this->discoveryEvent       = $this->createMock(CustomItemXrefEntityDiscoveryEvent::class);
-        $this->contact              = $this->createMock(Lead::class);
+        $this->contact              = $this->createStub(Lead::class);
         $this->customItem           = $this->createMock(CustomItem::class);
-        $this->xref                 = $this->createMock(CustomItemXrefContact::class);
+        $this->xref                 = $this->createStub(CustomItemXrefContact::class);
         $this->xrefSubscriber       = new CustomItemXrefContactSubscriber(
             $this->entityManager,
             $userHelper,

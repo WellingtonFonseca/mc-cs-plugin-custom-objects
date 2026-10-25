@@ -12,8 +12,10 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomField\Params;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\EventListener\CustomFieldPostLoadSubscriber;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomFieldPostLoadSubscriberTest extends \PHPUnit\Framework\TestCase
 {
     private const FIELD_TYPE = 'text';

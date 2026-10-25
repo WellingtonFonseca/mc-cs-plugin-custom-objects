@@ -14,9 +14,11 @@ use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\CustomObjectMergedFilt
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\QueryFilterFactory;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\SegmentFilterBuilder;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\UnionQueryContainer;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class QueryFilterFactoryTest extends TestCase
 {
     /**
@@ -56,8 +58,8 @@ class QueryFilterFactoryTest extends TestCase
         $this->contactSegmentFilterFactory = $this->createMock(SegmentFilterBuilder::class);
         $this->queryFilterHelper           = $this->createMock(QueryFilterHelper::class);
         $this->contactSegmentFilter        = $this->createMock(ContactSegmentFilter::class);
-        $this->segmentQueryBuilder         = $this->createMock(SegmentQueryBuilder::class);
-        $this->unionQueryContainer         = $this->createMock(UnionQueryContainer::class);
+        $this->segmentQueryBuilder         = $this->createStub(SegmentQueryBuilder::class);
+        $this->unionQueryContainer         = $this->createStub(UnionQueryContainer::class);
         $this->factory                     = new QueryFilterFactory(
             $this->contactSegmentFilterFactory,
             $this->queryFilterHelper

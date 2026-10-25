@@ -25,10 +25,12 @@ use MauticPlugin\CustomObjectsBundle\EventListener\SerializerSubscriber;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomItemXrefContactRepository;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class SerializerSubscriberTest extends \PHPUnit\Framework\TestCase
 {
     private $configProvider;
@@ -192,14 +194,14 @@ class SerializerSubscriberTest extends \PHPUnit\Framework\TestCase
 
     public function testAddCustomItemsIntoContactResponse(): void
     {
-        $contact         = $this->createMock(Lead::class);
-        $customItem      = $this->createMock(CustomItem::class);
-        $customFieldText = $this->createMock(CustomField::class);
-        $customFieldDate = $this->createMock(CustomField::class);
+        $contact         = $this->createStub(Lead::class);
+        $customItem      = $this->createStub(CustomItem::class);
+        $customFieldText = $this->createStub(CustomField::class);
+        $customFieldDate = $this->createStub(CustomField::class);
         $context         = $this->createMock(Context::class);
         $visitor         = $this->createMock(SerializationVisitorInterface::class);
-        $translator      = $this->createMock(TranslatorInterface::class);
-        $filterOperator  = $this->createMock(FilterOperatorProviderInterface::class);
+        $translator      = $this->createStub(TranslatorInterface::class);
+        $filterOperator  = $this->createStub(FilterOperatorProviderInterface::class);
 
         $contact->method('getId')->willReturn(345);
         $customFieldDate->method('getAlias')->willReturn('text-field-1');

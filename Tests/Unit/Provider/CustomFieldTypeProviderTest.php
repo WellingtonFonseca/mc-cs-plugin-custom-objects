@@ -11,14 +11,16 @@ use MauticPlugin\CustomObjectsBundle\CustomFieldType\DateType;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\TextType;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomFieldTypeProviderTest extends \PHPUnit\Framework\TestCase
 {
     public function testWorkflow(): void
     {
         $customFieldTypeProvider = new CustomFieldTypeProvider();
-        $filterOperatorProvider  = $this->createMock(FilterOperatorProviderInterface::class);
+        $filterOperatorProvider  = $this->createStub(FilterOperatorProviderInterface::class);
         $textType                = new TextType($this->createMock(TranslatorInterface::class), $filterOperatorProvider);
 
         $customFieldTypeProvider->addType($textType);
@@ -31,7 +33,7 @@ class CustomFieldTypeProviderTest extends \PHPUnit\Framework\TestCase
 
     public function testKeyTypeMapping(): void
     {
-        $filterOperatorProvider = $this->createMock(FilterOperatorProviderInterface::class);
+        $filterOperatorProvider = $this->createStub(FilterOperatorProviderInterface::class);
         $mockTranslator         = $this->createMock(Translator::class);
         $typeProvider           = new CustomFieldTypeProvider();
         $match                  = [];

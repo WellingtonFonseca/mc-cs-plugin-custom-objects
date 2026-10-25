@@ -17,7 +17,9 @@ use MauticPlugin\CustomObjectsBundle\Repository\CustomObjectRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomObjectRepositoryTest extends TestCase
 {
     use ConsecutiveCallsTrait;
@@ -61,12 +63,12 @@ class CustomObjectRepositoryTest extends TestCase
     {
         parent::setUp();
 
-        $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        $this->classMetadata = $this->createMock(ClassMetadata::class);
+        $this->entityManager = $this->createStub(EntityManagerInterface::class);
+        $this->classMetadata = $this->createStub(ClassMetadata::class);
         $this->queryBuilder  = $this->createMock(QueryBuilder::class);
         $this->query         = $this->createMock(AbstractQuery::class);
         $this->expression    = $this->createMock(Expr::class);
-        $this->registry      = $this->createMock(ManagerRegistry::class);
+        $this->registry      = $this->createStub(ManagerRegistry::class);
         $this->repository    = new CustomObjectRepository(
             $this->registry,
         );

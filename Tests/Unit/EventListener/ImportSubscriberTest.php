@@ -23,7 +23,9 @@ use MauticPlugin\CustomObjectsBundle\Repository\CustomFieldRepository;
 use Symfony\Component\Form\Form;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class ImportSubscriberTest extends \PHPUnit\Framework\TestCase
 {
     use ConsecutiveCallsTrait;
@@ -73,7 +75,7 @@ class ImportSubscriberTest extends \PHPUnit\Framework\TestCase
         $this->importInitEvent       = new ImportInitEvent('unicorn');
         $this->importMappingEvent    = new ImportMappingEvent('unicorn');
         $this->import                = $this->createMock(Import::class);
-        $leadEventLogMock            = $this->createMock(LeadEventLog::class);
+        $leadEventLogMock            = $this->createStub(LeadEventLog::class);
         $this->importProcessEvent    = new ImportProcessEvent($this->import, $leadEventLogMock, []);
         $this->customObject          = $this->createMock(CustomObject::class);
         $this->form                  = $this->createMock(Form::class);

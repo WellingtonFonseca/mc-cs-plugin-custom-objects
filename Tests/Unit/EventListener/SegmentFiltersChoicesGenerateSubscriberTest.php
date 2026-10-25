@@ -28,7 +28,9 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
 {
     use ConsecutiveCallsTrait;
@@ -80,7 +82,7 @@ class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
         parent::setUp();
 
         $this->customObjectRepository = $this->createMock(CustomObjectRepository::class);
-        $this->translator             = $this->createMock(TranslatorInterface::class);
+        $this->translator             = $this->createStub(TranslatorInterface::class);
         $this->configProvider         = $this->createMock(ConfigProvider::class);
         $this->fieldTypeProvider      = $this->createMock(CustomFieldTypeProvider::class);
         $this->filterOperatorProvider = $this->createMock(FilterOperatorProviderInterface::class);

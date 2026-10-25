@@ -18,6 +18,7 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
 use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
@@ -26,6 +27,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 #[\AllowDynamicProperties]
+#[AllowMockObjectsWithoutExpectations]
 class SaveControllerTest extends ControllerTestCase
 {
     public const OBJECT_ID = 33;
@@ -88,12 +90,12 @@ class SaveControllerTest extends ControllerTestCase
         $this->customObjectModel      = $this->createMock(CustomObjectModel::class);
         $this->permissionProvider     = $this->createMock(CustomItemPermissionProvider::class);
         $this->routeProvider          = $this->createMock(CustomItemRouteProvider::class);
-        $this->lockFlashMessageHelper = $this->createMock(LockFlashMessageHelper::class);
+        $this->lockFlashMessageHelper = $this->createStub(LockFlashMessageHelper::class);
         $this->request                = new Request();
         $this->customItem             = $this->createMock(CustomItem::class);
         $this->form                   = $this->createMock(FormInterface::class);
 
-        $userMock = $this->createMock(User::class);
+        $userMock = $this->createStub(User::class);
         $userMock->method('isAdmin')
             ->willReturn(true);
 

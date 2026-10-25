@@ -13,8 +13,10 @@ use Doctrine\ORM\EntityManager;
 use Mautic\IntegrationsBundle\Migration\AbstractMigration;
 use MauticPlugin\CustomObjectsBundle\Migrations\Version_0_0_12;
 use MauticPlugin\CustomObjectsBundle\Migrations\Version_0_0_29;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class FulltextIndexMigrationsTest extends TestCase
 {
     public function testVersion0029DoesNothingWhenAllFulltextIndexesExist(): void
@@ -88,10 +90,10 @@ class FulltextIndexMigrationsTest extends TestCase
     private function runMigration(string $class, string $prefix, Schema $schema): array
     {
         $executed      = [];
-        $schemaManager = $this->createMock(AbstractSchemaManager::class);
+        $schemaManager = $this->createStub(AbstractSchemaManager::class);
         $schemaManager->method('introspectSchema')->willReturn($schema);
 
-        $connection = $this->createMock(Connection::class);
+        $connection = $this->createStub(Connection::class);
         $connection->method('createSchemaManager')->willReturn($schemaManager);
         $connection->method('prepare')->willReturnCallback(function (string $sql) use (&$executed) {
             $executed[] = trim(preg_replace('/\s+/', ' ', $sql));
@@ -100,7 +102,7 @@ class FulltextIndexMigrationsTest extends TestCase
             return $statement;
         });
 
-        $entityManager = $this->createMock(EntityManager::class);
+        $entityManager = $this->createStub(EntityManager::class);
         $entityManager->method('getConnection')->willReturn($connection);
 
         $migration = new $class($entityManager, $prefix);

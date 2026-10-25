@@ -16,6 +16,7 @@ use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\QueryFilterFactory;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterHelper;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Translation\MessageCatalogue;
@@ -26,6 +27,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * The node of a Custom Object event in the campaign builder is named by the translation of `mautic.campaign.<type>` (core), and the
  * type holds the id of the object: the plugin adds those translations, one pair per object, to the catalogue in use.
  */
+#[AllowMockObjectsWithoutExpectations]
 class CampaignNodeLabelsTest extends TestCase
 {
     private function subscriber(TranslatorInterface $translator, CustomObjectModel $objects): CampaignSubscriber

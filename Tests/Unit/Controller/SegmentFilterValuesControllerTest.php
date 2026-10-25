@@ -26,7 +26,7 @@ class SegmentFilterValuesControllerTest extends TestCase
 
     public function testNoPermissionIs403(): void
     {
-        $values = $this->createMock(SegmentFilterValues::class);
+        $values = $this->createStub(SegmentFilterValues::class);
         $values->method('find')->willThrowException(new ForbiddenException('view'));
 
         $response = (new SegmentFilterValuesController())->valuesAction(new Request(['field' => 'cmf_14']), $values);
@@ -37,7 +37,7 @@ class SegmentFilterValuesControllerTest extends TestCase
 
     public function testAnUnknownFieldIs404(): void
     {
-        $values = $this->createMock(SegmentFilterValues::class);
+        $values = $this->createStub(SegmentFilterValues::class);
         $values->method('find')->willThrowException(new NotFoundException());
 
         $response = (new SegmentFilterValuesController())->valuesAction(new Request(['field' => 'email']), $values);

@@ -12,10 +12,12 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+#[AllowMockObjectsWithoutExpectations]
 final class CustomItemDeleteApiControllerTest extends TestCase
 {
     private CustomObjectModel $customObjectModel;
@@ -30,9 +32,9 @@ final class CustomItemDeleteApiControllerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->customObjectModel = $this->createMock(CustomObjectModel::class);
+        $this->customObjectModel = $this->createStub(CustomObjectModel::class);
         $this->customItemModel   = $this->createMock(CustomItemModel::class);
-        $this->em                = $this->createMock(EntityManagerInterface::class);
+        $this->em                = $this->createStub(EntityManagerInterface::class);
         $this->connection        = $this->createMock(Connection::class);
 
         $this->em->method('getConnection')->willReturn($this->connection);

@@ -19,7 +19,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class ContactTabSubscriberTest extends TestCase
 {
     use ConsecutiveCallsTrait;
@@ -99,7 +101,7 @@ class ContactTabSubscriberTest extends TestCase
 
     public function testForTabsContext(): void
     {
-        $contact       = $this->createMock(Lead::class);
+        $contact       = $this->createStub(Lead::class);
         $customObject1 = $this->createMock(CustomObject::class);
 
         $customObject1->expects($this->once())
@@ -115,7 +117,7 @@ class ContactTabSubscriberTest extends TestCase
             ->willReturn(CustomObject::TYPE_MASTER);
 
         // Custom objects of type RELATIONSHIP should not get a tab
-        $customObject2 = $this->createMock(CustomObject::class);
+        $customObject2 = $this->createStub(CustomObject::class);
         $customObject2->method('getType')->willReturn(CustomObject::TYPE_RELATIONSHIP);
 
         $this->configProvider->expects($this->once())
@@ -149,8 +151,8 @@ class ContactTabSubscriberTest extends TestCase
 
     public function testForTabContentsContext(): void
     {
-        $customObject = $this->createMock(CustomObject::class);
-        $contact      = $this->createMock(Lead::class);
+        $customObject = $this->createStub(CustomObject::class);
+        $contact      = $this->createStub(Lead::class);
 
         $contact->method('getId')->willReturn(45);
         $customObject->method('getId')->willReturn(555);
@@ -181,7 +183,7 @@ class ContactTabSubscriberTest extends TestCase
                 'link/route'
             ], true));
 
-        $sessionProvider = $this->createMock(SessionProvider::class);
+        $sessionProvider = $this->createStub(SessionProvider::class);
         $sessionProvider->method('getFilter')->willReturn('Search something');
         $sessionProvider->method('getNamespace')->willReturn('Some namespace');
 

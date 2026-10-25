@@ -16,11 +16,13 @@ use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterHelper;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomFieldRepository;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\CustomItemNameFilterQueryBuilder;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomItemNameFilterQueryBuilderTest extends TestCase
 {
     /**
@@ -53,9 +55,9 @@ class CustomItemNameFilterQueryBuilderTest extends TestCase
         parent::setUp();
 
         $randomParameter = new RandomParameterName();
-        $eventDispatcher = $this->createMock(EventDispatcherInterface::class);
+        $eventDispatcher = $this->createStub(EventDispatcherInterface::class);
 
-        $entityManager = $this->createMock(EntityManager::class);
+        $entityManager = $this->createStub(EntityManager::class);
         $entityManager
             ->method('getConnection')
             ->willReturn($this->createMock(Connection::class));
@@ -72,9 +74,9 @@ class CustomItemNameFilterQueryBuilderTest extends TestCase
             new RandomParameterName()
         );
 
-        $this->queryBuilder         = $this->createMock(QueryBuilder::class);
+        $this->queryBuilder         = $this->createStub(QueryBuilder::class);
         $this->contactSegmentFilter = $this->createMock(ContactSegmentFilter::class);
-        $this->connection           = $this->createMock(Connection::class);
+        $this->connection           = $this->createStub(Connection::class);
         $this->expressionBuilder    = $this->createMock(ExpressionBuilder::class);
 
         $this->customItemNameFilterQueryBuilder = new CustomItemNameFilterQueryBuilder(

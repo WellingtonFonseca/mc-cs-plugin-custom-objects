@@ -15,10 +15,12 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Helper\CsvHelper;
 use MauticPlugin\CustomObjectsBundle\Report\ReportColumnsBuilder;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class ReportColumnsBuilderTest extends TestCase
 {
     /**
@@ -60,11 +62,11 @@ class ReportColumnsBuilderTest extends TestCase
     {
         $this->customObject                    = $this->createMock(CustomObject::class);
         $this->reportColumnsBuilder            = new ReportColumnsBuilder($this->customObject);
-        $this->connection                      = $this->createMock(Connection::class);
+        $this->connection                      = $this->createStub(Connection::class);
         $this->queryBuilder                    = $this->createMock(QueryBuilder::class);
-        $this->translatorInterface             = $this->createMock(TranslatorInterface::class);
-        $this->filterOperatorProviderInterface = $this->createMock(FilterOperatorProviderInterface::class);
-        $this->csvHelper                       = $this->createMock(CsvHelper::class);
+        $this->translatorInterface             = $this->createStub(TranslatorInterface::class);
+        $this->filterOperatorProviderInterface = $this->createStub(FilterOperatorProviderInterface::class);
+        $this->csvHelper                       = $this->createStub(CsvHelper::class);
     }
 
     private function getCustomFieldsCollection(): ArrayCollection

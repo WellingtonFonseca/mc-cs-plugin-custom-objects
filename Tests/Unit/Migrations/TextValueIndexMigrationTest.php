@@ -11,8 +11,10 @@ use Doctrine\DBAL\Statement;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\EntityManager;
 use MauticPlugin\CustomObjectsBundle\Migrations\Version_0_0_30;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class TextValueIndexMigrationTest extends TestCase
 {
     public function testAddsTheIndexWhenItIsMissing(): void
@@ -48,10 +50,10 @@ class TextValueIndexMigrationTest extends TestCase
     private function runMigration(string $prefix, Schema $schema): array
     {
         $executed      = [];
-        $schemaManager = $this->createMock(AbstractSchemaManager::class);
+        $schemaManager = $this->createStub(AbstractSchemaManager::class);
         $schemaManager->method('introspectSchema')->willReturn($schema);
 
-        $connection = $this->createMock(Connection::class);
+        $connection = $this->createStub(Connection::class);
         $connection->method('createSchemaManager')->willReturn($schemaManager);
         $connection->method('prepare')->willReturnCallback(function (string $sql) use (&$executed) {
             $executed[] = trim(preg_replace('/\s+/', ' ', $sql));
@@ -59,7 +61,7 @@ class TextValueIndexMigrationTest extends TestCase
             return $this->createMock(Statement::class);
         });
 
-        $entityManager = $this->createMock(EntityManager::class);
+        $entityManager = $this->createStub(EntityManager::class);
         $entityManager->method('getConnection')->willReturn($connection);
 
         $migration = new Version_0_0_30($entityManager, $prefix);

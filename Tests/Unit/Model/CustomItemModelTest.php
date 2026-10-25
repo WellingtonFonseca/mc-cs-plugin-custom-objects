@@ -43,7 +43,9 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomItemModelTest extends TestCase
 {
     use ConsecutiveCallsTrait;
@@ -115,16 +117,16 @@ class CustomItemModelTest extends TestCase
         $this->customItem                   = $this->createMock(CustomItem::class);
         $this->user                         = $this->createMock(User::class);
         $this->entityManager                = $this->createMock(EntityManager::class);
-        $this->security                     = $this->createMock(CorePermissions::class);
-        $this->router                       = $this->createMock(UrlGeneratorInterface::class);
-        $this->translator                   = $this->createMock(Translator::class);
+        $this->security                     = $this->createStub(CorePermissions::class);
+        $this->router                       = $this->createStub(UrlGeneratorInterface::class);
+        $this->translator                   = $this->createStub(Translator::class);
         $this->userHelper                   = $this->createMock(UserHelper::class);
-        $this->logger                       = $this->createMock(LoggerInterface::class);
-        $this->coreParametersHelper         = $this->createMock(CoreParametersHelper::class);
+        $this->logger                       = $this->createStub(LoggerInterface::class);
+        $this->coreParametersHelper         = $this->createStub(CoreParametersHelper::class);
         $this->queryBuilder                 = $this->createMock(QueryBuilder::class);
         $this->dbalQueryBuilder             = $this->createMock(DbalQueryBuilder::class);
-        $this->statement                    = $this->createMock(Statement::class);
-        $this->connection                   = $this->createMock(Connection::class);
+        $this->statement                    = $this->createStub(Statement::class);
+        $this->connection                   = $this->createStub(Connection::class);
         $this->query                        = $this->createMock(AbstractQuery::class);
         $this->customItemRepository         = $this->createMock(CustomItemRepository::class);
         $this->customItemPermissionProvider = $this->createMock(CustomItemPermissionProvider::class);
@@ -132,7 +134,7 @@ class CustomItemModelTest extends TestCase
         $this->customFieldValueModel        = $this->createMock(CustomFieldValueModel::class);
         $this->dispatcher                   = $this->createMock(EventDispatcherInterface::class);
         $this->validator                    = $this->createMock(ValidatorInterface::class);
-        $this->violationList                = $this->createMock(ConstraintViolationListInterface::class);
+        $this->violationList                = $this->createStub(ConstraintViolationListInterface::class);
         $this->customItemModel              = new CustomItemModel(
             $this->entityManager,
             $this->security,
@@ -186,7 +188,7 @@ class CustomItemModelTest extends TestCase
 
     public function testSaveEdit(): void
     {
-        $customFieldValue = $this->createMock(CustomFieldValueText::class);
+        $customFieldValue = $this->createStub(CustomFieldValueText::class);
         $this->user->expects($this->once())->method('getName')->willReturn('John Doe');
         $this->userHelper->expects($this->once())->method('getUser')->willReturn($this->user);
         $this->customItem->expects($this->exactly(4))->method('isNew')->willReturn(false);
@@ -443,7 +445,7 @@ class CustomItemModelTest extends TestCase
 
     public function testAUserWithoutViewOtherOnlySeesTheItemsHeCreatedInTheDbalList(): void
     {
-        $connection = $this->createMock(Connection::class);
+        $connection = $this->createStub(Connection::class);
         $dbal       = new DbalQueryBuilder($connection);
         $connection->method('createQueryBuilder')->willReturn($dbal);
         $entityManager = $this->createMock(EntityManager::class);
@@ -677,7 +679,7 @@ class CustomItemModelTest extends TestCase
     public function testTheCountAndTheLookupAskTheirOwnEvents(): void
     {
         $this->entityManager->method('getExpressionBuilder')->willReturn(new Expr());
-        $query = $this->createMock(AbstractQuery::class);
+        $query = $this->createStub(AbstractQuery::class);
         $query->method('getSingleScalarResult')->willReturn(3);
         $query->method('getArrayResult')->willReturn([['id' => 5, 'value' => 'A'], ['id' => 6, 'value' => 'B']]);
         $realQueryBuilder = $this->getMockBuilder(QueryBuilder::class)->setConstructorArgs([$this->entityManager])->onlyMethods(['getQuery'])->getMock();
@@ -771,7 +773,7 @@ class CustomItemModelTest extends TestCase
     public function testATermOfTheSearchNarrowsTheListToTheItemsOfThatField(): void
     {
         $realQueryBuilder = new QueryBuilder($this->entityManager);
-        $repository       = $this->createMock(\Doctrine\ORM\EntityRepository::class);
+        $repository       = $this->createStub(\Doctrine\ORM\EntityRepository::class);
         $repository->method('findBy')->willReturn([$this->field(1, 'nome', 'Nome'), $this->field(3, 'posicao', 'Posição', 'int')]);
         $entityManager = $this->createMock(EntityManager::class);
         $entityManager->method('createQueryBuilder')->willReturn($realQueryBuilder);

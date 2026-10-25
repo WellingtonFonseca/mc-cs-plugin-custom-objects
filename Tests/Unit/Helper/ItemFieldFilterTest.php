@@ -16,9 +16,11 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueText;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Exception\InvalidValueException;
 use MauticPlugin\CustomObjectsBundle\Helper\ItemFieldFilter;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class ItemFieldFilterTest extends TestCase
 {
     private ItemFieldFilter $filter;
@@ -33,7 +35,7 @@ class ItemFieldFilterTest extends TestCase
      */
     private function apply(string $type, string $value, string $textMode = ItemFieldFilter::TEXT_CONTAINS, int $index = 0): array
     {
-        $field = $this->createMock(CustomField::class);
+        $field = $this->createStub(CustomField::class);
         $field->method('getType')->willReturn($type);
         $field->method('getId')->willReturn(77);
 
@@ -307,7 +309,7 @@ class ItemFieldFilterTest extends TestCase
 
     public function testTwoTermsOnTheSameFieldDoNotShareParameters(): void
     {
-        $field = $this->createMock(CustomField::class);
+        $field = $this->createStub(CustomField::class);
         $field->method('getType')->willReturn('date');
         $field->method('getId')->willReturn(5);
 

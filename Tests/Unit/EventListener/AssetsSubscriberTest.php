@@ -8,10 +8,12 @@ use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\CoreBundle\Twig\Helper\AssetsHelper;
 use MauticPlugin\CustomObjectsBundle\EventListener\AssetsSubscriber;
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Component\Asset\Packages;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 
+#[AllowMockObjectsWithoutExpectations]
 class AssetsSubscriberTest extends \PHPUnit\Framework\TestCase
 {
     private $packages;
@@ -31,8 +33,8 @@ class AssetsSubscriberTest extends \PHPUnit\Framework\TestCase
     {
         parent::setUp();
 
-        $this->packages             = $this->createMock(Packages::class);
-        $this->coreParametersHelper = $this->createMock(CoreParametersHelper::class);
+        $this->packages             = $this->createStub(Packages::class);
+        $this->coreParametersHelper = $this->createStub(CoreParametersHelper::class);
         $this->assetsHelper         = new AssetsHelper(
             $this->packages,
             $this->coreParametersHelper

@@ -8,8 +8,10 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Driver;
 use Mautic\LeadBundle\Segment\Query\QueryBuilder as SegmentQueryBuilder;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\UnionQueryContainer;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class UnionQueryContainerTest extends TestCase
 {
     /**

@@ -24,8 +24,8 @@ class CustomFieldOptionModelTest extends \PHPUnit\Framework\TestCase
     {
         parent::setUp();
 
-        $this->entityManager          = $this->createMock(EntityManager::class);
-        $this->connection             = $this->createMock(Connection::class);
+        $this->entityManager          = $this->createStub(EntityManager::class);
+        $this->connection             = $this->createStub(Connection::class);
         $this->queryBuilder           = $this->createMock(QueryBuilder::class);
         $this->customFieldOptionModel = new CustomFieldOptionModel($this->entityManager);
 

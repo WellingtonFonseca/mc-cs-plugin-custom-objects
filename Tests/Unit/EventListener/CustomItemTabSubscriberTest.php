@@ -17,7 +17,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomItemTabSubscriberTest extends TestCase
 {
     use ConsecutiveCallsTrait;
@@ -89,7 +91,7 @@ class CustomItemTabSubscriberTest extends TestCase
 
     public function testForTabsContext(): void
     {
-        $itemCustomObject = $this->createMock(CustomObject::class);
+        $itemCustomObject = $this->createStub(CustomObject::class);
         $itemCustomObject->method('getId')->willReturn(444);
 
         $this->customObject->expects($this->exactly(2))
@@ -158,7 +160,7 @@ class CustomItemTabSubscriberTest extends TestCase
 
     public function testForTabContentsContext(): void
     {
-        $otherCustomObject = $this->createMock(CustomObject::class);
+        $otherCustomObject = $this->createStub(CustomObject::class);
         $otherCustomObject->method('getId')->willReturn(111);
 
         $this->customItem->method('getId')->willReturn(45);
@@ -188,7 +190,7 @@ class CustomItemTabSubscriberTest extends TestCase
                 'link/route'
             ], true));
 
-        $sessionProvider = $this->createMock(SessionProvider::class);
+        $sessionProvider = $this->createStub(SessionProvider::class);
         $sessionProvider->method('getFilter')->willReturn('Search something');
         $sessionProvider->method('getNamespace')->willReturn('Some namespace');
 

@@ -23,7 +23,9 @@ use Symfony\Component\Validator\ConstraintViolationListInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
 {
     use ConsecutiveCallsTrait;
@@ -53,9 +55,9 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
         $this->queryBuilder           = $this->createMock(QueryBuilder::class);
         $this->statement              = $this->createMock(Statement::class);
         $this->validator              = $this->createMock(ValidatorInterface::class);
-        $this->violationList          = $this->createMock(ConstraintViolationListInterface::class);
-        $this->filterOperatorProvider = $this->createMock(FilterOperatorProviderInterface::class);
-        $this->translator             = $this->createMock(TranslatorInterface::class);
+        $this->violationList          = $this->createStub(ConstraintViolationListInterface::class);
+        $this->filterOperatorProvider = $this->createStub(FilterOperatorProviderInterface::class);
+        $this->translator             = $this->createStub(TranslatorInterface::class);
         $this->customFieldValueModel  = new CustomFieldValueModel(
             $this->entityManager,
             $this->validator
@@ -215,11 +217,11 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
 
     public function testCreateValuesForItemsReadsAllTheItemsWithOneQuery(): void
     {
-        $field = $this->createMock(CustomField::class);
+        $field = $this->createStub(CustomField::class);
         $field->method('getId')->willReturn(44);
         $field->method('getTypeObject')->willReturn(new TextType($this->translator, $this->filterOperatorProvider));
 
-        $object = $this->createMock(CustomObject::class);
+        $object = $this->createStub(CustomObject::class);
         $object->method('getPublishedFields')->willReturn(new ArrayCollection([44 => $field]));
 
         $items = [];
@@ -250,10 +252,10 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
 
     public function testCreateValuesForItemsDoesNotQueryWhenAllItemsAreNew(): void
     {
-        $field = $this->createMock(CustomField::class);
+        $field = $this->createStub(CustomField::class);
         $field->method('getId')->willReturn(44);
         $field->method('getTypeObject')->willReturn(new TextType($this->translator, $this->filterOperatorProvider));
-        $object = $this->createMock(CustomObject::class);
+        $object = $this->createStub(CustomObject::class);
         $object->method('getPublishedFields')->willReturn(new ArrayCollection([44 => $field]));
 
         $item = $this->getMockBuilder(CustomItem::class)->onlyMethods(['getCustomObject', 'isNew'])->disableOriginalConstructor()->getMock();
@@ -293,7 +295,7 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
         $first  = $this->itemOf($object, 31);
         $second = $this->itemOf($object, 32);
 
-        $connection = $this->createMock(Connection::class);
+        $connection = $this->createStub(Connection::class);
         $connection->method('createQueryBuilder')->willReturnCallback(fn () => new \Doctrine\DBAL\Query\QueryBuilder($connection));
         $connection->method('fetchAllAssociative')->willReturn([
             ['custom_item_id' => '31', 'custom_field_id' => '44', 'value' => 'one'],
@@ -348,11 +350,11 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
 
     public function testASavedValueOfAnExistingItemIsMergedAndFlushed(): void
     {
-        $value = $this->createMock(CustomFieldValueInterface::class);
+        $value = $this->createStub(CustomFieldValueInterface::class);
         $value->method('getCustomField')->willReturn($this->customField);
         $value->method('getCustomItem')->willReturn($this->customItem);
         $this->customItem->method('getId')->willReturn(99);
-        $merged = $this->createMock(CustomFieldValueInterface::class);
+        $merged = $this->createStub(CustomFieldValueInterface::class);
         $this->entityManager->method('merge')->with($value)->willReturn($merged);
         $this->entityManager->expects($this->once())->method('flush')->with($merged);
         $this->violationList->method('count')->willReturn(0);
@@ -363,13 +365,13 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
 
     public function testEachOptionIsTrimmedAndSavedAsItsOwnValue(): void
     {
-        $item  = $this->createMock(CustomItem::class);
+        $item  = $this->createStub(CustomItem::class);
         $item->method('getId')->willReturn(99);
-        $field = $this->createMock(CustomField::class);
+        $field = $this->createStub(CustomField::class);
         $field->method('getId')->willReturn(44);
         $field->method('canHaveMultipleValues')->willReturn(true);
         $value = new \MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueOption($field, $item, ' red , green ');
-        $query = $this->createMock(AbstractQuery::class);
+        $query = $this->createStub(AbstractQuery::class);
         $query->method('execute')->willReturn(0);
         $this->entityManager->method('createQuery')->willReturn($query);
         $this->violationList->method('count')->willReturn(0);

@@ -10,6 +10,7 @@ use Mautic\LeadBundle\Segment\ContactSegmentFilterCrate;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterHelper;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
 use MauticPlugin\CustomObjectsBundle\Segment\SegmentItemMatcher;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -20,6 +21,7 @@ use PHPUnit\Framework\TestCase;
  *
  * Fixture: Custom Object #1 owns fields #1, #2 and #3; #9 is another object's field.
  */
+#[AllowMockObjectsWithoutExpectations]
 class SegmentItemMatcherTest extends TestCase
 {
     private const OBJECT_ID = 1;

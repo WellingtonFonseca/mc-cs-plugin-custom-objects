@@ -17,6 +17,7 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Component\Form\FormFactory;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\InputBag;
@@ -25,6 +26,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 #[\AllowDynamicProperties]
+#[AllowMockObjectsWithoutExpectations]
 class FormControllerTest extends ControllerTestCase
 {
     private const OBJECT_ID = 33;
@@ -49,16 +51,16 @@ class FormControllerTest extends ControllerTestCase
         parent::setUp();
 
         $this->customObjectModel       = $this->createMock(CustomObjectModel::class);
-        $this->customFieldModel        = $this->createMock(CustomFieldModel::class);
+        $this->customFieldModel        = $this->createStub(CustomFieldModel::class);
         $this->formFactory             = $this->createMock(FormFactory::class);
         $this->permissionProvider      = $this->createMock(CustomObjectPermissionProvider::class);
         $this->routeProvider           = $this->createMock(CustomObjectRouteProvider::class);
-        $this->customFieldTypeProvider = $this->createMock(CustomFieldTypeProvider::class);
-        $this->lockFlashMessageHelper  = $this->createMock(LockFlashMessageHelper::class);
-        $this->request                 = $this->createMock(Request::class);
-        $this->customObject            = $this->createMock(CustomObject::class);
-        $this->form                    = $this->createMock(FormInterface::class);
-        $this->model                   = $this->createMock(NotificationModel::class);
+        $this->customFieldTypeProvider = $this->createStub(CustomFieldTypeProvider::class);
+        $this->lockFlashMessageHelper  = $this->createStub(LockFlashMessageHelper::class);
+        $this->request                 = $this->createStub(Request::class);
+        $this->customObject            = $this->createStub(CustomObject::class);
+        $this->form                    = $this->createStub(FormInterface::class);
+        $this->model                   = $this->createStub(NotificationModel::class);
 
         $this->formController = new FormController(
             $this->managerRegistry,

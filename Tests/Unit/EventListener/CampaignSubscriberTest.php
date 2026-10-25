@@ -32,7 +32,9 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class CampaignSubscriberTest extends TestCase
 {
     use ConsecutiveCallsTrait;
@@ -75,7 +77,7 @@ class CampaignSubscriberTest extends TestCase
         $this->customFieldModel       = $this->createMock(CustomFieldModel::class);
         $this->customObjectModel      = $this->createMock(CustomObjectModel::class);
         $this->customItemModel        = $this->createMock(CustomItemModel::class);
-        $this->translator             = $this->createMock(TranslatorInterface::class);
+        $this->translator             = $this->createStub(TranslatorInterface::class);
         $this->configProvider         = $this->createMock(ConfigProvider::class);
         $this->queryFilterHelper      = $this->createMock(QueryFilterHelper::class);
         $this->queryFilterFactory     = $this->createMock(QueryFilterFactory::class);
@@ -83,12 +85,12 @@ class CampaignSubscriberTest extends TestCase
         $this->campaignBuilderEvent   = new CampaignBuilderEvent($this->translator); // final in Mautic 7: the real event
         $this->campaignExecutionEvent = $this->createMock(CampaignExecutionEvent::class);
         $this->customObject           = $this->createMock(CustomObject::class);
-        $this->customField            = $this->createMock(CustomField::class);
-        $this->contact                = $this->createMock(Lead::class);
+        $this->customField            = $this->createStub(CustomField::class);
+        $this->contact                = $this->createStub(Lead::class);
         $this->queryBuilder           = $this->createMock(QueryBuilder::class);
         $this->segmentQueryBuilder    = $this->createMock(SegmentQueryBuilder::class);
         $this->criteriaMatcher        = $this->createMock(MergedItemCriteriaMatcher::class);
-        $this->statement              = $this->createMock(Statement::class);
+        $this->statement              = $this->createStub(Statement::class);
         $this->result                 = $this->createMock(Result::class);
         $this->campaignSubscriber     = new CampaignSubscriber(
             $this->customFieldModel,
@@ -559,7 +561,7 @@ class CampaignSubscriberTest extends TestCase
 
     public function testTheActionAndTheConditionAreRegisteredForEachObjectWithFields(): void
     {
-        $withoutFields = $this->createMock(CustomObject::class);
+        $withoutFields = $this->createStub(CustomObject::class);
         $withoutFields->method('getCustomFields')->willReturn(new ArrayCollection());
         $withoutFields->method('getId')->willReturn(11);
 
@@ -586,7 +588,7 @@ class CampaignSubscriberTest extends TestCase
 
     public function testAContactWithoutAnIdFailsTheCondition(): void
     {
-        $contact = $this->createMock(Lead::class);
+        $contact = $this->createStub(Lead::class);
         $contact->method('getId')->willReturn(0);
         $this->configProvider->method('pluginIsEnabled')->willReturn(true);
         $this->campaignExecutionEvent->method('getEvent')->willReturn(['type' => 'custom_item.63.fieldvalue']);
@@ -599,7 +601,7 @@ class CampaignSubscriberTest extends TestCase
 
     public function testASingleCriterionIsAskedToTheSegmentQueryAndTheItemIsJoinedToIt(): void
     {
-        $multi = $this->createMock(CustomField::class);
+        $multi = $this->createStub(CustomField::class);
         $multi->method('getId')->willReturn(42);
         $multi->method('getType')->willReturn('multiselect');
         $multi->method('canHaveMultipleValues')->willReturn(true);
@@ -662,7 +664,7 @@ class CampaignSubscriberTest extends TestCase
     #[DataProvider('includingExcluding')]
     public function testIncludingAndExcludingOnATextFieldAreAnsweredByTheMergedQuery(array $config, bool $multipleValues, bool $merged): void
     {
-        $field = $this->createMock(CustomField::class);
+        $field = $this->createStub(CustomField::class);
         $field->method('canHaveMultipleValues')->willReturn($multipleValues);
         $field->method('getType')->willReturn('text');
         $this->configProvider->method('pluginIsEnabled')->willReturn(true);

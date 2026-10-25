@@ -9,9 +9,11 @@ use MauticPlugin\CustomObjectsBundle\CustomFieldType\IntType;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueInt;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class IntTypeTest extends \PHPUnit\Framework\TestCase
 {
     private $translator;
@@ -28,9 +30,9 @@ class IntTypeTest extends \PHPUnit\Framework\TestCase
     {
         parent::setUp();
 
-        $this->translator             = $this->createMock(TranslatorInterface::class);
-        $this->customField            = $this->createMock(CustomField::class);
-        $this->customItem             = $this->createMock(CustomItem::class);
+        $this->translator             = $this->createStub(TranslatorInterface::class);
+        $this->customField            = $this->createStub(CustomField::class);
+        $this->customItem             = $this->createStub(CustomItem::class);
         $this->filterOperatorProvider = $this->createMock(FilterOperatorProviderInterface::class);
         $this->fieldType              = new IntType(
             $this->translator,

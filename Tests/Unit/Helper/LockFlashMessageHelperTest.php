@@ -19,8 +19,8 @@ class LockFlashMessageHelperTest extends TestCase
 
     public function testAddFlash(): void
     {
-        $coreParametersHelper = $this->createMock(CoreParametersHelper::class);
-        $translator           = $this->createMock(TranslatorInterface::class);
+        $coreParametersHelper = $this->createStub(CoreParametersHelper::class);
+        $translator           = $this->createStub(TranslatorInterface::class);
         $flashBag             = $this->createMock(FlashBag::class);
         $router               = $this->createMock(Router::class);
 
@@ -28,7 +28,7 @@ class LockFlashMessageHelperTest extends TestCase
 
         $id               = 1;
         $name             = 'name';
-        $checkedOut       = $this->createMock(\DateTime::class);
+        $checkedOut       = $this->createStub(\DateTime::class);
         $checkedOutBy     = 'getCheckedOutBy';
         $checkedOutByUser = 'checkedOutByUser';
         $returnUrl        = 'returnUrl';

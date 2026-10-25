@@ -17,10 +17,12 @@ use MauticPlugin\CustomObjectsBundle\Model\CustomFieldModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldRouteProvider;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Component\Form\FormFactory;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
+#[AllowMockObjectsWithoutExpectations]
 class SaveControllerTest extends AbstractFieldControllerTest
 {
     private $formFactory;
@@ -333,7 +335,7 @@ class SaveControllerTest extends AbstractFieldControllerTest
             ->method('getId')
             ->willReturn($objectId);
 
-        $customField = $this->createMock(CustomField::class);
+        $customField = $this->createStub(CustomField::class);
 
         $mapExtras = [
             ['custom_field', null, []],

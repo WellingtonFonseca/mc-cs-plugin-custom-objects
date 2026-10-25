@@ -12,7 +12,7 @@ class InvalidValueExceptionTest extends \PHPUnit\Framework\TestCase
     public function testGettersSetters(): void
     {
         $exception   = new InvalidValueException('Invalid field value');
-        $customField = $this->createMock(CustomField::class);
+        $customField = $this->createStub(CustomField::class);
 
         $this->assertNull($exception->getCustomField());
 

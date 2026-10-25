@@ -30,7 +30,7 @@ class CustomObjectEventTest extends TestCase
     {
         $this->customObject = new CustomObject();
         $this->event        = new CustomObjectEvent($this->customObject);
-        $this->flashBag     = $this->createMock(FlashBag::class);
+        $this->flashBag     = $this->createStub(FlashBag::class);
     }
 
     public function testGettersSetters(): void

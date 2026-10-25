@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Helper;
 
+use PHPUnit\Framework\MockObject\Stub;
 use Doctrine\DBAL\Result;
 use Mautic\LeadBundle\Segment\ContactSegmentFilter;
 use Mautic\LeadBundle\Segment\ContactSegmentFilterCrate;
@@ -13,6 +14,7 @@ use MauticPlugin\CustomObjectsBundle\Helper\MergedItemCriteriaMatcher;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterHelper;
 use MauticPlugin\CustomObjectsBundle\Model\CustomFieldModel;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\SegmentFilterBuilder;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -20,13 +22,14 @@ use PHPUnit\Framework\TestCase;
  * Several criteria of a campaign condition must hold on the SAME item: they go into ONE merged filter, the one the
  * merged segment query (createMergedItemIdsQuery) answers.
  */
+#[AllowMockObjectsWithoutExpectations]
 class MergedItemCriteriaMatcherTest extends TestCase
 {
     private SegmentFilterBuilder&MockObject $factory;
 
     private QueryFilterHelper&MockObject $helper;
 
-    private CustomFieldModel&MockObject $fieldModel;
+    private CustomFieldModel&Stub $fieldModel;
 
     private MergedItemCriteriaMatcher $matcher;
 
@@ -34,7 +37,7 @@ class MergedItemCriteriaMatcherTest extends TestCase
     {
         $this->factory    = $this->createMock(SegmentFilterBuilder::class);
         $this->helper     = $this->createMock(QueryFilterHelper::class);
-        $this->fieldModel = $this->createMock(CustomFieldModel::class);
+        $this->fieldModel = $this->createStub(CustomFieldModel::class);
         $this->matcher    = new MergedItemCriteriaMatcher($this->factory, $this->helper, $this->fieldModel);
     }
 
@@ -76,7 +79,7 @@ class MergedItemCriteriaMatcherTest extends TestCase
             $merged = $property;
         });
 
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchOne')->willReturn('42');
         $query = $this->createMock(SegmentQueryBuilder::class);
         $query->method('executeQuery')->willReturn($result);
@@ -100,16 +103,16 @@ class MergedItemCriteriaMatcherTest extends TestCase
 
     public function testNoItemSatisfyingEveryCriterionIsNull(): void
     {
-        $crate = $this->createMock(ContactSegmentFilterCrate::class);
+        $crate = $this->createStub(ContactSegmentFilterCrate::class);
         $this->factory->method('factor')->willReturnCallback(function (array $array) use ($crate): ContactSegmentFilter {
             $mock = $this->createMock(ContactSegmentFilter::class);
             $mock->contactSegmentFilterCrate = $crate;
 
             return $mock;
         });
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchOne')->willReturn(false);
-        $query = $this->createMock(SegmentQueryBuilder::class);
+        $query = $this->createStub(SegmentQueryBuilder::class);
         $query->method('executeQuery')->willReturn($result);
         $this->helper->method('createMergedItemIdsQuery')->willReturn($query);
 
@@ -126,7 +129,7 @@ class MergedItemCriteriaMatcherTest extends TestCase
 
             return $field;
         });
-        $crate  = $this->createMock(ContactSegmentFilterCrate::class);
+        $crate  = $this->createStub(ContactSegmentFilterCrate::class);
         $filter = [];
         $this->factory->method('factor')->willReturnCallback(function (array $array) use ($crate, &$filter): ContactSegmentFilter {
             $filter[] = $array;
@@ -135,9 +138,9 @@ class MergedItemCriteriaMatcherTest extends TestCase
 
             return $mock;
         });
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchOne')->willReturn(false);
-        $query = $this->createMock(SegmentQueryBuilder::class);
+        $query = $this->createStub(SegmentQueryBuilder::class);
         $query->method('executeQuery')->willReturn($result);
         $this->helper->method('createMergedItemIdsQuery')->willReturn($query);
 

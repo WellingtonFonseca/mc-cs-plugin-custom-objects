@@ -8,9 +8,11 @@ use MauticPlugin\CustomObjectsBundle\CustomObjectEvents;
 use MauticPlugin\CustomObjectsBundle\Event\CustomObjectListFormatEvent;
 use MauticPlugin\CustomObjectsBundle\EventListener\CustomObjectListFormatSubscriber;
 use MauticPlugin\CustomObjectsBundle\Helper\TokenFormatter;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomObjectListFormatSubscriberTest extends TestCase
 {
     /**

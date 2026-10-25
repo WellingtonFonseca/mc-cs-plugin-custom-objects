@@ -7,9 +7,11 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\CustomFieldType;
 use Mautic\LeadBundle\Provider\FilterOperatorProviderInterface;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\CountryType;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueText;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class CountryTypeTest extends \PHPUnit\Framework\TestCase
 {
     private $translator;
@@ -23,7 +25,7 @@ class CountryTypeTest extends \PHPUnit\Framework\TestCase
     {
         parent::setUp();
 
-        $this->translator = $this->createMock(TranslatorInterface::class);
+        $this->translator = $this->createStub(TranslatorInterface::class);
         $this->fieldType  = new CountryType(
             $this->translator,
             $this->createMock(FilterOperatorProviderInterface::class)

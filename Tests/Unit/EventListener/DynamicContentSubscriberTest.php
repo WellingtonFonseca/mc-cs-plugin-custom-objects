@@ -17,10 +17,12 @@ use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\CustomFieldFilterQuery
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\CustomItemNameFilterQueryBuilder;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\QueryFilterFactory;
 use Monolog\Logger;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[AllowMockObjectsWithoutExpectations]
 class DynamicContentSubscriberTest extends TestCase
 {
     use ConsecutiveCallsTrait;
@@ -52,10 +54,10 @@ class DynamicContentSubscriberTest extends TestCase
 
         $this->configProviderMock    = $this->createMock(ConfigProvider::class);
         $this->queryFilterFactory    = $this->createMock(QueryFilterFactory::class);
-        $this->queryFilterHelperMock = $this->createMock(QueryFilterHelper::class);
+        $this->queryFilterHelperMock = $this->createStub(QueryFilterHelper::class);
         $this->loggerMock            = $this->createMock(Logger::class);
         $this->queryBuilderMock      = $this->createMock(QueryBuilder::class);
-        $this->statementMock         = $this->createMock(Statement::class);
+        $this->statementMock         = $this->createStub(Statement::class);
 
         $this->dynamicContentSubscriber = new DynamicContentSubscriber(
             $this->queryFilterFactory,
@@ -121,7 +123,7 @@ class DynamicContentSubscriberTest extends TestCase
         $event = $this->buildEventWithFilters();
         $event->setIsEvaluated(false);
 
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
 
         $this->queryBuilderMock->expects($this->once())
             ->method('execute')

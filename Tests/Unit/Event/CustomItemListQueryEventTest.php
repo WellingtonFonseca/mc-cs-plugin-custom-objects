@@ -12,8 +12,8 @@ class CustomItemListQueryEventTest extends \PHPUnit\Framework\TestCase
 {
     public function testGettersSetters(): void
     {
-        $queryBuilder  = $this->createMock(QueryBuilder::class);
-        $tableConfig   = $this->createMock(TableConfig::class);
+        $queryBuilder  = $this->createStub(QueryBuilder::class);
+        $tableConfig   = $this->createStub(TableConfig::class);
         $event         = new CustomItemListQueryEvent($queryBuilder, $tableConfig);
 
         $this->assertSame($queryBuilder, $event->getQueryBuilder());

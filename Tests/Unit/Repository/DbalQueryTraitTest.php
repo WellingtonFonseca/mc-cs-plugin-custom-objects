@@ -13,7 +13,7 @@ class DbalQueryTraitTest extends \PHPUnit\Framework\TestCase
     public function testExecuteSelectIfSelect(): void
     {
         $qb        = $this->createMock(QueryBuilder::class);
-        $statement = $this->createMock(Statement::class);
+        $statement = $this->createStub(Statement::class);
         $trait     = new class {
             use DbalQueryTrait;
         };

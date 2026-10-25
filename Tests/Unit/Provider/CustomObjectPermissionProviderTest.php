@@ -26,7 +26,7 @@ class CustomObjectPermissionProviderTest extends \PHPUnit\Framework\TestCase
     {
         parent::setUp();
         $this->permissions = $this->createMock(CorePermissions::class);
-        $this->entity      = $this->createMock(FormEntity::class);
+        $this->entity      = $this->createStub(FormEntity::class);
         $this->provider    = new CustomObjectPermissionProvider($this->permissions);
     }
 

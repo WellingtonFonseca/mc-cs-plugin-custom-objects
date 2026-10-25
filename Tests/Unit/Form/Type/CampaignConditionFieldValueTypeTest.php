@@ -32,10 +32,10 @@ final class CampaignConditionFieldValueTypeTest extends TestCase
 
     protected function setUp(): void
     {
-        $translator = $this->createMock(TranslatorInterface::class);
+        $translator = $this->createStub(TranslatorInterface::class);
         $translator->method('trans')->willReturnArgument(0);
 
-        $operatorProvider = $this->createMock(FilterOperatorProviderInterface::class);
+        $operatorProvider = $this->createStub(FilterOperatorProviderInterface::class);
         $operatorProvider->method('getAllOperators')->willReturn(['=' => ['label' => 'a'], '!=' => ['label' => 'b'], 'empty' => ['label' => 'c']]);
 
         $customObject = new CustomObject();

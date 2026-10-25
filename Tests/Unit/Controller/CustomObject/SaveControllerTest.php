@@ -18,6 +18,7 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\SubmitButton;
@@ -28,6 +29,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 #[\AllowDynamicProperties]
+#[AllowMockObjectsWithoutExpectations]
 class SaveControllerTest extends ControllerTestCase
 {
     private const OBJECT_ID = 33;
@@ -59,9 +61,9 @@ class SaveControllerTest extends ControllerTestCase
         $this->permissionProvider         = $this->createMock(CustomObjectPermissionProvider::class);
         $this->routeProvider              = $this->createMock(CustomObjectRouteProvider::class);
         $this->customFieldTypeProvider    = $this->createMock(CustomFieldTypeProvider::class);
-        $this->paramsToStringTransformer  = $this->createMock(ParamsToStringTransformer::class);
-        $this->optionsToStringTransformer = $this->createMock(OptionsToStringTransformer::class);
-        $this->lockFlashMessageHelper     = $this->createMock(LockFlashMessageHelper::class);
+        $this->paramsToStringTransformer  = $this->createStub(ParamsToStringTransformer::class);
+        $this->optionsToStringTransformer = $this->createStub(OptionsToStringTransformer::class);
+        $this->lockFlashMessageHelper     = $this->createStub(LockFlashMessageHelper::class);
         $this->request                    = $this->createMock(Request::class);
         $this->customObject               = $this->createMock(CustomObject::class);
         $this->form                       = $this->createMock(FormInterface::class);

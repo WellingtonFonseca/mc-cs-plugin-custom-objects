@@ -16,10 +16,12 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProviderFactory;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Component\HttpFoundation\Request;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 #[\AllowDynamicProperties]
+#[AllowMockObjectsWithoutExpectations]
 class BatchDeleteControllerTest extends ControllerTestCase
 {
     use ConsecutiveCallsTrait;
@@ -42,16 +44,16 @@ class BatchDeleteControllerTest extends ControllerTestCase
 
         $this->customItemModel        = $this->createMock(CustomItemModel::class);
         $this->sessionProvider        = $this->createMock(SessionProvider::class);
-        $this->sessionProviderFactory = $this->createMock(SessionProviderFactory::class);
+        $this->sessionProviderFactory = $this->createStub(SessionProviderFactory::class);
         $this->permissionProvider     = $this->createMock(CustomItemPermissionProvider::class);
         $this->routeProvider          = $this->createMock(CustomItemRouteProvider::class);
-        $this->request                = $this->createMock(Request::class);
+        $this->request                = $this->createStub(Request::class);
 
         $this->requestStack->expects($this->any())
             ->method('getCurrentRequest')
             ->willReturn($this->request);
 
-        $this->model                  = $this->createMock(NotificationModel::class);
+        $this->model                  = $this->createStub(NotificationModel::class);
         $this->batchDeleteController  = new BatchDeleteController(
             $this->managerRegistry,
             $this->modelFactory,

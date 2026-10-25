@@ -17,10 +17,12 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefCustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomItemRepository;
 use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomItemRepositoryTest extends TestCase
 {
     use ConsecutiveCallsTrait;
@@ -46,14 +48,14 @@ class CustomItemRepositoryTest extends TestCase
     {
         parent::setUp();
 
-        $this->entityManager        = $this->createMock(EntityManager::class);
-        $classMetadata              = $this->createMock(ClassMetadata::class);
+        $this->entityManager        = $this->createStub(EntityManager::class);
+        $classMetadata              = $this->createStub(ClassMetadata::class);
         $this->customObject         = $this->createMock(CustomObject::class);
         $this->contact              = $this->createMock(Lead::class);
         $this->queryBuilder         = $this->createMock(QueryBuilder::class);
         $this->expr                 = $this->createMock(Expr::class);
         $this->query                = $this->createMock(AbstractQuery::class);
-        $this->registry             = $this->createMock(ManagerRegistry::class);
+        $this->registry             = $this->createStub(ManagerRegistry::class);
         $this->customItemRepository = new CustomItemRepository(
             $this->registry,
         );

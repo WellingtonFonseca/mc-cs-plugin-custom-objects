@@ -28,7 +28,7 @@ class SegmentFilterDecoratorDelegateSubscriberTest extends TestCase
     {
         parent::setUp();
 
-        $this->multiselectDecorator = $this->createMock(MultiselectDecorator::class);
+        $this->multiselectDecorator = $this->createStub(MultiselectDecorator::class);
         $this->subscriber           = new SegmentFilterDecoratorDelegateSubscriber(
             $this->multiselectDecorator
         );

@@ -11,8 +11,8 @@ class CustomItemXrefCustomItemTest extends \PHPUnit\Framework\TestCase
 {
     public function testGettersIfCustomItemAIsLower(): void
     {
-        $customItemA = $this->createMock(CustomItem::class);
-        $customItemB = $this->createMock(CustomItem::class);
+        $customItemA = $this->createStub(CustomItem::class);
+        $customItemB = $this->createStub(CustomItem::class);
         $dateAdded   = new \DateTimeImmutable('2019-03-04 12:34:56');
 
         $customItemA->method('getId')->willReturn(33);
@@ -33,8 +33,8 @@ class CustomItemXrefCustomItemTest extends \PHPUnit\Framework\TestCase
 
     public function testGettersIfCustomItemBIsLower(): void
     {
-        $customItemA = $this->createMock(CustomItem::class);
-        $customItemB = $this->createMock(CustomItem::class);
+        $customItemA = $this->createStub(CustomItem::class);
+        $customItemB = $this->createStub(CustomItem::class);
         $dateAdded   = new \DateTimeImmutable('2019-03-04 12:34:56');
 
         $customItemA->method('getId')->willReturn(55);
@@ -53,8 +53,8 @@ class CustomItemXrefCustomItemTest extends \PHPUnit\Framework\TestCase
 
     public function testGettersIfCustomItemsAreEqual(): void
     {
-        $customItemA = $this->createMock(CustomItem::class);
-        $customItemB = $this->createMock(CustomItem::class);
+        $customItemA = $this->createStub(CustomItem::class);
+        $customItemB = $this->createStub(CustomItem::class);
         $dateAdded   = new \DateTimeImmutable('2019-03-04 12:34:56');
 
         $customItemA->method('getId')->willReturn(55);

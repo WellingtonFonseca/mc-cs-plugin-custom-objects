@@ -19,6 +19,7 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
 use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\Form\FormFactory;
 use Symfony\Component\Form\FormInterface;
@@ -28,6 +29,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 #[\AllowDynamicProperties]
+#[AllowMockObjectsWithoutExpectations]
 class FormControllerTest extends ControllerTestCase
 {
     public const OBJECT_ID = 33;
@@ -95,14 +97,14 @@ class FormControllerTest extends ControllerTestCase
         $this->formFactory            = $this->createMock(FormFactory::class);
         $this->permissionProvider     = $this->createMock(CustomItemPermissionProvider::class);
         $this->routeProvider          = $this->createMock(CustomItemRouteProvider::class);
-        $this->lockFlashMessageHelper = $this->createMock(LockFlashMessageHelper::class);
-        $this->request                = $this->createMock(Request::class);
-        $this->customObject           = $this->createMock(CustomObject::class);
-        $this->customItem             = $this->createMock(CustomItem::class);
-        $this->form                   = $this->createMock(FormInterface::class);
-        $this->model                  = $this->createMock(NotificationModel::class);
+        $this->lockFlashMessageHelper = $this->createStub(LockFlashMessageHelper::class);
+        $this->request                = $this->createStub(Request::class);
+        $this->customObject           = $this->createStub(CustomObject::class);
+        $this->customItem             = $this->createStub(CustomItem::class);
+        $this->form                   = $this->createStub(FormInterface::class);
+        $this->model                  = $this->createStub(NotificationModel::class);
 
-        $userMock = $this->createMock(User::class);
+        $userMock = $this->createStub(User::class);
         $userMock->method('isAdmin')
             ->willReturn(true);
 

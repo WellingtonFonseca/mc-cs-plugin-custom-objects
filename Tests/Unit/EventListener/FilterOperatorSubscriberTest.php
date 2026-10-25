@@ -11,10 +11,12 @@ use Mautic\LeadBundle\Segment\Query\QueryBuilder;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\EventListener\FilterOperatorSubscriber;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 final class FilterOperatorSubscriberTest extends \PHPUnit\Framework\TestCase
 {
     /**
@@ -48,7 +50,7 @@ final class FilterOperatorSubscriberTest extends \PHPUnit\Framework\TestCase
     public function testOnOperatorsGenerate(): void
     {
         /** @var \PHPUnit\Framework\MockObject\MockObject|TranslatorInterface translatorInterfaceMock */
-        $translatorInterfaceMock = $this->createMock(TranslatorInterface::class);
+        $translatorInterfaceMock = $this->createStub(TranslatorInterface::class);
         $event                   = new LeadListFiltersOperatorsEvent([], $translatorInterfaceMock);
         $this->assertCount(0, $event->getOperators(), 'Expects 0 operators');
         $this->filterOperatorSubscriber->onOperatorsGenerate($event);
@@ -150,7 +152,7 @@ final class FilterOperatorSubscriberTest extends \PHPUnit\Framework\TestCase
     public function testOnWithinFieldValuesBuilderWhenWithinCustomObjectsIsOneOf(): void
     {
         /** @var \PHPUnit\Framework\MockObject\MockObject|QueryBuilder $queryBuilderMock */
-        $queryBuilderMock = $this->createMock(QueryBuilder::class);
+        $queryBuilderMock = $this->createStub(QueryBuilder::class);
 
         $queryBuilderMock->method('getTableAlias')->willReturn('t');
 

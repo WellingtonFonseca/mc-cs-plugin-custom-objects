@@ -40,7 +40,9 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class TokenSubscriberTest extends TestCase
 {
     use ConsecutiveCallsTrait;
@@ -120,15 +122,15 @@ class TokenSubscriberTest extends TestCase
         parent::setUp();
 
         $this->configProvider     = $this->createMock(ConfigProvider::class);
-        $this->queryFilterHelper  = $this->createMock(QueryFilterHelper::class);
+        $this->queryFilterHelper  = $this->createStub(QueryFilterHelper::class);
         $this->queryFilterFactory = $this->createMock(QueryFilterFactory::class);
         $this->customObjectModel  = $this->createMock(CustomObjectModel::class);
         $this->customItemModel    = $this->createMock(CustomItemModel::class);
-        $this->customFieldModel   = $this->createMock(CustomFieldModel::class);
+        $this->customFieldModel   = $this->createStub(CustomFieldModel::class);
         $this->tokenParser        = $this->createMock(TokenParser::class);
         $this->eventModel         = $this->createMock(EventModel::class);
-        $this->eventDispatcher    = $this->createMock(EventDispatcher::class);
-        $this->tokenFormatter     = $this->createMock(TokenFormatter::class);
+        $this->eventDispatcher    = $this->createStub(EventDispatcher::class);
+        $this->tokenFormatter     = $this->createStub(TokenFormatter::class);
         $this->subscriber         = new TokenSubscriber(
             $this->configProvider,
             $this->queryFilterHelper,
@@ -208,7 +210,7 @@ class TokenSubscriberTest extends TestCase
             ->willReturn(true);
 
         $customObject = $this->createMock(CustomObject::class);
-        $customField  = $this->createMock(CustomField::class);
+        $customField  = $this->createStub(CustomField::class);
 
         $customObject->expects($this->once())
             ->method('getCustomFields')
@@ -348,7 +350,7 @@ class TokenSubscriberTest extends TestCase
         </body>
         </html>
         ';
-        $customObject   = $this->createMock(CustomObject::class);
+        $customObject   = $this->createStub(CustomObject::class);
         $email          = new Email();
         $emailSendEvent = new EmailSendEvent(
             null,
@@ -394,7 +396,7 @@ class TokenSubscriberTest extends TestCase
         </body>
         </html>
         ';
-        $customObject   = $this->createMock(CustomObject::class);
+        $customObject   = $this->createStub(CustomObject::class);
         $email          = new Email();
         $emailSendEvent = new EmailSendEvent(
             null,
@@ -485,7 +487,7 @@ class TokenSubscriberTest extends TestCase
         );
 
         $customField            = $this->createMock(CustomField::class);
-        $customObject           = $this->createMock(CustomObject::class);
+        $customObject           = $this->createStub(CustomObject::class);
         $customItemWithField    = $this->createMock(CustomItem::class);
         $customItemWithoutField = $this->createMock(CustomItem::class);
         $valueEntity            = $this->createMock(CustomFieldValueInterface::class);
@@ -634,7 +636,7 @@ class TokenSubscriberTest extends TestCase
         );
 
         $customField            = $this->createMock(CustomField::class);
-        $customObject           = $this->createMock(CustomObject::class);
+        $customObject           = $this->createStub(CustomObject::class);
         $customItemWithField    = $this->createMock(CustomItem::class);
         $customItemWithoutField = $this->createMock(CustomItem::class);
         $valueEntity            = $this->createMock(CustomFieldValueInterface::class);
@@ -735,9 +737,9 @@ class TokenSubscriberTest extends TestCase
     {
         $this->configProvider->method('pluginIsEnabled')->willReturn(true);
         $this->builderEvent->method('tokensRequested')->willReturn(true);
-        $customObject = $this->createMock(CustomObject::class);
-        $field1       = $this->createMock(CustomField::class);
-        $field2       = $this->createMock(CustomField::class);
+        $customObject = $this->createStub(CustomObject::class);
+        $field1       = $this->createStub(CustomField::class);
+        $field2       = $this->createStub(CustomField::class);
         $field1->method('getAlias')->willReturn('sku');
         $field1->method('getLabel')->willReturn('SKU');
         $field2->method('getAlias')->willReturn('price');
@@ -821,10 +823,10 @@ class TokenSubscriberTest extends TestCase
     {
         $this->constructWithDependencies();
 
-        $queryBuilder  = $this->createMock(QueryBuilder::class);
+        $queryBuilder  = $this->createStub(QueryBuilder::class);
         $campaignEvent = $this->createMock(Event::class);
         $token         = $this->tokenParser->findTokens('{custom-object=product:sku | where=segment-filter |order=latest|limit=1 | default=No thing}')->current();
-        $email         = $this->createMock(Email::class);
+        $email         = $this->createStub(Email::class);
 
         $email->method('getEmailType')->willReturn('template');
 
@@ -862,12 +864,12 @@ class TokenSubscriberTest extends TestCase
     {
         $this->constructWithDependencies();
 
-        $queryBuilder  = $this->createMock(QueryBuilder::class);
+        $queryBuilder  = $this->createStub(QueryBuilder::class);
         $campaignEvent = $this->createMock(Event::class);
         $token         = $this->tokenParser->findTokens('{custom-object=product:sku | where=segment-filter |order=latest|limit=1 | default=No thing}')->current();
-        $campaign      = $this->createMock(Campaign::class);
+        $campaign      = $this->createStub(Campaign::class);
 
-        $email = $this->createMock(Email::class);
+        $email = $this->createStub(Email::class);
         $email->method('getEmailType')->willReturn('template');
         $campaign->method('getLists')->willReturn(new ArrayCollection([]));
 
@@ -908,13 +910,13 @@ class TokenSubscriberTest extends TestCase
     private function constructWithDependencies(): void
     {
         $this->configProvider     = $this->createMock(ConfigProvider::class);
-        $this->queryFilterHelper  = $this->createMock(QueryFilterHelper::class);
+        $this->queryFilterHelper  = $this->createStub(QueryFilterHelper::class);
         $this->queryFilterFactory = $this->createMock(QueryFilterFactory::class);
         $this->customObjectModel  = $this->createMock(CustomObjectModel::class);
         $this->customItemModel    = $this->createMock(CustomItemModel::class);
         $this->tokenParser        = new TokenParser();
         $this->eventModel         = $this->createMock(EventModel::class);
-        $this->eventDispatcher    = $this->createMock(EventDispatcher::class);
+        $this->eventDispatcher    = $this->createStub(EventDispatcher::class);
         $this->subscriber         = new TokenSubscriber(
             $this->configProvider,
             $this->queryFilterHelper,

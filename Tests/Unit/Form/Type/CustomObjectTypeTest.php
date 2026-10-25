@@ -22,7 +22,9 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomObjectTypeTest extends TestCase
 {
     use ConsecutiveCallsTrait;
@@ -49,8 +51,8 @@ class CustomObjectTypeTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->entityManager           = $this->createMock(EntityManager::class);
-        $this->customFieldTypeProvider = $this->createMock(CustomFieldTypeProvider::class);
+        $this->entityManager           = $this->createStub(EntityManager::class);
+        $this->customFieldTypeProvider = $this->createStub(CustomFieldTypeProvider::class);
         $this->customObjectRepository  = $this->createMock(CustomObjectRepository::class);
 
         $this->type = new CustomObjectType(
@@ -89,7 +91,7 @@ class CustomObjectTypeTest extends TestCase
 
     private function buildForm(bool $isNewObject, string $coNameSingular, string $coAlias, string $action)
     {
-        $customObject = $this->createMock(CustomObject::class);
+        $customObject = $this->createStub(CustomObject::class);
         $customObject->method('isNew')
             ->willReturn($isNewObject);
         $customObject->method('getNameSingular')

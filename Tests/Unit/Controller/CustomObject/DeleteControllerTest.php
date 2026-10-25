@@ -16,11 +16,13 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProviderFactory;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
+#[AllowMockObjectsWithoutExpectations]
 class DeleteControllerTest extends ControllerTestCase
 {
     private const OBJECT_ID = 33;
@@ -45,11 +47,11 @@ class DeleteControllerTest extends ControllerTestCase
     {
         parent::setUp();
 
-        $this->sessionProviderFactory = $this->createMock(SessionProviderFactory::class);
+        $this->sessionProviderFactory = $this->createStub(SessionProviderFactory::class);
         $this->customObjectModel      = $this->createMock(CustomObjectModel::class);
         $this->sessionProvider        = $this->createMock(SessionProvider::class);
         $this->permissionProvider     = $this->createMock(CustomObjectPermissionProvider::class);
-        $this->request                = $this->createMock(Request::class);
+        $this->request                = $this->createStub(Request::class);
 
         $this->requestStack->expects($this->any())
             ->method('getCurrentRequest')
@@ -134,7 +136,7 @@ class DeleteControllerTest extends ControllerTestCase
 
     public function testDeleteAction(): void
     {
-        $customObject = $this->createMock(CustomObject::class);
+        $customObject = $this->createStub(CustomObject::class);
 
         $customObject->method('getId')->willReturn(self::OBJECT_ID);
 
@@ -162,7 +164,7 @@ class DeleteControllerTest extends ControllerTestCase
 
     public function testThatItDisplaysErrorMessageIfThereAreRelatedSegments(): void
     {
-        $customObject = $this->createMock(CustomObject::class);
+        $customObject = $this->createStub(CustomObject::class);
 
         $customObject->method('getId')->willReturn(self::OBJECT_ID);
 

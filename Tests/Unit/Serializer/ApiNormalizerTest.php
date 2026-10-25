@@ -56,9 +56,9 @@ class ApiNormalizerTest extends TestCase
         if (interface_exists('ApiPlatform\\Core\\Api\\IriConverterInterface')) {
             $this->normalizerInterface     = $this->createMock(Normalizer::class);
             $this->customFieldTypeProvider = $this->createMock(CustomFieldTypeProvider::class);
-            $this->iriConverter            = $this->createMock(IriConverterInterface::class);
-            $this->customItemModel         = $this->createMock(CustomItemModel::class);
-            $this->em                      = $this->createMock(EntityManager::class);
+            $this->iriConverter            = $this->createStub(IriConverterInterface::class);
+            $this->customItemModel         = $this->createStub(CustomItemModel::class);
+            $this->em                      = $this->createStub(EntityManager::class);
             $this->apiNormalizer           = new ApiNormalizer($this->normalizerInterface, $this->customFieldTypeProvider, $this->customItemModel, $this->iriConverter, $this->em);
         } else {
             $this->markTestSkipped('ApiPlatform is not available');
@@ -71,7 +71,7 @@ class ApiNormalizerTest extends TestCase
     {
         $data         = ['sth' => 'sth'];
         $class        = CustomObject::class;
-        $customObject = $this->createMock(CustomObject::class);
+        $customObject = $this->createStub(CustomObject::class);
         $this->normalizerInterface
             ->expects($this->once())
             ->method('denormalize')
@@ -106,7 +106,7 @@ class ApiNormalizerTest extends TestCase
                 [$options[1], $classOption, null, []],
                 [$dataReduced, $class, null, []]
             ], [$customOptionOne, $customOptionTwo, $customField], true));
-        $customFieldType = $this->createMock(CustomFieldTypeInterface::class);
+        $customFieldType = $this->createStub(CustomFieldTypeInterface::class);
         $this->customFieldTypeProvider
             ->expects($this->once())
             ->method('getType')
@@ -123,7 +123,7 @@ class ApiNormalizerTest extends TestCase
             ->expects($this->once())
             ->method('setDefaultValue')
             ->with('1');
-        $typeObjectMock = $this->createMock(IntType::class);
+        $typeObjectMock = $this->createStub(IntType::class);
         $customField
             ->expects($this->once())
             ->method('getTypeObject')

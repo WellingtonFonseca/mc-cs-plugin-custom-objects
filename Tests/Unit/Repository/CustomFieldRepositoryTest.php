@@ -14,7 +14,9 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomFieldRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class CustomFieldRepositoryTest extends \PHPUnit\Framework\TestCase
 {
     use ConsecutiveCallsTrait;
@@ -43,9 +45,9 @@ class CustomFieldRepositoryTest extends \PHPUnit\Framework\TestCase
     {
         parent::setUp();
 
-        $this->registry      = $this->createMock(ManagerRegistry::class);
-        $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        $this->classMetadata = $this->createMock(ClassMetadata::class);
+        $this->registry      = $this->createStub(ManagerRegistry::class);
+        $this->entityManager = $this->createStub(EntityManagerInterface::class);
+        $this->classMetadata = $this->createStub(ClassMetadata::class);
         $this->queryBuilder  = $this->createMock(QueryBuilder::class);
         $this->query         = $this->createMock(AbstractQuery::class);
         $this->expression    = $this->createMock(Expr::class);
@@ -152,7 +154,7 @@ class CustomFieldRepositoryTest extends \PHPUnit\Framework\TestCase
                 ['required', true]
             ], null, false, $this->queryBuilder, 'setParameter'));
 
-        $customField = $this->createMock(CustomField::class);
+        $customField = $this->createStub(CustomField::class);
 
         $this->query->expects($this->once())
             ->method('getResult')

@@ -18,7 +18,9 @@ use MauticPlugin\CustomObjectsBundle\Helper\CsvHelper;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class AbstractMultivalueTypeTest extends \PHPUnit\Framework\TestCase
 {
     use ConsecutiveCallsTrait;
@@ -39,7 +41,7 @@ class AbstractMultivalueTypeTest extends \PHPUnit\Framework\TestCase
 
         $this->translator  = $this->createMock(TranslatorInterface::class);
         $this->customField = $this->createMock(CustomField::class);
-        $this->customItem  = $this->createMock(CustomItem::class);
+        $this->customItem  = $this->createStub(CustomItem::class);
         $this->provider    = $this->createMock(FilterOperatorProviderInterface::class);
         $this->fieldType   = new class($this->translator, $this->provider, new CsvHelper()) extends AbstractMultivalueType {
         };

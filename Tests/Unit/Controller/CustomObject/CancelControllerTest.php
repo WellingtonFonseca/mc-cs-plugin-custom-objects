@@ -11,7 +11,9 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProviderFactory;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 
+#[AllowMockObjectsWithoutExpectations]
 class CancelControllerTest extends ControllerTestCase
 {
     private $sessionProvider;
@@ -28,7 +30,7 @@ class CancelControllerTest extends ControllerTestCase
     {
         parent::setUp();
 
-        $this->sessionProviderFactory  = $this->createMock(SessionProviderFactory::class);
+        $this->sessionProviderFactory  = $this->createStub(SessionProviderFactory::class);
         $this->sessionProvider         = $this->createMock(SessionProvider::class);
         $this->routeProvider           = $this->createMock(CustomObjectRouteProvider::class);
         $this->customObjectModel       = $this->createMock(CustomObjectModel::class);

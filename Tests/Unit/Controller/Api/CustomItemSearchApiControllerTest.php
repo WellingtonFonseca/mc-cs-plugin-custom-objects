@@ -13,11 +13,13 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+#[AllowMockObjectsWithoutExpectations]
 final class CustomItemSearchApiControllerTest extends TestCase
 {
     private CustomObjectModel $customObjectModel;
@@ -30,10 +32,10 @@ final class CustomItemSearchApiControllerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->customObjectModel = $this->createMock(CustomObjectModel::class);
-        $this->em                = $this->createMock(EntityManagerInterface::class);
+        $this->customObjectModel = $this->createStub(CustomObjectModel::class);
+        $this->em                = $this->createStub(EntityManagerInterface::class);
 
-        $query = $this->createMock(AbstractQuery::class);
+        $query = $this->createStub(AbstractQuery::class);
         $query->method('getResult')->willReturn([]);
 
         $this->queryBuilder = $this->getMockBuilder(QueryBuilder::class)
@@ -58,14 +60,14 @@ final class CustomItemSearchApiControllerTest extends TestCase
         $fields = [];
         $id     = 1;
         foreach ($fieldTypesByAlias as $alias => $type) {
-            $field = $this->createMock(CustomField::class);
+            $field = $this->createStub(CustomField::class);
             $field->method('getAlias')->willReturn($alias);
             $field->method('getType')->willReturn($type);
             $field->method('getId')->willReturn($id++);
             $fields[] = $field;
         }
 
-        $object = $this->createMock(CustomObject::class);
+        $object = $this->createStub(CustomObject::class);
         $object->method('getCustomFields')->willReturn(new \Doctrine\Common\Collections\ArrayCollection($fields));
         $this->customObjectModel->method('fetchEntityByAlias')->willReturn($object);
     }

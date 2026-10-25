@@ -14,8 +14,10 @@ use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
 use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 
+#[AllowMockObjectsWithoutExpectations]
 class UnlinkControllerTest extends ControllerTestCase
 {
     public const ITEM_ID = 22;
@@ -78,7 +80,7 @@ class UnlinkControllerTest extends ControllerTestCase
 
     public function testSaveActionIfForbidden(): void
     {
-        $customItem = $this->createMock(CustomItem::class);
+        $customItem = $this->createStub(CustomItem::class);
 
         $this->customItemModel->expects($this->once())
             ->method('fetchEntity')

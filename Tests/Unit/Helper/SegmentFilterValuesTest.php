@@ -13,10 +13,12 @@ use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Helper\SegmentFilterValues;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+#[AllowMockObjectsWithoutExpectations]
 class SegmentFilterValuesTest extends TestCase
 {
     private Connection&MockObject $connection;
@@ -35,9 +37,9 @@ class SegmentFilterValuesTest extends TestCase
 
     private function field(string $type = 'text', int $objectId = 7): CustomField
     {
-        $object = $this->createMock(CustomObject::class);
+        $object = $this->createStub(CustomObject::class);
         $object->method('getId')->willReturn($objectId);
-        $typeObject = $this->createMock(TextType::class);
+        $typeObject = $this->createStub(TextType::class);
         $typeObject->method('getPrefixedTableName')->willReturn('custom_field_value_text');
         $field = $this->createMock(CustomField::class);
         $field->method('getCustomObject')->willReturn($object);

@@ -7,10 +7,12 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\EventListener;
 use Mautic\LeadBundle\Event\LeadListFiltersChoicesEvent;
 use Mautic\LeadBundle\LeadEvents;
 use MauticPlugin\CustomObjectsBundle\EventListener\SegmentTextInOperatorSubscriber;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[AllowMockObjectsWithoutExpectations]
 class SegmentTextInOperatorSubscriberTest extends TestCase
 {
     private const TEXT_OPERATORS = ['equals' => '=', 'not equal' => '!=', 'contém' => 'like', 'not like' => '!like', 'começar com' => 'startsWith', 'contains' => 'contains'];
