@@ -82,6 +82,15 @@ See [Wiki](https://github.com/acquia/mc-cs-plugin-custom-objects/wiki)
 
 The plugin has currently test coverage of 91%. Each new PR must be covered by tests to be considered to be merged. To run the tests execute `composer test -- --filter CustomObjects` from the Mautic root dir.
 
+Without the Mautic monorepo (the Docker stack of this fork), the unit suite and mutation testing run from the plugin folder inside the web container, with the files in `infection/`:
+
+```bash
+php /var/www/html/vendor/bin/phpunit -c infection/phpunit.xml
+infection --configuration=infection/infection.json5 --threads=8 --no-progress --initial-tests-php-options='-d pcov.enabled=1' --min-msi=0
+```
+
+`infection/bootstrap.php` loads the project autoloader without nikic/php-parser (Infection brings its own). `Tests/Functional` needs the monorepo and does not run there.
+
 ## Static Analysis
 
 PHPSTAN is used for static analysis. Here is how to run it locally from the Mautic's root dir:
