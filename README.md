@@ -62,7 +62,7 @@ The segment form offers `including` / `excluding` (`in` / `!in`) on the text fie
 
 ## Item list: search by label and view modal
 
-The search box of an object's item list takes `field:value` terms where the field is the alias or the label shown on the screens (`Curso:Matematica`, or `"Nome do Curso":Matematica` when the label has spaces; case does not matter). A click on an item's name opens a modal with its field values and its linked contacts (up to 50), in the item list and in the Custom Objects tab of a contact; ctrl / cmd / shift click opens the full page. The footer has Editar (only for who may edit the item), Detalhes (the item page) and Fechar. The modal follows the item page's permissions, and shows the contacts only to users who may view contacts.
+The search box of an object's item list takes `field:value` terms where the field is the alias or the label shown on the screens (`Curso:Matematica`, or `"Nome do Curso":Matematica` when the label has spaces; case does not matter). A click on an item's name opens a modal with the same detail rows as the item page (category, created by and on, modified by and on, ID), its field values and its linked contacts (up to 50), in the item list and in the Custom Objects tab of a contact; ctrl / cmd / shift click opens the full page. The footer has Editar (only for who may edit the item), Detalhes (the item page) and Fechar. The modal follows the item page's permissions, and shows the contacts only to users who may view contacts.
 
 ## Screens (Custom Objects admin)
 
