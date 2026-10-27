@@ -510,6 +510,14 @@ class CustomField extends FormEntity implements UniqueEntityInterface, UuidInter
     }
 
     /**
+     * Sets the default value as it is stored (see getStoredDefaultValue()), without the transformer of the type.
+     */
+    public function setStoredDefaultValue(?string $defaultValue): void
+    {
+        $this->defaultValue = '' === $defaultValue ? null : $defaultValue;
+    }
+
+    /**
      * @param mixed $defaultValue
      */
     public function setDefaultValue($defaultValue): void

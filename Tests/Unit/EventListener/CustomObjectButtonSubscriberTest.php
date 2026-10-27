@@ -102,12 +102,17 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
             ->with(555)
             ->willReturn('generated/edit/route');
 
-        $this->objectPermissionProvider->expects($this->once())
+        // the New button and the import of a definition ask the same permission
+        $this->objectPermissionProvider->expects($this->exactly(2))
             ->method('canCreate');
 
         $this->objectRouteProvider->expects($this->once())
             ->method('buildNewRoute')
             ->willReturn('generated/new/route');
+
+        $this->objectRouteProvider->expects($this->once())
+            ->method('buildImportDefinitionRoute')
+            ->willReturn('generated/import/route');
 
         $this->translator->expects($this->exactly(3))
             ->method('trans')
@@ -117,7 +122,7 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
                 ['mautic.core.form.cancel']
             ], 'translated string'));
 
-        $this->event->expects($this->exactly(5))
+        $this->event->expects($this->exactly(6))
             ->method('addButton')
             ->willReturnCallback($this->consecutiveCalls([[[
                 'attr' => [
@@ -160,6 +165,13 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
                 'btnText'   => 'mautic.core.form.new',
                 'iconClass' => 'fa fa-plus',
                 'priority'  => 500,
+            ]], [[
+                'attr' => [
+                    'href' => 'generated/import/route',
+                ],
+                'btnText'   => 'custom.object.import.button',
+                'iconClass' => 'ri-upload-2-line',
+                'priority'  => 400,
             ]]], null, false, $this->event, 'addButton'));
 
         $this->subscriber->injectViewButtons($this->event);
