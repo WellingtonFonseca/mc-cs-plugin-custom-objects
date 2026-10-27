@@ -1,0 +1,13 @@
+{# One alert of an import of a definition (a text and, under it, a list of items), for the object page and for the check of the import page.
+   Needs `alert` ({type: success|info|warning|danger, message, items}) and `class` (the extra CSS class that tells the two uses apart).
+   One block inside the alert, so the list stays under the text (the alert lays out its icon and its children side by side). #}
+<div class="alert alert-{{ alert.type }} {{ class }} mb-sm" role="alert">
+    <div>
+        {{ alert.message }}
+        {% if alert.items|default([]) is not empty %}
+            <ul class="mb-0">
+                {% for item in alert.items %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+</div>

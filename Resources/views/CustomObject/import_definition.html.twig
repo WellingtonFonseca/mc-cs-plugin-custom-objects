@@ -14,16 +14,7 @@
                     <p class="help-block custom-object-import-help">{{ (checkAlerts is empty ? 'custom.object.import.help' : 'custom.object.import.preview_help')|trans }}</p>
                 {% endif %}
                 {% for alert in checkAlerts|default([]) %}
-                    <div class="alert alert-{{ alert.type }} custom-object-import-check mb-sm" role="alert">
-                        <div>
-                            {{ alert.message }}
-                            {% if alert.items is not empty %}
-                                <ul class="mb-0">
-                                    {% for item in alert.items %}<li>{{ item }}</li>{% endfor %}
-                                </ul>
-                            {% endif %}
-                        </div>
-                    </div>
+                    {{ include('@CustomObjects/CustomObject/_import_alert.html.twig', {'alert': alert, 'class': 'custom-object-import-check'}) }}
                 {% endfor %}
                 {% if errors is not empty %}
                     <div class="alert alert-danger" id="custom-object-import-errors">

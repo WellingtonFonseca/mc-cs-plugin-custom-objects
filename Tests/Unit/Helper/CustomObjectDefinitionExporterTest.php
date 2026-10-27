@@ -58,11 +58,11 @@ class CustomObjectDefinitionExporterTest extends TestCase
         $this->assertSame(CustomObject::TYPE_MASTER, $array['type']);
         $this->assertNull($array['category']);
         $this->assertNull($array['masterObjectAlias']);
-        $this->assertNull($array['relationshipObjectAlias']);
+        $this->assertArrayNotHasKey('relationshipObjectAlias', $array);
         $this->assertArrayNotHasKey('id', $array);
     }
 
-    public function testRelatedObjectsAreNamedByAlias(): void
+    public function testTheMasterOfARelationshipObjectIsNamedByAliasAndTheChildOfAMasterIsNotInTheFile(): void
     {
         $master = new CustomObject();
         $master->setAlias('school');
@@ -77,7 +77,8 @@ class CustomObjectDefinitionExporterTest extends TestCase
 
         $this->assertSame(CustomObject::TYPE_RELATIONSHIP, $array['type']);
         $this->assertSame('school', $array['masterObjectAlias']);
-        $this->assertSame('student', $array['relationshipObjectAlias']);
+        // the child is linked by the plugin when it is saved; naming it here made a copy clash with the original on a unique index
+        $this->assertArrayNotHasKey('relationshipObjectAlias', $array);
     }
 
     public function testFieldsComeInTheirOrderWithTheirSettingsAndNoIds(): void

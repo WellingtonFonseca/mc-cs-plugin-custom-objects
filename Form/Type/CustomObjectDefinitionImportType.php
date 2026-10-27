@@ -72,7 +72,7 @@ class CustomObjectDefinitionImportType extends AbstractType
         return "var f = mQuery('form[name=custom_object_definition_import]');"
             ." f.find('textarea').val('').prop('readonly', false).removeAttr('readonly').focus();"
             ." f.find('input[name\$=\"[confirmed]\"]').val('0');"
-            ." mQuery('.custom-object-import-check, .custom-object-import-help').hide();"
+            ." mQuery('.custom-object-import-check, .custom-object-import-help, #custom-object-import-errors').hide();"
             ." mQuery('.btn-save').removeClass('hide').html(".$label." + '<i class=\"ri-search-line\"></i>');"
             ." mQuery('.btn-reset').hide();"
             .' return false;';

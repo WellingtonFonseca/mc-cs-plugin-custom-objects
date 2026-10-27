@@ -22,10 +22,16 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomFieldRepository;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomItemRepository;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomObjectRepository;
+use Doctrine\DBAL\Connection;
+use Doctrine\ORM\EntityManagerInterface;
+use Mautic\CoreBundle\Security\Permissions\CorePermissions;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Validator\ConstraintViolation;
+use Symfony\Component\Validator\ConstraintViolationList;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 class CustomObjectDefinitionImporterTest extends TestCase
@@ -51,28 +57,51 @@ class CustomObjectDefinitionImporterTest extends TestCase
     /** @var CategoryRepository|MockObject */
     private $categoryRepository;
 
+    /** @var CorePermissions|MockObject */
+    private $security;
+
+    /** @var ValidatorInterface|MockObject */
+    private $validator;
+
+    /** @var Connection|MockObject */
+    private $connection;
+
+    private $typeProvider;
+    private $itemModel;
+    private $entityManager;
+    private $translator;
+
     private CustomObjectDefinitionImporter $importer;
 
     protected function setUp(): void
     {
         $this->model            = $this->createMock(CustomObjectModel::class);
+        // an alias is clean when it is lower case with letters, numbers and hyphens
+        $this->model->method('cleanAlias')->willReturnCallback(static fn (string $alias): string => strtolower(preg_replace('/[^a-zA-Z0-9-]/', '', $alias)));
         $this->objectRepository = $this->createMock(CustomObjectRepository::class);
         $this->fieldRepository  = $this->createMock(CustomFieldRepository::class);
         $this->permissionProvider = $this->createMock(CustomObjectPermissionProvider::class);
         $this->itemRepository     = $this->createMock(CustomItemRepository::class);
-        $itemModel                = $this->createMock(CustomItemModel::class);
-        $itemModel->method('getRepository')->willReturn($this->itemRepository);
+        $this->itemModel          = $this->createMock(CustomItemModel::class);
+        $this->itemModel->method('getRepository')->willReturn($this->itemRepository);
         $this->categoryRepository = $this->createMock(CategoryRepository::class);
         $this->categoryModel      = $this->createMock(CategoryModel::class);
         $this->categoryModel->method('getRepository')->willReturn($this->categoryRepository);
+        $this->security   = $this->createMock(CorePermissions::class);
+        $this->security->method('isGranted')->willReturn(true);
+        $this->validator  = $this->createMock(ValidatorInterface::class);
+        $this->validator->method('validate')->willReturn(new ConstraintViolationList());
+        $this->connection = $this->createMock(Connection::class);
+        $this->entityManager = $this->createMock(EntityManagerInterface::class);
+        $this->entityManager->method('getConnection')->willReturn($this->connection);
 
         $text = $this->createMock(CustomFieldTypeInterface::class);
         $text->method('getSymfonyFormFieldType')->willReturn(TextType::class);
         $select = $this->createMock(CustomFieldTypeInterface::class);
         $select->method('getSymfonyFormFieldType')->willReturn(ChoiceType::class);
 
-        $provider = $this->createMock(CustomFieldTypeProvider::class);
-        $provider->method('getType')->willReturnCallback(static function (string $key) use ($text, $select) {
+        $this->typeProvider = $this->createMock(CustomFieldTypeProvider::class);
+        $this->typeProvider->method('getType')->willReturnCallback(static function (string $key) use ($text, $select) {
             return match ($key) {
                 'text'   => $text,
                 'select' => $select,
@@ -80,18 +109,21 @@ class CustomObjectDefinitionImporterTest extends TestCase
             };
         });
 
-        $translator = $this->createMock(TranslatorInterface::class);
-        $translator->method('trans')->willReturnCallback(static fn (string $id, array $params = []): string => $id.($params ? ' '.json_encode($params) : ''));
+        $this->translator = $this->createMock(TranslatorInterface::class);
+        $this->translator->method('trans')->willReturnCallback(static fn (string $id, array $params = []): string => $id.($params ? ' '.json_encode($params) : ''));
 
         $this->importer = new CustomObjectDefinitionImporter(
             $this->model,
             $this->objectRepository,
             $this->fieldRepository,
-            new CustomFieldFactory($provider),
-            $itemModel,
+            new CustomFieldFactory($this->typeProvider),
+            $this->itemModel,
             $this->categoryModel,
             $this->permissionProvider,
-            $translator
+            $this->security,
+            $this->validator,
+            $this->entityManager,
+            $this->translator
         );
 
         $this->model->method('save')->willReturnArgument(0);
@@ -251,7 +283,7 @@ class CustomObjectDefinitionImporterTest extends TestCase
             ['alias' => 'nolabel', 'type' => 'text', 'order' => 5],
             'not an object',
         ];
-        $definition['relationshipObjectAlias'] = 'missing';
+        $definition['masterObjectAlias'] = 'missing';
 
         $errors = implode("\n", $this->errorsOf($definition));
 
@@ -284,25 +316,23 @@ class CustomObjectDefinitionImporterTest extends TestCase
         $this->assertSame(0, $field->getOrder());
     }
 
-    public function testARelationshipObjectKeepsItsTypeAndItsRelatedObjects(): void
+    public function testARelationshipObjectKeepsItsTypeAndItsMaster(): void
     {
         $master = new CustomObject();
         $master->setAlias('school');
-        $related = new CustomObject();
-        $related->setAlias('student');
-        $this->objectRepository->method('findOneBy')->willReturnCallback(
-            static fn (array $criteria) => ['school' => $master, 'student' => $related][$criteria['alias']] ?? null
-        );
-        $definition                            = $this->definition();
-        $definition['type']                    = CustomObject::TYPE_RELATIONSHIP;
-        $definition['masterObjectAlias']       = 'school';
+        $this->objectRepository->method('findOneBy')->willReturnCallback(static fn (array $criteria) => 'school' === $criteria['alias'] ? $master : null);
+        $definition                      = $this->definition();
+        $definition['type']              = CustomObject::TYPE_RELATIONSHIP;
+        $definition['masterObjectAlias'] = 'school';
+        // the child of a master is never taken from the file: the plugin links it when the child is saved (a second link would clash with the
+        // unique index of the column)
         $definition['relationshipObjectAlias'] = 'student';
 
         $object = $this->importer->import((string) json_encode($definition))->getCustomObject();
 
         $this->assertSame(CustomObject::TYPE_RELATIONSHIP, $object->getType());
         $this->assertSame($master, $object->getMasterObject());
-        $this->assertSame($related, $object->getRelationshipObject());
+        $this->assertNull($object->getRelationshipObject());
     }
 
     public function testFieldsAsAJsonObjectAndMissingOrdersKeepTheSequenceOfTheFile(): void
@@ -403,7 +433,6 @@ class CustomObjectDefinitionImporterTest extends TestCase
         $this->assertFalse($result->isCreated());
         $this->assertSame($existing, $result->getCustomObject());
         $this->assertSame(['d', 'c'], $result->getAddedAliases());
-        $this->assertSame(['a'], $result->getSkipped());
         $fields = [];
         foreach ($existing->getCustomFields() as $field) {
             $fields[$field->getAlias()] = [$field->getLabel(), $field->getOrder()];
@@ -426,7 +455,6 @@ class CustomObjectDefinitionImporterTest extends TestCase
         $result = $this->importer->import((string) json_encode($definition));
 
         $this->assertSame([], $result->getAddedAliases());
-        $this->assertSame(['a'], $result->getSkipped());
         $this->assertSame([], $result->getTypeMismatches());
     }
 
@@ -439,7 +467,6 @@ class CustomObjectDefinitionImporterTest extends TestCase
 
         $result = $this->importer->import((string) json_encode($definition));
 
-        $this->assertSame(['b'], $result->getSkipped());
         $this->assertSame(['custom.object.import.skipped_type {"%alias%":"b","%existing%":"select","%file%":"text"}'], $result->getTypeMismatches());
     }
 
@@ -487,7 +514,6 @@ class CustomObjectDefinitionImporterTest extends TestCase
 
         $this->assertTrue($result->isCreated());
         $this->assertSame(['a', 'b'], $result->getAddedAliases());
-        $this->assertSame([], $result->getSkipped());
     }
 
     public function testTheProblemsOfTheObjectAndOfTheFieldsAreListedTogether(): void
@@ -576,7 +602,6 @@ class CustomObjectDefinitionImporterTest extends TestCase
         $result = $this->importer->import((string) json_encode($definition), false);
 
         $this->assertSame(['c'], $result->getAddedAliases());
-        $this->assertSame(['a'], $result->getSkipped());
         $this->assertSame(['c'], $result->getRequiredWithItems());
         $this->assertCount(2, $existing->getCustomFields());
     }
@@ -655,5 +680,108 @@ class CustomObjectDefinitionImporterTest extends TestCase
         $definition['category'] = 'not even valid';
 
         $this->assertNull($this->importer->import((string) json_encode($definition))->getCreatedCategory());
+    }
+
+    public function testTheApplyIsOneTransaction(): void
+    {
+        $this->connection->expects($this->once())->method('beginTransaction');
+        $this->connection->expects($this->once())->method('commit');
+        $this->connection->expects($this->never())->method('rollBack');
+
+        $this->importer->import((string) json_encode($this->definition()));
+    }
+
+    public function testTheCheckOpensNoTransaction(): void
+    {
+        $this->connection->expects($this->never())->method('beginTransaction');
+
+        $this->importer->import((string) json_encode($this->definition()), false);
+    }
+
+    public function testAFailureWhileSavingRollsBackAndIsAnErrorOfTheFile(): void
+    {
+        $this->model->method('save')->willThrowException(new \RuntimeException('column too long'));
+        $this->connection->expects($this->once())->method('rollBack');
+        $this->connection->expects($this->never())->method('commit');
+
+        $this->assertSame(['custom.object.import.error.save {"%message%":"column too long"}'], $this->errorsOf($this->definition()));
+    }
+
+    public function testTheConstraintsOfTheEntitiesAreEnforcedBeforeAnythingIsSaved(): void
+    {
+        $validator = $this->createMock(ValidatorInterface::class);
+        $validator->method('validate')->willReturn(new ConstraintViolationList([new ConstraintViolation('too long', null, [], null, 'label', 'x')]));
+        $importer = new CustomObjectDefinitionImporter(
+            $this->model,
+            $this->objectRepository,
+            $this->fieldRepository,
+            new CustomFieldFactory($this->typeProvider),
+            $this->itemModel,
+            $this->categoryModel,
+            $this->permissionProvider,
+            $this->security,
+            $validator,
+            $this->entityManager,
+            $this->translator
+        );
+        $this->model->expects($this->never())->method('save');
+
+        try {
+            $importer->import((string) json_encode($this->definition()));
+            $this->fail('The import should have been refused');
+        } catch (DefinitionImportException $e) {
+            // the object and each of its two fields are validated (the object's own constraints do not cascade to the fields)
+            $this->assertSame(['course - label: too long', 'a - label: too long', 'b - label: too long'], $e->getErrors());
+        }
+    }
+
+    public function testAnAliasThatTheModelWouldChangeIsRefused(): void
+    {
+        $definition          = $this->definition();
+        $definition['alias'] = 'My Course';
+        $definition['customFields'][0]['alias'] = 'Field_One';
+
+        $errors = implode("\n", $this->errorsOf($definition));
+
+        $this->assertStringContainsString('custom.object.import.error.alias_form {"%alias%":"My Course"}', $errors);
+        $this->assertStringContainsString('custom.object.import.error.alias_form {"%alias%":"Field_One"}', $errors);
+    }
+
+    public function testARelationshipObjectNeedsItsMaster(): void
+    {
+        $definition         = $this->definition();
+        $definition['type'] = CustomObject::TYPE_RELATIONSHIP;
+
+        $this->assertSame(['custom.object.import.error.master_required'], $this->errorsOf($definition));
+    }
+
+    public function testANewCategoryNeedsThePermissionToCreateCategories(): void
+    {
+        $security = $this->createMock(CorePermissions::class);
+        $security->expects($this->once())->method('isGranted')->with('category:categories:create')->willReturn(false);
+        $this->categoryRepository->method('findOneBy')->willReturn(null);
+        $importer = new CustomObjectDefinitionImporter(
+            $this->model,
+            $this->objectRepository,
+            $this->fieldRepository,
+            new CustomFieldFactory($this->typeProvider),
+            $this->itemModel,
+            $this->categoryModel,
+            $this->permissionProvider,
+            $security,
+            $this->validator,
+            $this->entityManager,
+            $this->translator
+        );
+        $this->categoryModel->expects($this->never())->method('saveEntity');
+        $definition             = $this->definition();
+        $definition['category'] = ['alias' => 'school', 'title' => 'Schools'];
+
+        try {
+            $importer->import((string) json_encode($definition));
+            $this->fail('The import should have been refused');
+        } catch (DefinitionImportException $e) {
+            $this->assertSame(['custom.object.import.error.category_forbidden {"%alias%":"school"}'], $e->getErrors());
+        }
     }
 }

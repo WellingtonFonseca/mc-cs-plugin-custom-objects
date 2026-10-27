@@ -57,6 +57,15 @@ class ImportDefinitionController extends CommonController
         $json      = (string) ($form->get('definition')->getData() ?? '');
         $confirmed = '1' === (string) $form->get('confirmed')->getData();
 
+        // the form's token: without it a page of another site could post an import for a logged-in admin
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            return $this->renderImportForm(
+                $this->createImportForm($formFactory, $routeProvider, false, $json),
+                $routeProvider,
+                [$this->translator->trans('custom.object.import.error.token')]
+            );
+        }
+
         // first the check: what the import WOULD do, nothing saved; the person confirms it on the next submit
         if (!$confirmed) {
             try {
@@ -73,7 +82,6 @@ class ImportDefinitionController extends CommonController
                 $routeProvider,
                 [],
                 $alerts->fromResult($check, true),
-                '',
                 $canConfirm
             );
         }
@@ -81,7 +89,7 @@ class ImportDefinitionController extends CommonController
         try {
             $result = $importer->import($json);
         } catch (DefinitionImportException $e) {
-            return $this->renderImportForm($this->createImportForm($formFactory, $routeProvider), $routeProvider, $e->getErrors(), [], $json);
+            return $this->renderImportForm($this->createImportForm($formFactory, $routeProvider, false, $json), $routeProvider, $e->getErrors());
         }
 
         // the object page shows what was done as alerts (it reads them once from the session)
@@ -117,7 +125,6 @@ class ImportDefinitionController extends CommonController
         CustomObjectRouteProvider $routeProvider,
         array $errors,
         array $checkAlerts = [],
-        string $json = '',
         bool $canConfirm = true
     ): Response {
         return $this->delegateView([

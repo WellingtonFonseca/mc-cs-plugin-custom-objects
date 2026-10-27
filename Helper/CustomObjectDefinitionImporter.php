@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Helper;
 
+use Doctrine\ORM\EntityManagerInterface;
 use Mautic\CategoryBundle\Entity\Category;
 use Mautic\CategoryBundle\Model\CategoryModel;
+use Mautic\CoreBundle\Security\Permissions\CorePermissions;
 use MauticPlugin\CustomObjectsBundle\DTO\CustomObjectDefinitionImportResult;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField\Params;
@@ -13,13 +15,14 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldFactory;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldOption;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\DefinitionImportException;
-use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
+use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomFieldRepository;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomObjectRepository;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -43,6 +46,9 @@ class CustomObjectDefinitionImporter
         private CustomItemModel $customItemModel,
         private CategoryModel $categoryModel,
         private CustomObjectPermissionProvider $permissionProvider,
+        private CorePermissions $security,
+        private ValidatorInterface $validator,
+        private EntityManagerInterface $entityManager,
         private TranslatorInterface $translator
     ) {
     }
@@ -72,17 +78,21 @@ class CustomObjectDefinitionImporter
             usort($fields, fn ($a, $b): int => $this->orderOf($a) <=> $this->orderOf($b));
         }
 
+        // an existing object only receives fields: the rest of the file (category, related objects, names) is not even read
+        if ($existing instanceof CustomObject) {
+            if ([] !== $errors) {
+                throw new DefinitionImportException($errors);
+            }
+
+            return $this->addMissingFields($existing, $fields, $apply);
+        }
+
         $newCategory  = false;
-        $category     = $existing instanceof CustomObject ? null : $this->findCategory($definition['category'] ?? null, $errors, $newCategory);
-        $master       = $existing instanceof CustomObject ? null : $this->findRelated($definition['masterObjectAlias'] ?? null, $errors);
-        $relationship = $existing instanceof CustomObject ? null : $this->findRelated($definition['relationshipObjectAlias'] ?? null, $errors);
+        $category     = $this->findCategory($definition['category'] ?? null, $errors, $newCategory);
+        $master       = $this->findRelated($definition['masterObjectAlias'] ?? null, $errors);
 
         if ([] !== $errors) {
             throw new DefinitionImportException($errors);
-        }
-
-        if ($existing instanceof CustomObject) {
-            return $this->addMissingFields($existing, $fields, $apply);
         }
 
         $customObject = new CustomObject();
@@ -93,7 +103,6 @@ class CustomObjectDefinitionImporter
         $customObject->setLanguage($definition['language'] ?? null);
         $customObject->setType((int) ($definition['type'] ?? CustomObject::TYPE_MASTER));
         $customObject->setMasterObject($master);
-        $customObject->setRelationshipObject($relationship);
 
         foreach ($fields as $order => $rawField) {
             $customObject->addCustomField($this->buildField($customObject, $rawField, $order));
@@ -107,14 +116,25 @@ class CustomObjectDefinitionImporter
             }
         }
 
-        if ($apply) {
-            if ($newCategory) {
-                $this->categoryModel->saveEntity($category);
-            }
-            $this->customObjectModel->save($customObject);
+        // the fields are validated one by one: the object's own constraints do not cascade to them
+        $violations = $this->violations($customObject, (string) $customObject->getAlias());
+        foreach ($customObject->getCustomFields() as $newField) {
+            $violations = array_merge($violations, $this->violations($newField, (string) $newField->getAlias()));
+        }
+        if ([] !== $violations) {
+            throw new DefinitionImportException($violations);
         }
 
-        return new CustomObjectDefinitionImportResult($customObject, true, array_column($fields, 'alias'), [], [], [], $createdCategory);
+        if ($apply) {
+            $this->applyInTransaction(function () use ($newCategory, $category, $customObject): void {
+                if ($newCategory) {
+                    $this->categoryModel->saveEntity($category);
+                }
+                $this->customObjectModel->save($customObject);
+            });
+        }
+
+        return new CustomObjectDefinitionImportResult($customObject, true, array_column($fields, 'alias'), [], [], $createdCategory);
     }
 
     /**
@@ -130,13 +150,12 @@ class CustomObjectDefinitionImporter
         }
 
         $added      = [];
+        $newFields  = [];
         $required   = [];
-        $skipped    = [];
         $mismatches = [];
         foreach ($fields as $rawField) {
             $alias = $rawField['alias'];
             if (isset($existingFields[$alias])) {
-                $skipped[] = $alias;
                 if ($existingFields[$alias]->getType() !== $rawField['type']) {
                     $mismatches[] = $this->t('custom.object.import.skipped_type', [
                         '%alias%'    => $alias,
@@ -152,21 +171,34 @@ class CustomObjectDefinitionImporter
             if ($apply) {
                 $customObject->addCustomField($field);
             }
-            $added[] = $alias;
+            $newFields[] = $field;
+            $added[]     = $alias;
             if ($field->isRequired()) {
                 $required[] = $alias;
             }
         }
 
+        if ([] !== $newFields) {
+            $violations = [];
+            foreach ($newFields as $newField) {
+                $violations = array_merge($violations, $this->violations($newField, (string) $newField->getAlias()));
+            }
+            if ([] !== $violations) {
+                throw new DefinitionImportException($violations);
+            }
+        }
+
         if ($apply && [] !== $added) {
-            $this->customObjectModel->save($customObject);
+            $this->applyInTransaction(function () use ($customObject): void {
+                $this->customObjectModel->save($customObject);
+            });
         }
 
         // a required field (every unique identifier is one) added to an object with items: those items have it empty and cannot be saved
         // again until it has a value, which is said to who imports
         $requiredWithItems = [] !== $required && $this->hasItems($customObject) ? $required : [];
 
-        return new CustomObjectDefinitionImportResult($customObject, false, $added, $skipped, $mismatches, $requiredWithItems);
+        return new CustomObjectDefinitionImportResult($customObject, false, $added, $mismatches, $requiredWithItems);
     }
 
     /**
@@ -209,6 +241,40 @@ class CustomObjectDefinitionImporter
         return [];
     }
 
+    /**
+     * The entity's own constraints (lengths, blank values, the default value of its type): what the forms of the plugin enforce, which a file
+     * made by hand would otherwise skip until the database refuses it.
+     *
+     * @return string[]
+     */
+    private function violations(object $entity, string $label): array
+    {
+        $messages = [];
+        foreach ($this->validator->validate($entity) as $violation) {
+            $messages[] = $label.' - '.$violation->getPropertyPath().': '.$violation->getMessage();
+        }
+
+        return $messages;
+    }
+
+    /**
+     * Everything the apply saves (the category, then the object with its fields) goes in one database transaction: a failure leaves nothing
+     * behind and is said as an error of the file instead of a server error.
+     */
+    private function applyInTransaction(callable $save): void
+    {
+        $connection = $this->entityManager->getConnection();
+        $connection->beginTransaction();
+        try {
+            $save();
+            $connection->commit();
+        } catch (\Throwable $e) {
+            $connection->rollBack();
+
+            throw new DefinitionImportException([$this->t('custom.object.import.error.save', ['%message%' => $e->getMessage()])]);
+        }
+    }
+
     private function hasItems(CustomObject $customObject): bool
     {
         return $this->customItemModel->getRepository()->getItemCount((int) $customObject->getId()) > 0;
@@ -237,13 +303,20 @@ class CustomObjectDefinitionImporter
         }
 
         foreach (['alias', 'nameSingular', 'namePlural'] as $key) {
-            if (!isset($definition[$key]) || !is_string($definition[$key]) || '' === trim($definition[$key])) {
+            if (!$this->isFilled($definition[$key] ?? null)) {
                 $errors[] = $this->t('custom.object.import.error.required', ['%key%' => $key]);
             }
         }
 
+        // the model cleans an alias and renames a taken one: a copy must keep the alias of the file, so only a clean one is accepted
+        if (is_string($definition['alias'] ?? null) && $this->isFilled($definition['alias']) && $this->customObjectModel->cleanAlias($definition['alias'], '', 0, '-') !== $definition['alias']) {
+            $errors[] = $this->t('custom.object.import.error.alias_form', ['%alias%' => $definition['alias']]);
+        }
+
         if (isset($definition['type']) && !in_array($definition['type'], [CustomObject::TYPE_MASTER, CustomObject::TYPE_RELATIONSHIP], true)) {
             $errors[] = $this->t('custom.object.import.error.type');
+        } elseif (CustomObject::TYPE_RELATIONSHIP === ($definition['type'] ?? null) && !$this->isFilled($definition['masterObjectAlias'] ?? null)) {
+            $errors[] = $this->t('custom.object.import.error.master_required');
         }
 
         if (!isset($definition['customFields']) || !is_array($definition['customFields'])) {
@@ -272,13 +345,17 @@ class CustomObjectDefinitionImporter
             }
 
             foreach (['alias', 'label', 'type'] as $key) {
-                if (!isset($field[$key]) || !is_string($field[$key]) || '' === trim($field[$key])) {
+                if (!$this->isFilled($field[$key] ?? null)) {
                     $errors[] = $this->t('custom.object.import.error.field_required', ['%position%' => $position, '%key%' => $key]);
                 }
             }
 
             if (!isset($field['alias']) || !is_string($field['alias']) || '' === $field['alias']) {
                 continue;
+            }
+
+            if ($this->customObjectModel->cleanAlias($field['alias'], '', 0, '-') !== $field['alias']) {
+                $errors[] = $this->t('custom.object.import.error.alias_form', ['%alias%' => $field['alias']]);
             }
 
             if (in_array($field['alias'], $seen, true)) {
@@ -297,6 +374,14 @@ class CustomObjectDefinitionImporter
         }
 
         return $errors;
+    }
+
+    /**
+     * @param mixed $value
+     */
+    private function isFilled($value): bool
+    {
+        return is_string($value) && '' !== trim($value);
     }
 
     /**
@@ -334,7 +419,7 @@ class CustomObjectDefinitionImporter
 
         $alias = is_array($data) ? ($data['alias'] ?? null) : null;
         $title = is_array($data) ? ($data['title'] ?? null) : null;
-        if (!is_string($alias) || '' === trim($alias) || !is_string($title) || '' === trim($title)) {
+        if (!$this->isFilled($alias) || !$this->isFilled($title)) {
             $errors[] = $this->t('custom.object.import.error.category');
 
             return null;
@@ -343,6 +428,12 @@ class CustomObjectDefinitionImporter
         $found = $this->categoryModel->getRepository()->findOneBy(['alias' => $alias, 'bundle' => self::CATEGORY_BUNDLE]);
         if ($found instanceof Category) {
             return $found;
+        }
+
+        if (!$this->security->isGranted('category:categories:create')) {
+            $errors[] = $this->t('custom.object.import.error.category_forbidden', ['%alias%' => $alias]);
+
+            return null;
         }
 
         $isNew    = true;

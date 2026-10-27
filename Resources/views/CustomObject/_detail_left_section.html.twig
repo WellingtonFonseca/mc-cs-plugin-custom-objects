@@ -9,17 +9,7 @@
             </div>
             {# what an import of a definition just did to this object (success, info, warning), once #}
             {% for alert in importAlerts|default([]) %}
-                <div class="alert alert-{{ alert.type }} custom-object-import-alert mb-sm" role="alert">
-                    {# one block, so the list stays under the text (the alert lays out its icon and its children side by side) #}
-                    <div>
-                        {{ alert.message }}
-                        {% if alert.items|default([]) is not empty %}
-                            <ul class="mb-0">
-                                {% for item in alert.items %}<li>{{ item }}</li>{% endfor %}
-                            </ul>
-                        {% endif %}
-                    </div>
-                </div>
+                {{ include('@CustomObjects/CustomObject/_import_alert.html.twig', {'alert': alert, 'class': 'custom-object-import-alert'}) }}
             {% endfor %}
         </div>
         <!--/ form detail header -->

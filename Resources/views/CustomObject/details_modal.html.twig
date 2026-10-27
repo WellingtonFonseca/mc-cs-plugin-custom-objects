@@ -1,18 +1,14 @@
 {#
-  Body of the modal opened by a click on an object's name in the list: the tabs Campos (the fields of the object, one per row) and Clonar (the definition as JSON, read only) (label,
-  alias, type, required, unique identifier, default value, options), then the footer (Editar only with permission, Detalhes, Fechar: a .bottom-form-buttons block that core copies into the modal footer, with a single .btn-primary like the contact modal). The shared modal is narrow by default, so only a
-  modal holding this body is widened (:has); every other use of the shared modal keeps its size. Long texts break inside
-  their cell instead of pushing the table out of the modal.
+  Body of the modal opened by a click on an object's name in the list: the tabs Campos (the fields table, _fields_table.html.twig, whose
+  cells break long texts instead of pushing the table out of the modal) and Clonar (the definition as JSON, read only), then the footer
+  (Editar only with permission, Detalhes, Fechar: a .bottom-form-buttons block that core copies into the modal footer, with a single
+  .btn-primary like the contact modal). The shared modal is narrow by default, so only a modal holding this body is widened (:has);
+  every other use of the shared modal keeps its size.
 #}
 <style>
     .modal-dialog:has(.custom-object-details-modal) {
         width: 1100px;
         max-width: 95vw;
-    }
-    .custom-object-details-modal td,
-    .custom-object-details-modal th {
-        overflow-wrap: anywhere;
-        word-break: break-word;
     }
 </style>
 <div class="custom-object-details-modal">
