@@ -9,7 +9,10 @@
     <div class="box-layout">
         <div class="col-md-9 bg-auto height-auto bg-white">
             <div class="pa-md">
-                <p class="help-block">{{ (checkAlerts is empty ? 'custom.object.import.help' : (canConfirm ? 'custom.object.import.preview_help' : 'custom.object.import.nothing_help'))|trans }}</p>
+                {# no text over a check that found nothing: its alert says it #}
+                {% if checkAlerts is empty or canConfirm %}
+                    <p class="help-block custom-object-import-help">{{ (checkAlerts is empty ? 'custom.object.import.help' : 'custom.object.import.preview_help')|trans }}</p>
+                {% endif %}
                 {% for alert in checkAlerts|default([]) %}
                     <div class="alert alert-{{ alert.type }} custom-object-import-check mb-sm" role="alert">
                         <div>
