@@ -106,12 +106,20 @@ class CustomObjectDefinitionImporter
             $nextOrder                          = max($nextOrder, (int) $field->getOrder() + 1);
         }
 
-        $added   = [];
-        $skipped = [];
+        $added      = [];
+        $skipped    = [];
+        $mismatches = [];
         foreach ($fields as $rawField) {
             $alias = $rawField['alias'];
             if (isset($existingFields[$alias])) {
-                $skipped[] = $this->skippedMessage($existingFields[$alias], $rawField);
+                $skipped[] = $alias;
+                if ($existingFields[$alias]->getType() !== $rawField['type']) {
+                    $mismatches[] = $this->t('custom.object.import.skipped_type', [
+                        '%alias%'    => $alias,
+                        '%existing%' => (string) $existingFields[$alias]->getType(),
+                        '%file%'     => $rawField['type'],
+                    ]);
+                }
 
                 continue;
             }
@@ -124,25 +132,7 @@ class CustomObjectDefinitionImporter
             $this->customObjectModel->save($customObject);
         }
 
-        return new CustomObjectDefinitionImportResult($customObject, false, $added, $skipped);
-    }
-
-    /**
-     * A field the object already has is left as it is; a different type is said, since it means the two instances have drifted apart.
-     *
-     * @param mixed[] $rawField
-     */
-    private function skippedMessage(CustomField $existing, array $rawField): string
-    {
-        if ($existing->getType() === $rawField['type']) {
-            return (string) $rawField['alias'];
-        }
-
-        return $this->t('custom.object.import.skipped_type', [
-            '%alias%'    => $rawField['alias'],
-            '%existing%' => (string) $existing->getType(),
-            '%file%'     => $rawField['type'],
-        ]);
+        return new CustomObjectDefinitionImportResult($customObject, false, $added, $skipped, $mismatches);
     }
 
     /**

@@ -7,6 +7,10 @@
                 <div class="col-xs-2 text-right">
                 </div>
             </div>
+            {# what an import of a definition just did to this object (success, info, warning), once #}
+            {% for alert in importAlerts|default([]) %}
+                <div class="alert alert-{{ alert.type }} custom-object-import-alert mb-sm" role="alert">{{ alert.message }}</div>
+            {% endfor %}
         </div>
         <!--/ form detail header -->
 

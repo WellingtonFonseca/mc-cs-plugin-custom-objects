@@ -41,6 +41,7 @@
             'dateRangeForm': dateRangeForm,
             'chartData': stats,
             'definitionJson': definitionJson,
+            'importAlerts': importAlerts is defined ? importAlerts : [],
             'mauticTemplateVars': mauticTemplateVars is defined ? mauticTemplateVars : {}
         }) }}
         {{ include('@CustomObjects/CustomObject/_detail_right_section.html.twig', {'logs': logs}) }}
