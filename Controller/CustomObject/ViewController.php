@@ -9,6 +9,8 @@ use Mautic\CoreBundle\Form\Type\DateRangeType;
 use Mautic\CoreBundle\Model\AuditLogModel;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
+use MauticPlugin\CustomObjectsBundle\Helper\CustomObjectDefinitionExporter;
+use MauticPlugin\CustomObjectsBundle\Helper\CustomObjectDefinitionImportAlerts;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
@@ -23,6 +25,7 @@ class ViewController extends CommonController
         AuditLogModel $auditLogModel,
         CustomObjectPermissionProvider $permissionProvider,
         CustomObjectRouteProvider $routeProvider,
+        CustomObjectDefinitionExporter $definitionExporter,
         int $objectId
     ): Response {
         $request = $this->getCurrentRequest();
@@ -64,6 +67,9 @@ class ViewController extends CommonController
                     'dateRangeForm' => $dateRangeForm->createView(),
                     'stats'         => $stats,
                     'logs'          => $auditLogs,
+                    'definitionJson' => $definitionExporter->toJson($customObject),
+                    // what an import of a definition just did to this object, shown once above the details
+                    'importAlerts'  => $request->getSession()->getFlashBag()->get(CustomObjectDefinitionImportAlerts::SESSION_KEY),
                 ],
                 'contentTemplate' => '@CustomObjects/CustomObject/detail.html.twig',
                 'passthroughVars' => [
@@ -83,6 +89,7 @@ class ViewController extends CommonController
     public function detailsAction(
         CustomObjectModel $customObjectModel,
         CustomObjectPermissionProvider $permissionProvider,
+        CustomObjectDefinitionExporter $definitionExporter,
         int $objectId
     ): Response {
         try {
@@ -103,7 +110,7 @@ class ViewController extends CommonController
         }
 
         return $this->delegateView([
-            'viewParameters'  => ['customObject' => $customObject, 'canEdit' => $canEdit],
+            'viewParameters'  => ['customObject' => $customObject, 'canEdit' => $canEdit, 'definitionJson' => $definitionExporter->toJson($customObject)],
             'contentTemplate' => '@CustomObjects/CustomObject/details_modal.html.twig',
             'passthroughVars' => ['route' => false],
         ]);

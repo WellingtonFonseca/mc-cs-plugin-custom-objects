@@ -28,6 +28,10 @@ class CustomObjectRouteProvider
 
     public const ROUTE_LINK   = 'mautic_custom_object_link';
 
+    public const ROUTE_IMPORT_DEFINITION      = 'mautic_custom_object_import_definition';
+
+    public const ROUTE_IMPORT_DEFINITION_SAVE = 'mautic_custom_object_import_definition_save';
+
     public function __construct(private RouterInterface $router)
     {
     }
@@ -40,6 +44,21 @@ class CustomObjectRouteProvider
     public function buildSaveRoute(?int $id = null): string
     {
         return $this->router->generate(static::ROUTE_SAVE, ['objectId' => $id]);
+    }
+
+    public function buildImportDefinitionRoute(): string
+    {
+        return $this->router->generate(static::ROUTE_IMPORT_DEFINITION);
+    }
+
+    public function buildImportDefinitionSaveRoute(): string
+    {
+        return $this->router->generate(static::ROUTE_IMPORT_DEFINITION_SAVE);
+    }
+
+    public function buildCancelRoute(): string
+    {
+        return $this->router->generate(static::ROUTE_CANCEL);
     }
 
     public function buildViewRoute(int $id): string

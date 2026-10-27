@@ -1,0 +1,31 @@
+{% extends '@MauticCore/Default/content.html.twig' %}
+
+{% block mauticContent %}customObject{% endblock %}
+
+{% block headerTitle %}{{ 'custom.object.import.title'|trans }}{% endblock %}
+
+{% block content %}
+    {{ form_start(form) }}
+    <div class="box-layout">
+        <div class="col-md-9 bg-auto height-auto bg-white">
+            <div class="pa-md">
+                {# no text over a check that found nothing: its alert says it #}
+                {% if checkAlerts is empty or canConfirm %}
+                    <p class="help-block custom-object-import-help">{{ (checkAlerts is empty ? 'custom.object.import.help' : 'custom.object.import.preview_help')|trans }}</p>
+                {% endif %}
+                {% for alert in checkAlerts|default([]) %}
+                    {{ include('@CustomObjects/CustomObject/_import_alert.html.twig', {'alert': alert, 'class': 'custom-object-import-check'}) }}
+                {% endfor %}
+                {% if errors is not empty %}
+                    <div class="alert alert-danger" id="custom-object-import-errors">
+                        <ul class="mb-0">
+                            {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                {{ form_row(form.definition) }}
+            </div>
+        </div>
+    </div>
+    {{ form_end(form) }}
+{% endblock %}

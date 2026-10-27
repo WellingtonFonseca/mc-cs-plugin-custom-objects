@@ -7,6 +7,10 @@
                 <div class="col-xs-2 text-right">
                 </div>
             </div>
+            {# what an import of a definition just did to this object (success, info, warning), once #}
+            {% for alert in importAlerts|default([]) %}
+                {{ include('@CustomObjects/CustomObject/_import_alert.html.twig', {'alert': alert, 'class': 'custom-object-import-alert'}) }}
+            {% endfor %}
         </div>
         <!--/ form detail header -->
 
@@ -39,6 +43,39 @@
         <!-- some stats -->
 
         <!--/ stats -->
+        <!-- tabs controls -->
+        <ul class="nav nav-tabs pr-md pl-md">
+            <li class="active">
+                <a href="#fields-container" role="tab" data-toggle="tab">
+                    {{ 'custom.object.tab.fields'|trans }}
+                </a>
+            </li>
+            <li id="definition-tab">
+                <a href="#definition-container" role="tab" data-toggle="tab">
+                    {{ 'custom.object.definition.tab'|trans }}
+                </a>
+            </li>
+        </ul>
+        <!--/ tabs controls -->
+    </div>
+
+    <div class="tab-content pa-md">
+
+        <!-- #fields-container -->
+        <div class="tab-pane fade active in bdr-w-0" id="fields-container">
+            {{ include('@CustomObjects/CustomObject/_fields_table.html.twig') }}
+        </div>
+        <!--/ #fields-container -->
+
+        <!-- #definition-container -->
+        <div class="tab-pane fade bdr-w-0" id="definition-container">
+            {{ include('@CustomObjects/CustomObject/_definition.html.twig') }}
+        </div>
+        <!--/ #definition-container -->
+    </div>
+
+    <!-- chart, below the fields -->
+    <div class="bg-auto">
         <div class="pa-md">
             <div class="row">
                 <div class="col-sm-12">
@@ -62,49 +99,5 @@
             </div>
         </div>
         {{- customContent('details.stats.graph.below', mauticTemplateVars|default({})) -}}
-
-        <!-- tabs controls -->
-        <ul class="nav nav-tabs pr-md pl-md">
-            <li class="active">
-                <a href="#fields-container" role="tab" data-toggle="tab">
-                    {{ 'custom.object.tab.fields'|trans }}
-                </a>
-            </li>
-        </ul>
-        <!--/ tabs controls -->
-    </div>
-
-    <div class="tab-content pa-md">
-
-        <!-- #fields-container -->
-        <div class="tab-pane fade active in bdr-w-0" id="fields-container">
-            <ul class="list-group mb-xs">
-                {% for field in customObject.getCustomFields() %}
-                    <li class="list-group-item bg-auto bg-light-xs">
-                        <div class="box-layout">
-                            <div class="col-md-1 va-m">
-                                <h3>
-                                    {% set isRequired = field.isRequired() ? true : false %}
-                                    {% set requiredTitle = isRequired ? 'mautic.core.required' : 'mautic.core.not_required' %}
-                                    {% set requiredClass = isRequired ? 'check' : 'times' %}
-                                    <span class="fa fa-{{ requiredClass }} text-white dark-xs"
-                                          data-toggle="tooltip"
-                                          data-placement="left"
-                                          title="{{ requiredTitle|trans }}">
-                                    </span>
-                                </h3>
-                            </div>
-                            <div class="col-md-7 va-m">
-                                <h5 class="fw-sb text-primary mb-xs">{{ field.getLabel() }}</h5>
-                            </div>
-                            <div class="col-md-4 va-m text-right">
-                                <em class="text-white dark-sm">{{ field.getTypeObject().getName() }}</em>
-                            </div>
-                        </div>
-                    </li>
-                {% endfor %}
-            </ul>
-        </div>
-        <!--/ #fields-container -->
     </div>
 </div>

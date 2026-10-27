@@ -45,6 +45,7 @@ class CustomObjectButtonSubscriber implements EventSubscriberInterface
 
                 try {
                     $event->addButton($this->defineNewButton(), ButtonHelper::LOCATION_PAGE_ACTIONS, $event->getRoute());
+                    $event->addButton($this->defineImportDefinitionButton(), ButtonHelper::LOCATION_PAGE_ACTIONS, $event->getRoute());
                 } catch (ForbiddenException) {
                 }
 
@@ -193,9 +194,13 @@ class CustomObjectButtonSubscriber implements EventSubscriberInterface
                 'data-confirm-callback' => 'executeAction',
                 'data-cancel-text'      => $this->translator->trans('mautic.core.form.cancel'),
                 'data-cancel-callback'  => 'dismissConfirmation',
+                // core 5 paints the Delete item of a row menu by this class and core 7 by this id (`a#delete`), red on hover as in the other lists
+                'id'    => 'delete',
+                'class' => 'danger',
             ],
             'btnText'   => 'mautic.core.form.delete',
-            'iconClass' => 'fa fa-fw fa-trash-o text-danger',
+            // the icon of core's own Delete item: it takes the color of the item (a text-danger icon stays red on the red hover)
+            'iconClass' => 'ri-delete-bin-line',
             'priority'  => 0,
         ];
     }
@@ -216,6 +221,27 @@ class CustomObjectButtonSubscriber implements EventSubscriberInterface
             'btnText'   => 'mautic.core.form.new',
             'iconClass' => 'fa fa-plus',
             'priority'  => 500,
+        ];
+    }
+
+    /**
+     * The button of the list page that opens the import of the definition of an object made on another instance (a Clone tab's JSON).
+     *
+     * @return mixed[]
+     *
+     * @throws ForbiddenException
+     */
+    private function defineImportDefinitionButton(): array
+    {
+        $this->permissionProvider->canCreate();
+
+        return [
+            'attr' => [
+                'href' => $this->routeProvider->buildImportDefinitionRoute(),
+            ],
+            'btnText'   => 'custom.object.import.button',
+            'iconClass' => 'ri-upload-2-line',
+            'priority'  => 400,
         ];
     }
 

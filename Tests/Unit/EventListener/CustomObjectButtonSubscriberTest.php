@@ -112,12 +112,17 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
             ->with(555)
             ->willReturn('generated/edit/route');
 
-        $this->objectPermissionProvider->expects($this->exactly(2))
+        // the New button and the import of a definition ask the same permission, on each of the two locations
+        $this->objectPermissionProvider->expects($this->exactly(4))
             ->method('canCreate');
 
         $this->objectRouteProvider->expects($this->exactly(2))
             ->method('buildNewRoute')
             ->willReturn('generated/new/route');
+
+        $this->objectRouteProvider->expects($this->exactly(2))
+            ->method('buildImportDefinitionRoute')
+            ->willReturn('generated/import/route');
 
         $this->translator->expects($this->exactly(6))
             ->method('trans')
@@ -146,9 +151,11 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
                     'data-confirm-callback' => 'executeAction',
                     'data-cancel-text'      => 'translated string',
                     'data-cancel-callback'  => 'dismissConfirmation',
+                    'id'                    => 'delete',
+                    'class'                 => 'danger',
                 ],
                 'btnText'   => 'mautic.core.form.delete',
-                'iconClass' => 'fa fa-fw fa-trash-o text-danger',
+                'iconClass' => 'ri-delete-bin-line',
                 'priority'  => 0,
             ], [
                 'attr' => [
@@ -171,6 +178,13 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
                 'btnText'   => 'mautic.core.form.new',
                 'iconClass' => 'fa fa-plus',
                 'priority'  => 500,
+            ], [
+                'attr' => [
+                    'href' => 'generated/import/route',
+                ],
+                'btnText'   => 'custom.object.import.button',
+                'iconClass' => 'ri-upload-2-line',
+                'priority'  => 400,
             ]];
 
         $list = $this->buttonEvent(CustomObjectRouteProvider::ROUTE_LIST, ButtonHelper::LOCATION_LIST_ACTIONS);
@@ -281,9 +295,11 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
                     'data-confirm-callback' => 'executeAction',
                     'data-cancel-text'      => null,
                     'data-cancel-callback'  => 'dismissConfirmation',
+                    'id'                    => 'delete',
+                    'class'                 => 'danger',
                 ],
                 'btnText'   => 'mautic.core.form.delete',
-                'iconClass' => 'fa fa-fw fa-trash-o text-danger',
+                'iconClass' => 'ri-delete-bin-line',
                 'priority'  => 0,
             ], [
                 'attr' => [

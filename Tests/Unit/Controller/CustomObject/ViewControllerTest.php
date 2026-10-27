@@ -10,6 +10,7 @@ use MauticPlugin\CustomObjectsBundle\Controller\CustomObject\ViewController;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
+use MauticPlugin\CustomObjectsBundle\Helper\CustomObjectDefinitionExporter;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
@@ -21,6 +22,8 @@ use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Session\Flash\FlashBagInterface;
+use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 #[\AllowDynamicProperties]
@@ -33,6 +36,7 @@ class ViewControllerTest extends ControllerTestCase
     private $auditLog;
     private $permissionProvider;
     private $routeProvider;
+    private $definitionExporter;
     private $formFactory;
     private $form;
     private $customObject;
@@ -50,6 +54,7 @@ class ViewControllerTest extends ControllerTestCase
         $this->auditLog           = $this->createMock(AuditLogModel::class);
         $this->permissionProvider = $this->createMock(CustomObjectPermissionProvider::class);
         $this->routeProvider      = $this->createMock(CustomObjectRouteProvider::class);
+        $this->definitionExporter = $this->createMock(CustomObjectDefinitionExporter::class);
         $this->requestStack       = $this->createMock(RequestStack::class);
         $this->request            = $this->createStub(Request::class);
         $this->formFactory        = $this->createMock(FormFactoryInterface::class);
@@ -95,6 +100,7 @@ class ViewControllerTest extends ControllerTestCase
             $this->auditLog,
             $this->permissionProvider,
             $this->routeProvider,
+            $this->definitionExporter,
             self::OBJECT_ID
         );
     }
@@ -124,6 +130,7 @@ class ViewControllerTest extends ControllerTestCase
             $this->auditLog,
             $this->permissionProvider,
             $this->routeProvider,
+            $this->definitionExporter,
             self::OBJECT_ID
         );
     }
@@ -144,6 +151,16 @@ class ViewControllerTest extends ControllerTestCase
         $this->routeProvider->expects($this->once())
             ->method('buildViewRoute')
             ->with(self::OBJECT_ID);
+
+        // the alerts of an import that just redirected here are read once from the session
+        $flashBag = $this->createMock(FlashBagInterface::class);
+        $flashBag->expects($this->once())
+            ->method('get')
+            ->with('custom_object_import_alerts')
+            ->willReturn([['type' => 'success', 'message' => 'done']]);
+        $session = $this->createMock(Session::class);
+        $session->method('getFlashBag')->willReturn($flashBag);
+        $this->request->method('getSession')->willReturn($session);
 
         $this->formFactory->expects($this->once())
             ->method('create')
@@ -189,6 +206,7 @@ class ViewControllerTest extends ControllerTestCase
             $this->auditLog,
             $this->permissionProvider,
             $this->routeProvider,
+            $this->definitionExporter,
             self::OBJECT_ID
         );
     }
