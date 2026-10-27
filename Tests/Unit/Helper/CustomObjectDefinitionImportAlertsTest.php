@@ -58,4 +58,24 @@ class CustomObjectDefinitionImportAlertsTest extends TestCase
         $this->assertSame(['success', 'warning'], array_column($alerts, 'type'));
         $this->assertSame('custom.object.import.mismatch {"%fields%":"b (x); e (y)"}', $alerts[1]['message']);
     }
+
+    public function testRequiredFieldsAddedToAnObjectWithItemsAreAWarningWithTheirList(): void
+    {
+        $alerts = $this->alerts->fromResult(new CustomObjectDefinitionImportResult($this->object, false, ['c', 'd'], [], [], ['d']));
+
+        $this->assertSame(['success', 'warning'], array_column($alerts, 'type'));
+        $this->assertSame(
+            ['type' => 'warning', 'message' => 'custom.object.import.required_with_items {"%name%":"Cursos"}', 'items' => ['d']],
+            $alerts[1]
+        );
+    }
+
+    public function testTheRequiredWarningComesBeforeTheTypeWarning(): void
+    {
+        $alerts = $this->alerts->fromResult(new CustomObjectDefinitionImportResult($this->object, false, ['c'], [], ['b (x)'], ['c']));
+
+        $this->assertSame(['success', 'warning', 'warning'], array_column($alerts, 'type'));
+        $this->assertStringStartsWith('custom.object.import.required_with_items', $alerts[1]['message']);
+        $this->assertStringStartsWith('custom.object.import.mismatch', $alerts[2]['message']);
+    }
 }

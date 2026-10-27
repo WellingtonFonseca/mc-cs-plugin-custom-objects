@@ -9,7 +9,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * What the object page says after an import of a definition, as alerts (Bootstrap types: success, info, warning): the object was created or
- * received fields (success), nothing was added (info), a kept field has another type in the file (warning).
+ * received fields (success), nothing was added (info), a required field was added to an object that has items, or a kept field has another type in the file (warning).
  */
 class CustomObjectDefinitionImportAlerts
 {
@@ -33,6 +33,10 @@ class CustomObjectDefinitionImportAlerts
             $alerts[] = $this->alert('info', 'custom.object.import.nothing', ['%name%' => $name]);
         } else {
             $alerts[] = $this->alert('success', 'custom.object.import.added', ['%name%' => $name], $result->getAddedAliases());
+        }
+
+        if ([] !== $result->getRequiredWithItems()) {
+            $alerts[] = $this->alert('warning', 'custom.object.import.required_with_items', ['%name%' => $name], $result->getRequiredWithItems());
         }
 
         if ([] !== $result->getTypeMismatches()) {
