@@ -56,6 +56,7 @@ class CustomObjectDefinitionExporterTest extends TestCase
         $this->assertSame('Os cursos', $array['description']);
         $this->assertSame('pt_BR', $array['language']);
         $this->assertSame(CustomObject::TYPE_MASTER, $array['type']);
+        $this->assertNull($array['category']);
         $this->assertNull($array['masterObjectAlias']);
         $this->assertNull($array['relationshipObjectAlias']);
         $this->assertArrayNotHasKey('id', $array);
@@ -172,5 +173,20 @@ class CustomObjectDefinitionExporterTest extends TestCase
         $json = (new CustomObjectDefinitionExporter())->toJson($object);
 
         $this->assertStringContainsString('"description": "Ação / curso"', $json);
+    }
+
+    public function testTheCategoryIsExportedByAliasTitleAndColor(): void
+    {
+        $category = new \Mautic\CategoryBundle\Entity\Category();
+        $category->setAlias('school');
+        $category->setTitle('Schools');
+        $category->setColor('ff0000');
+        $object = $this->object();
+        $object->setCategory($category);
+
+        $this->assertSame(
+            ['alias' => 'school', 'title' => 'Schools', 'color' => 'ff0000'],
+            (new CustomObjectDefinitionExporter())->toArray($object)['category']
+        );
     }
 }

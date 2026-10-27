@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Helper;
 
+use Mautic\CategoryBundle\Entity\Category;
+use Mautic\CategoryBundle\Entity\CategoryRepository;
+use Mautic\CategoryBundle\Model\CategoryModel;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\CustomFieldTypeInterface;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldFactory;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
@@ -42,6 +45,12 @@ class CustomObjectDefinitionImporterTest extends TestCase
     /** @var CustomItemRepository|MockObject */
     private $itemRepository;
 
+    /** @var CategoryModel|MockObject */
+    private $categoryModel;
+
+    /** @var CategoryRepository|MockObject */
+    private $categoryRepository;
+
     private CustomObjectDefinitionImporter $importer;
 
     protected function setUp(): void
@@ -53,6 +62,9 @@ class CustomObjectDefinitionImporterTest extends TestCase
         $this->itemRepository     = $this->createMock(CustomItemRepository::class);
         $itemModel                = $this->createMock(CustomItemModel::class);
         $itemModel->method('getRepository')->willReturn($this->itemRepository);
+        $this->categoryRepository = $this->createMock(CategoryRepository::class);
+        $this->categoryModel      = $this->createMock(CategoryModel::class);
+        $this->categoryModel->method('getRepository')->willReturn($this->categoryRepository);
 
         $text = $this->createMock(CustomFieldTypeInterface::class);
         $text->method('getSymfonyFormFieldType')->willReturn(TextType::class);
@@ -77,6 +89,7 @@ class CustomObjectDefinitionImporterTest extends TestCase
             $this->fieldRepository,
             new CustomFieldFactory($provider),
             $itemModel,
+            $this->categoryModel,
             $this->permissionProvider,
             $translator
         );
@@ -538,5 +551,109 @@ class CustomObjectDefinitionImporterTest extends TestCase
         $definition['customFields'] = [['alias' => 'plain', 'label' => 'P', 'type' => 'text']];
 
         $this->assertSame([], $this->importer->import((string) json_encode($definition))->getRequiredWithItems());
+    }
+
+    public function testTheCheckSavesNothingForANewObject(): void
+    {
+        $this->model->expects($this->never())->method('save');
+        $this->categoryModel->expects($this->never())->method('saveEntity');
+
+        $result = $this->importer->import((string) json_encode($this->definition()), false);
+
+        $this->assertTrue($result->isCreated());
+        $this->assertSame(['a', 'b'], $result->getAddedAliases());
+    }
+
+    public function testTheCheckSavesNothingAndLeavesAnExistingObjectAsItWas(): void
+    {
+        $existing = $this->existingObject();
+        $this->fieldRepository->method('isAliasUnique')->willReturnCallback(static fn (string $alias): bool => in_array($alias, ['a', 'b'], true));
+        $this->itemRepository->method('getItemCount')->willReturn(2);
+        $definition                 = $this->definition();
+        $definition['customFields'] = [['alias' => 'c', 'label' => 'C', 'type' => 'text', 'required' => true], ['alias' => 'a', 'label' => 'A', 'type' => 'select']];
+        $this->model->expects($this->never())->method('save');
+
+        $result = $this->importer->import((string) json_encode($definition), false);
+
+        $this->assertSame(['c'], $result->getAddedAliases());
+        $this->assertSame(['a'], $result->getSkipped());
+        $this->assertSame(['c'], $result->getRequiredWithItems());
+        $this->assertCount(2, $existing->getCustomFields());
+    }
+
+    public function testTheCheckStillRefusesAWrongFile(): void
+    {
+        $this->assertSame(['custom.object.import.error.format'], $this->errorsOf(['format' => 'other', 'version' => 1, 'alias' => 'x', 'nameSingular' => 'X', 'namePlural' => 'Xs', 'customFields' => []]));
+    }
+
+    public function testAnExistingCategoryOfTheFileIsUsed(): void
+    {
+        $category = new Category();
+        $category->setAlias('school');
+        $category->setTitle('Schools');
+        $this->categoryRepository->expects($this->once())->method('findOneBy')->with(['alias' => 'school', 'bundle' => 'global'])->willReturn($category);
+        $this->categoryModel->expects($this->never())->method('saveEntity');
+        $definition             = $this->definition();
+        $definition['category'] = ['alias' => 'school', 'title' => 'Ignored title', 'color' => '000000'];
+
+        $result = $this->importer->import((string) json_encode($definition));
+
+        $this->assertSame($category, $result->getCustomObject()->getCategory());
+        $this->assertNull($result->getCreatedCategory());
+    }
+
+    public function testAMissingCategoryIsCreatedWithTheObject(): void
+    {
+        $this->categoryRepository->method('findOneBy')->willReturn(null);
+        $this->categoryModel->expects($this->once())->method('saveEntity')->with($this->callback(static function (Category $c): bool {
+            return 'school' === $c->getAlias() && 'Schools' === $c->getTitle() && 'global' === $c->getBundle() && 'ff0000' === $c->getColor();
+        }));
+        $definition             = $this->definition();
+        $definition['category'] = ['alias' => 'school', 'title' => 'Schools', 'color' => 'ff0000'];
+
+        $result = $this->importer->import((string) json_encode($definition));
+
+        $this->assertSame('Schools', $result->getCreatedCategory());
+        $this->assertSame('school', $result->getCustomObject()->getCategory()->getAlias());
+    }
+
+    public function testTheCheckDoesNotCreateTheCategoryButSaysItWould(): void
+    {
+        $this->categoryRepository->method('findOneBy')->willReturn(null);
+        $this->categoryModel->expects($this->never())->method('saveEntity');
+        $definition             = $this->definition();
+        $definition['category'] = ['alias' => 'school', 'title' => 'Schools'];
+
+        $result = $this->importer->import((string) json_encode($definition), false);
+
+        $this->assertSame('Schools', $result->getCreatedCategory());
+    }
+
+    public function testACategoryWithoutAliasOrTitleIsRefused(): void
+    {
+        foreach ([['alias' => 'x'], ['title' => 'X'], 'text', ['alias' => ' ', 'title' => 'X'], ['alias' => 5, 'title' => 'X']] as $category) {
+            $definition             = $this->definition();
+            $definition['category'] = $category;
+
+            $this->assertSame(['custom.object.import.error.category'], $this->errorsOf($definition));
+        }
+    }
+
+    public function testNoCategoryInTheFileMeansNoCategory(): void
+    {
+        $this->categoryRepository->expects($this->never())->method('findOneBy');
+
+        $this->assertNull($this->importer->import((string) json_encode($this->definition()))->getCustomObject()->getCategory());
+    }
+
+    public function testTheCategoryOfTheFileIsIgnoredForAnExistingObject(): void
+    {
+        $this->existingObject();
+        $this->fieldRepository->method('isAliasUnique')->willReturn(false);
+        $this->categoryRepository->expects($this->never())->method('findOneBy');
+        $definition             = $this->definition();
+        $definition['category'] = 'not even valid';
+
+        $this->assertNull($this->importer->import((string) json_encode($definition))->getCreatedCategory());
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Helper;
 
+use Mautic\CategoryBundle\Entity\Category;
+use Mautic\CategoryBundle\Model\CategoryModel;
 use MauticPlugin\CustomObjectsBundle\DTO\CustomObjectDefinitionImportResult;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField\Params;
@@ -25,17 +27,21 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * its fields and options, no items. An alias that exists only RECEIVES the fields of the file that the object does not have yet (by the
  * alias of the field); what the object already has is never changed, and the data of the object in the file (names, type, related objects)
  * is ignored. Everything wrong with the file is collected first and thrown together (DefinitionImportException), so one attempt shows all of
- * it, and nothing is saved unless there is no error. The `order` of the file only gives the sequence of the new fields: in a new object they
+ * it, and nothing is saved unless there is no error. With $apply false nothing is saved either way: it answers what an import WOULD do (the
+ * check shown before the person confirms). The `order` of the file only gives the sequence of the new fields: in a new object they
  * are numbered 0, 1, 2...; in an existing one they continue after the last number it uses.
  */
 class CustomObjectDefinitionImporter
 {
+    private const CATEGORY_BUNDLE = 'global';
+
     public function __construct(
         private CustomObjectModel $customObjectModel,
         private CustomObjectRepository $customObjectRepository,
         private CustomFieldRepository $customFieldRepository,
         private CustomFieldFactory $customFieldFactory,
         private CustomItemModel $customItemModel,
+        private CategoryModel $categoryModel,
         private CustomObjectPermissionProvider $permissionProvider,
         private TranslatorInterface $translator
     ) {
@@ -44,7 +50,7 @@ class CustomObjectDefinitionImporter
     /**
      * @throws DefinitionImportException
      */
-    public function import(string $json): CustomObjectDefinitionImportResult
+    public function import(string $json, bool $apply = true): CustomObjectDefinitionImportResult
     {
         $definition = json_decode($json, true);
         if (!is_array($definition)) {
@@ -66,6 +72,8 @@ class CustomObjectDefinitionImporter
             usort($fields, fn ($a, $b): int => $this->orderOf($a) <=> $this->orderOf($b));
         }
 
+        $newCategory  = false;
+        $category     = $existing instanceof CustomObject ? null : $this->findCategory($definition['category'] ?? null, $errors, $newCategory);
         $master       = $existing instanceof CustomObject ? null : $this->findRelated($definition['masterObjectAlias'] ?? null, $errors);
         $relationship = $existing instanceof CustomObject ? null : $this->findRelated($definition['relationshipObjectAlias'] ?? null, $errors);
 
@@ -74,7 +82,7 @@ class CustomObjectDefinitionImporter
         }
 
         if ($existing instanceof CustomObject) {
-            return $this->addMissingFields($existing, $fields);
+            return $this->addMissingFields($existing, $fields, $apply);
         }
 
         $customObject = new CustomObject();
@@ -91,15 +99,28 @@ class CustomObjectDefinitionImporter
             $customObject->addCustomField($this->buildField($customObject, $rawField, $order));
         }
 
-        $this->customObjectModel->save($customObject);
+        $createdCategory = null;
+        if ($category instanceof Category) {
+            $customObject->setCategory($category);
+            if ($newCategory) {
+                $createdCategory = (string) $category->getTitle();
+            }
+        }
 
-        return new CustomObjectDefinitionImportResult($customObject, true, array_column($fields, 'alias'), []);
+        if ($apply) {
+            if ($newCategory) {
+                $this->categoryModel->saveEntity($category);
+            }
+            $this->customObjectModel->save($customObject);
+        }
+
+        return new CustomObjectDefinitionImportResult($customObject, true, array_column($fields, 'alias'), [], [], [], $createdCategory);
     }
 
     /**
      * @param mixed[] $fields the fields of the file, in their sequence
      */
-    private function addMissingFields(CustomObject $customObject, array $fields): CustomObjectDefinitionImportResult
+    private function addMissingFields(CustomObject $customObject, array $fields, bool $apply): CustomObjectDefinitionImportResult
     {
         $existingFields = [];
         $nextOrder      = 0;
@@ -128,14 +149,16 @@ class CustomObjectDefinitionImporter
             }
 
             $field = $this->buildField($customObject, $rawField, $nextOrder++);
-            $customObject->addCustomField($field);
+            if ($apply) {
+                $customObject->addCustomField($field);
+            }
             $added[] = $alias;
             if ($field->isRequired()) {
                 $required[] = $alias;
             }
         }
 
-        if ([] !== $added) {
+        if ($apply && [] !== $added) {
             $this->customObjectModel->save($customObject);
         }
 
@@ -293,6 +316,44 @@ class CustomObjectDefinitionImporter
         }
 
         return true;
+    }
+
+    /**
+     * The category of the file: the one of that alias if it exists here (as a `global` category, the kind a Custom Object has), else a new one
+     * with the title and color of the file, saved only when the import is applied.
+     *
+     * @param mixed    $data
+     * @param string[] $errors
+     * @param bool     $isNew  set to true when the category is not in the database yet
+     */
+    private function findCategory($data, array &$errors, bool &$isNew): ?Category
+    {
+        if (null === $data) {
+            return null;
+        }
+
+        $alias = is_array($data) ? ($data['alias'] ?? null) : null;
+        $title = is_array($data) ? ($data['title'] ?? null) : null;
+        if (!is_string($alias) || '' === trim($alias) || !is_string($title) || '' === trim($title)) {
+            $errors[] = $this->t('custom.object.import.error.category');
+
+            return null;
+        }
+
+        $found = $this->categoryModel->getRepository()->findOneBy(['alias' => $alias, 'bundle' => self::CATEGORY_BUNDLE]);
+        if ($found instanceof Category) {
+            return $found;
+        }
+
+        $isNew    = true;
+        $category = new Category();
+        $category->setAlias($alias);
+        $category->setTitle($title);
+        $category->setBundle(self::CATEGORY_BUNDLE);
+        $category->setColor(is_string($data['color'] ?? null) ? $data['color'] : null);
+        $category->setIsPublished(true);
+
+        return $category;
     }
 
     /**
