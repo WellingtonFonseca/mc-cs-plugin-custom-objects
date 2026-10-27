@@ -9,7 +9,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * What the object page says after an import of a definition, as alerts (Bootstrap types: success, info, warning): the object was created or
- * received fields (success), nothing was added or some fields were kept (info), a kept field has another type in the file (warning).
+ * received fields (success), nothing was added (info), a kept field has another type in the file (warning).
  */
 class CustomObjectDefinitionImportAlerts
 {
@@ -20,7 +20,7 @@ class CustomObjectDefinitionImportAlerts
     }
 
     /**
-     * @return array<int, array{type: string, message: string}>
+     * @return array<int, array{type: string, message: string, items: string[]}>
      */
     public function fromResult(CustomObjectDefinitionImportResult $result): array
     {
@@ -32,11 +32,7 @@ class CustomObjectDefinitionImportAlerts
         } elseif ([] === $result->getAddedAliases()) {
             $alerts[] = $this->alert('info', 'custom.object.import.nothing', ['%name%' => $name]);
         } else {
-            $alerts[] = $this->alert('success', 'custom.object.import.added', ['%name%' => $name, '%fields%' => implode(', ', $result->getAddedAliases())]);
-        }
-
-        if ([] !== $result->getSkipped()) {
-            $alerts[] = $this->alert('info', 'custom.object.import.skipped', ['%fields%' => implode(', ', $result->getSkipped())]);
+            $alerts[] = $this->alert('success', 'custom.object.import.added', ['%name%' => $name], $result->getAddedAliases());
         }
 
         if ([] !== $result->getTypeMismatches()) {
@@ -48,11 +44,12 @@ class CustomObjectDefinitionImportAlerts
 
     /**
      * @param string[] $params
+     * @param string[] $items  shown as a bulleted list under the message
      *
-     * @return array{type: string, message: string}
+     * @return array{type: string, message: string, items: string[]}
      */
-    private function alert(string $type, string $id, array $params): array
+    private function alert(string $type, string $id, array $params, array $items = []): array
     {
-        return ['type' => $type, 'message' => $this->translator->trans($id, $params)];
+        return ['type' => $type, 'message' => $this->translator->trans($id, $params), 'items' => $items];
     }
 }
