@@ -17,7 +17,6 @@ class CustomObjectDefinitionImportResult
 {
     /**
      * @param string[] $addedAliases
-     * @param string[] $skipped
      * @param string[] $typeMismatches
      * @param string[] $requiredWithItems
      */
@@ -25,7 +24,6 @@ class CustomObjectDefinitionImportResult
         private CustomObject $customObject,
         private bool $created,
         private array $addedAliases,
-        private array $skipped,
         private array $typeMismatches = [],
         private array $requiredWithItems = [],
         private ?string $createdCategory = null
@@ -48,14 +46,6 @@ class CustomObjectDefinitionImportResult
     public function getAddedAliases(): array
     {
         return $this->addedAliases;
-    }
-
-    /**
-     * @return string[]
-     */
-    public function getSkipped(): array
-    {
-        return $this->skipped;
     }
 
     /**
