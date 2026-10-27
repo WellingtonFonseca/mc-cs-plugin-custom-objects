@@ -10,6 +10,7 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Form\Type\CustomObjectType;
+use MauticPlugin\CustomObjectsBundle\Helper\CustomObjectDefinitionExporter;
 use MauticPlugin\CustomObjectsBundle\Helper\LockFlashMessageHelper;
 use MauticPlugin\CustomObjectsBundle\Model\CustomFieldModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
@@ -37,6 +38,7 @@ class FormControllerTest extends ControllerTestCase
     private $lockFlashMessageHelper;
     private $customObject;
     private $form;
+    private $definitionExporter;
 
     /**
      * @var FormController
@@ -58,6 +60,7 @@ class FormControllerTest extends ControllerTestCase
         $this->customObject            = $this->createMock(CustomObject::class);
         $this->form                    = $this->createMock(FormInterface::class);
         $this->model                   = $this->createMock(NotificationModel::class);
+        $this->definitionExporter      = $this->createMock(CustomObjectDefinitionExporter::class);
 
         $this->formController = new FormController(
             $this->managerRegistry,
@@ -165,6 +168,7 @@ class FormControllerTest extends ControllerTestCase
             $this->routeProvider,
             $this->customFieldTypeProvider,
             $this->customFieldModel,
+            $this->definitionExporter,
             self::OBJECT_ID
         );
     }
@@ -193,6 +197,7 @@ class FormControllerTest extends ControllerTestCase
             $this->routeProvider,
             $this->customFieldTypeProvider,
             $this->customFieldModel,
+            $this->definitionExporter,
             self::OBJECT_ID
         );
     }
@@ -256,6 +261,7 @@ class FormControllerTest extends ControllerTestCase
             $this->routeProvider,
             $this->customFieldTypeProvider,
             $this->customFieldModel,
+            $this->definitionExporter,
             self::OBJECT_ID
         );
     }
