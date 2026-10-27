@@ -11,6 +11,7 @@ use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Form\DataTransformer\OptionsToStringTransformer;
 use MauticPlugin\CustomObjectsBundle\Form\DataTransformer\ParamsToStringTransformer;
 use MauticPlugin\CustomObjectsBundle\Form\Type\CustomObjectType;
+use MauticPlugin\CustomObjectsBundle\Helper\CustomObjectDefinitionExporter;
 use MauticPlugin\CustomObjectsBundle\Helper\LockFlashMessageHelper;
 use MauticPlugin\CustomObjectsBundle\Model\CustomFieldModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
@@ -40,6 +41,7 @@ class SaveControllerTest extends ControllerTestCase
     private $permissionProvider;
     private $routeProvider;
     private $lockFlashMessageHelper;
+    private $definitionExporter;
     private $customObject;
     private $form;
 
@@ -61,6 +63,7 @@ class SaveControllerTest extends ControllerTestCase
         $this->paramsToStringTransformer  = $this->createMock(ParamsToStringTransformer::class);
         $this->optionsToStringTransformer = $this->createMock(OptionsToStringTransformer::class);
         $this->lockFlashMessageHelper     = $this->createMock(LockFlashMessageHelper::class);
+        $this->definitionExporter         = $this->createMock(CustomObjectDefinitionExporter::class);
         $this->request                    = $this->createMock(Request::class);
         $this->customObject               = $this->createMock(CustomObject::class);
         $this->form                       = $this->createMock(FormInterface::class);
@@ -114,6 +117,7 @@ class SaveControllerTest extends ControllerTestCase
             $this->paramsToStringTransformer,
             $this->optionsToStringTransformer,
             $this->lockFlashMessageHelper,
+            $this->definitionExporter,
             self::OBJECT_ID
         );
     }
@@ -144,6 +148,7 @@ class SaveControllerTest extends ControllerTestCase
             $this->paramsToStringTransformer,
             $this->optionsToStringTransformer,
             $this->lockFlashMessageHelper,
+            $this->definitionExporter,
             self::OBJECT_ID
         );
     }
@@ -238,6 +243,7 @@ class SaveControllerTest extends ControllerTestCase
             $this->paramsToStringTransformer,
             $this->optionsToStringTransformer,
             $this->lockFlashMessageHelper,
+            $this->definitionExporter,
             self::OBJECT_ID
         );
     }
@@ -352,6 +358,7 @@ class SaveControllerTest extends ControllerTestCase
             $this->paramsToStringTransformer,
             $this->optionsToStringTransformer,
             $this->lockFlashMessageHelper,
+            $this->definitionExporter,
             self::OBJECT_ID
         );
 
@@ -400,6 +407,9 @@ class SaveControllerTest extends ControllerTestCase
         $this->customObjectModel->expects($this->never())
             ->method('save');
 
+        $this->definitionExporter->expects($this->never())
+            ->method('toJson');
+
         $this->customFieldModel->expects($this->once())
             ->method('fetchCustomFieldsForObject')
             ->with($this->isInstanceOf(CustomObject::class));
@@ -418,6 +428,62 @@ class SaveControllerTest extends ControllerTestCase
             $this->paramsToStringTransformer,
             $this->optionsToStringTransformer,
             $this->lockFlashMessageHelper,
+            $this->definitionExporter,
         );
+    }
+
+    public function testSaveActionForExistingCustomObjectWithInvalidFormExportsTheSavedDefinitionBeforeTheSubmit(): void
+    {
+        $calls = [];
+
+        $this->customObject->method('getId')->willReturn(self::OBJECT_ID);
+        $this->customObject->method('isNew')->willReturn(false);
+
+        $this->customObjectModel->method('fetchEntity')->willReturn($this->customObject);
+        $this->customObjectModel->method('isLocked')->willReturn(false);
+        $this->customObjectModel->expects($this->never())->method('save');
+
+        $this->routeProvider->method('buildSaveRoute')->willReturn('https://save.object');
+        $this->routeProvider->method('buildEditRoute')->willReturn('https://edit.object');
+
+        $this->formFactory->method('create')->willReturn($this->form);
+
+        $this->request->method('get')->willReturnMap([['custom_object', null, []]]);
+
+        $this->definitionExporter->expects($this->once())
+            ->method('toJson')
+            ->with($this->customObject)
+            ->willReturnCallback(function () use (&$calls): string {
+                $calls[] = 'toJson';
+
+                return '{"alias":"saved"}';
+            });
+
+        $this->form->expects($this->once())
+            ->method('submit')
+            ->willReturnCallback(function () use (&$calls) {
+                $calls[] = 'submit';
+
+                return $this->form;
+            });
+
+        $this->form->method('isValid')->willReturn(false);
+
+        $this->saveController->saveAction(
+            $this->flashBag,
+            $this->formFactory,
+            $this->customObjectModel,
+            $this->customFieldModel,
+            $this->permissionProvider,
+            $this->routeProvider,
+            $this->customFieldTypeProvider,
+            $this->paramsToStringTransformer,
+            $this->optionsToStringTransformer,
+            $this->lockFlashMessageHelper,
+            $this->definitionExporter,
+            self::OBJECT_ID
+        );
+
+        $this->assertSame(['toJson', 'submit'], $calls);
     }
 }

@@ -13,6 +13,7 @@ use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Form\DataTransformer\OptionsToStringTransformer;
 use MauticPlugin\CustomObjectsBundle\Form\DataTransformer\ParamsToStringTransformer;
 use MauticPlugin\CustomObjectsBundle\Form\Type\CustomObjectType;
+use MauticPlugin\CustomObjectsBundle\Helper\CustomObjectDefinitionExporter;
 use MauticPlugin\CustomObjectsBundle\Helper\LockFlashMessageHelper;
 use MauticPlugin\CustomObjectsBundle\Model\CustomFieldModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
@@ -37,6 +38,7 @@ class SaveController extends AbstractFormController
         ParamsToStringTransformer $paramsToStringTransformer,
         OptionsToStringTransformer $optionsToStringTransformer,
         LockFlashMessageHelper $lockFlashMessageHelper,
+        CustomObjectDefinitionExporter $definitionExporter,
         ?int $objectId = null
     ): Response {
         $request = $this->getCurrentRequest();
@@ -71,6 +73,9 @@ class SaveController extends AbstractFormController
             $customObject,
             ['action' => $action]
         );
+
+        // the Clone tab shows what is saved: read before the submit changes the entity, and only for an existing object
+        $definitionJson = $customObject->isNew() ? '' : $definitionExporter->toJson($customObject);
 
         $postData = $request->get('custom_object');
 
@@ -115,6 +120,7 @@ class SaveController extends AbstractFormController
                     'customFields'        => $customFieldModel->fetchCustomFieldsForObject($customObject),
                     'deletedFields'       => [],
                     'form'                => $form->createView(),
+                    'definitionJson'      => $definitionJson,
                 ],
                 'contentTemplate' => '@CustomObjects/CustomObject/form.html.twig',
                 'passthroughVars' => [
