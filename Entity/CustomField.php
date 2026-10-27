@@ -502,6 +502,14 @@ class CustomField extends FormEntity implements UniqueEntityInterface, UuidInter
     }
 
     /**
+     * The default value as it is stored (a string), not transformed for the type: what a copy of the field on another instance must hold.
+     */
+    public function getStoredDefaultValue(): ?string
+    {
+        return null === $this->defaultValue ? null : (string) $this->defaultValue;
+    }
+
+    /**
      * @param mixed $defaultValue
      */
     public function setDefaultValue($defaultValue): void

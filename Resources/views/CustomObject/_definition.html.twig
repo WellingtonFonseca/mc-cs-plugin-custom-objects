@@ -1,0 +1,11 @@
+{# The definition of the object (the object and its fields, no items) as JSON, to be copied to another Mautic instance. Read only: a <pre>,
+   never a field of the form, so it is not submitted. It shows what is SAVED; the copy button reads the text of the <pre>. #}
+<p class="help-block">{{ 'custom.object.definition.help'|trans }}</p>
+<div class="mb-sm">
+    <button type="button" class="btn btn-tertiary btn-sm btn-nospin" id="custom-object-definition-copy"
+            data-copied="{{ 'custom.object.definition.copied'|trans|e('html_attr') }}"
+            onclick="(function (b) { var t = document.getElementById('custom-object-definition').textContent; var done = function () { var l = b.querySelector('span'); var o = l.textContent; l.textContent = b.getAttribute('data-copied'); setTimeout(function () { l.textContent = o; }, 2000); }; if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(t).then(done); } else { var a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); document.body.removeChild(a); done(); } })(this);">
+        <i class="ri-file-copy-line"></i> <span>{{ 'custom.object.definition.copy'|trans }}</span>
+    </button>
+</div>
+<pre id="custom-object-definition" class="custom-object-definition" style="max-height:60vh;overflow:auto;white-space:pre;user-select:all">{{ definitionJson }}</pre>
