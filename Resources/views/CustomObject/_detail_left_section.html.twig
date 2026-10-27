@@ -46,6 +46,11 @@
                     {{ 'custom.object.tab.fields'|trans }}
                 </a>
             </li>
+            <li id="definition-tab">
+                <a href="#definition-container" role="tab" data-toggle="tab">
+                    {{ 'custom.object.definition.tab'|trans }}
+                </a>
+            </li>
         </ul>
         <!--/ tabs controls -->
     </div>
@@ -57,6 +62,12 @@
             {{ include('@CustomObjects/CustomObject/_fields_table.html.twig') }}
         </div>
         <!--/ #fields-container -->
+
+        <!-- #definition-container -->
+        <div class="tab-pane fade bdr-w-0" id="definition-container">
+            {{ include('@CustomObjects/CustomObject/_definition.html.twig') }}
+        </div>
+        <!--/ #definition-container -->
     </div>
 
     <!-- chart, below the fields -->

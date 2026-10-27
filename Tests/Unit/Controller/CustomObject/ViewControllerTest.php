@@ -10,6 +10,7 @@ use MauticPlugin\CustomObjectsBundle\Controller\CustomObject\ViewController;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
+use MauticPlugin\CustomObjectsBundle\Helper\CustomObjectDefinitionExporter;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
@@ -30,6 +31,7 @@ class ViewControllerTest extends ControllerTestCase
     private $auditLog;
     private $permissionProvider;
     private $routeProvider;
+    private $definitionExporter;
     private $formFactory;
     private $form;
     private $customObject;
@@ -47,6 +49,7 @@ class ViewControllerTest extends ControllerTestCase
         $this->auditLog           = $this->createMock(AuditLogModel::class);
         $this->permissionProvider = $this->createMock(CustomObjectPermissionProvider::class);
         $this->routeProvider      = $this->createMock(CustomObjectRouteProvider::class);
+        $this->definitionExporter = $this->createMock(CustomObjectDefinitionExporter::class);
         $this->requestStack       = $this->createMock(RequestStack::class);
         $this->request            = $this->createMock(Request::class);
         $this->formFactory        = $this->createMock(FormFactoryInterface::class);
@@ -97,6 +100,7 @@ class ViewControllerTest extends ControllerTestCase
             $this->auditLog,
             $this->permissionProvider,
             $this->routeProvider,
+            $this->definitionExporter,
             self::OBJECT_ID
         );
     }
@@ -126,6 +130,7 @@ class ViewControllerTest extends ControllerTestCase
             $this->auditLog,
             $this->permissionProvider,
             $this->routeProvider,
+            $this->definitionExporter,
             self::OBJECT_ID
         );
     }
@@ -191,6 +196,7 @@ class ViewControllerTest extends ControllerTestCase
             $this->auditLog,
             $this->permissionProvider,
             $this->routeProvider,
+            $this->definitionExporter,
             self::OBJECT_ID
         );
     }

@@ -9,6 +9,7 @@ use Mautic\CoreBundle\Form\Type\DateRangeType;
 use Mautic\CoreBundle\Model\AuditLogModel;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
+use MauticPlugin\CustomObjectsBundle\Helper\CustomObjectDefinitionExporter;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
@@ -23,6 +24,7 @@ class ViewController extends CommonController
         AuditLogModel $auditLogModel,
         CustomObjectPermissionProvider $permissionProvider,
         CustomObjectRouteProvider $routeProvider,
+        CustomObjectDefinitionExporter $definitionExporter,
         int $objectId
     ): Response {
         $request = $this->getCurrentRequest();
@@ -64,6 +66,7 @@ class ViewController extends CommonController
                     'dateRangeForm' => $dateRangeForm->createView(),
                     'stats'         => $stats,
                     'logs'          => $auditLogs,
+                    'definitionJson' => $definitionExporter->toJson($customObject),
                 ],
                 'contentTemplate' => '@CustomObjects/CustomObject/detail.html.twig',
                 'passthroughVars' => [
