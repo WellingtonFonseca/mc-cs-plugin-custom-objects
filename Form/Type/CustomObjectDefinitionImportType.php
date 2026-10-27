@@ -35,7 +35,8 @@ class CustomObjectDefinitionImportType extends AbstractType
 
         $builder->add('buttons', FormButtonsType::class, [
             'apply_text'     => false,
-            'save_text'      => $options['confirming'] ? 'custom.object.import.confirm' : 'custom.object.import.check',
+            // a check that finds nothing to do has no button to confirm
+            'save_text'      => $options['confirming'] ? ($options['can_confirm'] ? 'custom.object.import.confirm' : false) : 'custom.object.import.check',
             'save_icon'      => $options['confirming'] ? 'ri-upload-2-line' : 'ri-search-line',
             'cancel_onclick' => $options['cancel_onclick'],
         ]);
@@ -45,7 +46,7 @@ class CustomObjectDefinitionImportType extends AbstractType
 
     public function configureOptions(\Symfony\Component\OptionsResolver\OptionsResolver $resolver): void
     {
-        $resolver->setDefaults(['cancel_onclick' => '', 'action' => '', 'confirming' => false]);
+        $resolver->setDefaults(['cancel_onclick' => '', 'action' => '', 'confirming' => false, 'can_confirm' => true]);
     }
 
     public function getBlockPrefix(): string

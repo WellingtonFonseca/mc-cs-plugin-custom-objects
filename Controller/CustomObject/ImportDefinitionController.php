@@ -65,11 +65,16 @@ class ImportDefinitionController extends CommonController
                 return $this->renderImportForm($this->createImportForm($formFactory, $routeProvider, false, $json), $routeProvider, $e->getErrors());
             }
 
+            // an existing object that has every field of the file has nothing to confirm
+            $canConfirm = $check->isCreated() || [] !== $check->getAddedAliases();
+
             return $this->renderImportForm(
-                $this->createImportForm($formFactory, $routeProvider, true, $json),
+                $this->createImportForm($formFactory, $routeProvider, true, $json, $canConfirm),
                 $routeProvider,
                 [],
-                $alerts->fromResult($check, true)
+                $alerts->fromResult($check, true),
+                '',
+                $canConfirm
             );
         }
 
@@ -90,7 +95,8 @@ class ImportDefinitionController extends CommonController
         FormFactoryInterface $formFactory,
         CustomObjectRouteProvider $routeProvider,
         bool $confirming = false,
-        string $json = ''
+        string $json = '',
+        bool $canConfirm = true
     ): FormInterface {
         $cancel = $routeProvider->buildCancelRoute();
 
@@ -98,6 +104,7 @@ class ImportDefinitionController extends CommonController
             'action'         => $routeProvider->buildImportDefinitionSaveRoute(),
             'cancel_onclick' => "mQuery('form[name=custom_object_definition_import]').attr('action', '".$cancel."');",
             'confirming'     => $confirming,
+            'can_confirm'    => $canConfirm,
         ]);
     }
 
@@ -110,7 +117,8 @@ class ImportDefinitionController extends CommonController
         CustomObjectRouteProvider $routeProvider,
         array $errors,
         array $checkAlerts = [],
-        string $json = ''
+        string $json = '',
+        bool $canConfirm = true
     ): Response {
         return $this->delegateView([
             'returnUrl'      => $routeProvider->buildImportDefinitionRoute(),
@@ -118,6 +126,7 @@ class ImportDefinitionController extends CommonController
                 'form'        => $form->createView(),
                 'errors'      => $errors,
                 'checkAlerts' => $checkAlerts,
+                'canConfirm'  => $canConfirm,
             ],
             'contentTemplate' => '@CustomObjects/CustomObject/import_definition.html.twig',
             'passthroughVars' => [
