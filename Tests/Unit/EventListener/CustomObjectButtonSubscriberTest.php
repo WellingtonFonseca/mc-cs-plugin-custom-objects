@@ -140,9 +140,10 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
                     'data-confirm-callback' => 'executeAction',
                     'data-cancel-text'      => 'translated string',
                     'data-cancel-callback'  => 'dismissConfirmation',
+                    'class'                 => 'danger',
                 ],
                 'btnText'   => 'mautic.core.form.delete',
-                'iconClass' => 'fa fa-fw fa-trash-o text-danger',
+                'iconClass' => 'ri-delete-bin-line',
                 'priority'  => 0,
             ]], [[
                 'attr' => [
@@ -293,9 +294,10 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
                     'data-confirm-callback' => 'executeAction',
                     'data-cancel-text'      => null,
                     'data-cancel-callback'  => 'dismissConfirmation',
+                    'class'                 => 'danger',
                 ],
                 'btnText'   => 'mautic.core.form.delete',
-                'iconClass' => 'fa fa-fw fa-trash-o text-danger',
+                'iconClass' => 'ri-delete-bin-line',
                 'priority'  => 0,
             ]], [[
                 'attr' => [

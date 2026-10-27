@@ -194,9 +194,12 @@ class CustomObjectButtonSubscriber implements EventSubscriberInterface
                 'data-confirm-callback' => 'executeAction',
                 'data-cancel-text'      => $this->translator->trans('mautic.core.form.cancel'),
                 'data-cancel-callback'  => 'dismissConfirmation',
+                // core and the patches bundle paint the Delete item of a row menu by this class (red on hover, as in the other lists)
+                'class' => 'danger',
             ],
             'btnText'   => 'mautic.core.form.delete',
-            'iconClass' => 'fa fa-fw fa-trash-o text-danger',
+            // the icon of core's own Delete item: it takes the color of the item (a text-danger icon stays red on the red hover)
+            'iconClass' => 'ri-delete-bin-line',
             'priority'  => 0,
         ];
     }
