@@ -38,7 +38,7 @@ class CustomObjectDefinitionImportType extends AbstractType
 
         $builder->add('confirmed', HiddenType::class, ['data' => $options['confirming'] ? '1' : '0', 'mapped' => false]);
 
-        // while checking: Conferir. Once checked: Confirmar importação, and a second way out besides Cancelar (which leaves for the list):
+        // while checking: Conferir. Once checked: Confirmar importação, and a second way out, Limpar, placed before it (Cancelar, which leaves for the list, is last):
         // Limpar empties the text, makes it editable again and brings Conferir back, so another JSON can be pasted. A check that finds
         // nothing to do has the confirm button hidden, and Limpar is the way to try another file.
         $confirm = $options['confirming'] && $options['can_confirm'];
@@ -50,7 +50,7 @@ class CustomObjectDefinitionImportType extends AbstractType
             'cancel_onclick' => $options['cancel_onclick'],
         ];
         if ($options['confirming']) {
-            $buttons['post_extra_buttons'] = [[
+            $buttons['pre_extra_buttons'] = [[
                 'name'  => 'reset',
                 'label' => 'custom.object.import.reset',
                 'attr'  => ['class' => 'btn btn-secondary btn-reset btn-dnd btn-nospin', 'icon' => 'ri-eraser-line', 'onclick' => $this->resetScript()],
