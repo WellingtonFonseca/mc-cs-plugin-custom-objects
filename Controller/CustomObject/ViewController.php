@@ -86,6 +86,7 @@ class ViewController extends CommonController
     public function detailsAction(
         CustomObjectModel $customObjectModel,
         CustomObjectPermissionProvider $permissionProvider,
+        CustomObjectDefinitionExporter $definitionExporter,
         int $objectId
     ): Response {
         try {
@@ -106,7 +107,7 @@ class ViewController extends CommonController
         }
 
         return $this->delegateView([
-            'viewParameters'  => ['customObject' => $customObject, 'canEdit' => $canEdit],
+            'viewParameters'  => ['customObject' => $customObject, 'canEdit' => $canEdit, 'definitionJson' => $definitionExporter->toJson($customObject)],
             'contentTemplate' => '@CustomObjects/CustomObject/details_modal.html.twig',
             'passthroughVars' => ['route' => false],
         ]);
