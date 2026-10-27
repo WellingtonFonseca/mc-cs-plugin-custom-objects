@@ -12,10 +12,12 @@ use MauticPlugin\CustomObjectsBundle\Exception\DefinitionImportException;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Helper\CustomObjectDefinitionImporter;
+use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomFieldRepository;
+use MauticPlugin\CustomObjectsBundle\Repository\CustomItemRepository;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomObjectRepository;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -37,6 +39,9 @@ class CustomObjectDefinitionImporterTest extends TestCase
     /** @var CustomObjectPermissionProvider|MockObject */
     private $permissionProvider;
 
+    /** @var CustomItemRepository|MockObject */
+    private $itemRepository;
+
     private CustomObjectDefinitionImporter $importer;
 
     protected function setUp(): void
@@ -45,6 +50,9 @@ class CustomObjectDefinitionImporterTest extends TestCase
         $this->objectRepository = $this->createMock(CustomObjectRepository::class);
         $this->fieldRepository  = $this->createMock(CustomFieldRepository::class);
         $this->permissionProvider = $this->createMock(CustomObjectPermissionProvider::class);
+        $this->itemRepository     = $this->createMock(CustomItemRepository::class);
+        $itemModel                = $this->createMock(CustomItemModel::class);
+        $itemModel->method('getRepository')->willReturn($this->itemRepository);
 
         $text = $this->createMock(CustomFieldTypeInterface::class);
         $text->method('getSymfonyFormFieldType')->willReturn(TextType::class);
@@ -68,6 +76,7 @@ class CustomObjectDefinitionImporterTest extends TestCase
             $this->objectRepository,
             $this->fieldRepository,
             new CustomFieldFactory($provider),
+            $itemModel,
             $this->permissionProvider,
             $translator
         );
@@ -490,5 +499,44 @@ class CustomObjectDefinitionImporterTest extends TestCase
         $definition['alias'] = '';
 
         $this->assertStringContainsString('"%key%":"alias"', implode('', $this->errorsOf($definition)));
+    }
+
+    public function testARequiredFieldAddedToAnObjectWithItemsIsReported(): void
+    {
+        $this->existingObject();
+        $this->fieldRepository->method('isAliasUnique')->willReturnCallback(static fn (string $alias): bool => in_array($alias, ['a', 'b'], true));
+        $this->itemRepository->expects($this->once())->method('getItemCount')->willReturn(3);
+        $definition                 = $this->definition();
+        $definition['customFields'] = [
+            ['alias' => 'plain', 'label' => 'P', 'type' => 'text'],
+            ['alias' => 'must', 'label' => 'M', 'type' => 'text', 'required' => true],
+            ['alias' => 'code', 'label' => 'C', 'type' => 'text', 'isUniqueIdentifier' => true],
+        ];
+
+        $result = $this->importer->import((string) json_encode($definition));
+
+        $this->assertSame(['plain', 'must', 'code'], $result->getAddedAliases());
+        // a unique identifier is required by the plugin; the optional field is not reported
+        $this->assertSame(['must', 'code'], $result->getRequiredWithItems());
+    }
+
+    public function testNothingIsReportedWhenTheObjectHasNoItems(): void
+    {
+        $this->existingObject();
+        $this->itemRepository->method('getItemCount')->willReturn(0);
+        $definition                 = $this->definition();
+        $definition['customFields'] = [['alias' => 'must', 'label' => 'M', 'type' => 'text', 'required' => true]];
+
+        $this->assertSame([], $this->importer->import((string) json_encode($definition))->getRequiredWithItems());
+    }
+
+    public function testTheItemsAreNotCountedWhenNoRequiredFieldIsAdded(): void
+    {
+        $this->existingObject();
+        $this->itemRepository->expects($this->never())->method('getItemCount');
+        $definition                 = $this->definition();
+        $definition['customFields'] = [['alias' => 'plain', 'label' => 'P', 'type' => 'text']];
+
+        $this->assertSame([], $this->importer->import((string) json_encode($definition))->getRequiredWithItems());
     }
 }

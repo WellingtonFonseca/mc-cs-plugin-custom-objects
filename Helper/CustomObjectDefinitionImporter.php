@@ -13,6 +13,7 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\DefinitionImportException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
+use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomFieldRepository;
@@ -34,6 +35,7 @@ class CustomObjectDefinitionImporter
         private CustomObjectRepository $customObjectRepository,
         private CustomFieldRepository $customFieldRepository,
         private CustomFieldFactory $customFieldFactory,
+        private CustomItemModel $customItemModel,
         private CustomObjectPermissionProvider $permissionProvider,
         private TranslatorInterface $translator
     ) {
@@ -107,6 +109,7 @@ class CustomObjectDefinitionImporter
         }
 
         $added      = [];
+        $required   = [];
         $skipped    = [];
         $mismatches = [];
         foreach ($fields as $rawField) {
@@ -124,15 +127,23 @@ class CustomObjectDefinitionImporter
                 continue;
             }
 
-            $customObject->addCustomField($this->buildField($customObject, $rawField, $nextOrder++));
+            $field = $this->buildField($customObject, $rawField, $nextOrder++);
+            $customObject->addCustomField($field);
             $added[] = $alias;
+            if ($field->isRequired()) {
+                $required[] = $alias;
+            }
         }
 
         if ([] !== $added) {
             $this->customObjectModel->save($customObject);
         }
 
-        return new CustomObjectDefinitionImportResult($customObject, false, $added, $skipped, $mismatches);
+        // a required field (every unique identifier is one) added to an object with items: those items have it empty and cannot be saved
+        // again until it has a value, which is said to who imports
+        $requiredWithItems = [] !== $required && $this->hasItems($customObject) ? $required : [];
+
+        return new CustomObjectDefinitionImportResult($customObject, false, $added, $skipped, $mismatches, $requiredWithItems);
     }
 
     /**
@@ -173,6 +184,11 @@ class CustomObjectDefinitionImporter
         }
 
         return [];
+    }
+
+    private function hasItems(CustomObject $customObject): bool
+    {
+        return $this->customItemModel->getRepository()->getItemCount((int) $customObject->getId()) > 0;
     }
 
     /**
