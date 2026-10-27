@@ -62,6 +62,6 @@ class OptionsType extends AbstractType
      */
     public function getBlockPrefix(): string
     {
-        return 'sortablelist';
+        return 'custom_object_options';
     }
 }
