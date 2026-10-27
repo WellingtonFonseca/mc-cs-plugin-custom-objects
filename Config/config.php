@@ -175,6 +175,16 @@ $coParams = [
                 'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\CustomObject\FormController::newAction',
                 'method'     => 'GET',
             ],
+            CustomObjectRouteProvider::ROUTE_IMPORT_DEFINITION => [
+                'path'       => '/custom/object/import-definition',
+                'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\CustomObject\ImportDefinitionController::formAction',
+                'method'     => 'GET',
+            ],
+            CustomObjectRouteProvider::ROUTE_IMPORT_DEFINITION_SAVE => [
+                'path'       => '/custom/object/import-definition',
+                'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\CustomObject\ImportDefinitionController::saveAction',
+                'method'     => 'POST',
+            ],
             CustomObjectRouteProvider::ROUTE_EDIT => [
                 'path'       => '/custom/object/edit/{objectId}',
                 'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\CustomObject\FormController::editAction',

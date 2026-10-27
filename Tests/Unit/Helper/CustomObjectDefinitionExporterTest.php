@@ -132,4 +132,45 @@ class CustomObjectDefinitionExporterTest extends TestCase
         $this->assertStringContainsString('"description": "Os cursos"', $json);
         $this->assertSame('custom-object-definition', json_decode($json, true)['format']);
     }
+
+    public function testAFieldIsExportedWithEveryKeyAndValue(): void
+    {
+        $object = $this->object();
+        $field  = $this->field('code', 4);
+        $field->setRequired(true);
+        $field->setDefaultValue('abc');
+        $field->setIsPublished(false);
+        $field->setIsUniqueIdentifier(true);
+        $field->setShowInCustomObjectDetailList(true);
+        $field->setShowInContactDetailList(false);
+        $field->setParams(new \MauticPlugin\CustomObjectsBundle\Entity\CustomField\Params(['placeholder' => 'Type it']));
+        $object->addCustomField($field);
+
+        $exported = (new CustomObjectDefinitionExporter())->toArray($object)['customFields'][0];
+
+        $this->assertSame([
+            'alias'                        => 'code',
+            'label'                        => 'Label code',
+            'type'                         => 'text',
+            'order'                        => 4,
+            'required'                     => true,
+            'defaultValue'                 => 'abc',
+            'isPublished'                  => false,
+            'isUniqueIdentifier'           => true,
+            'showInCustomObjectDetailList' => true,
+            'showInContactDetailList'      => false,
+            'params'                       => ['placeholder' => 'Type it'],
+            'options'                      => [],
+        ], $exported);
+    }
+
+    public function testTheJsonKeepsAccentsAndSlashesAsTheyAre(): void
+    {
+        $object = $this->object();
+        $object->setDescription('Ação / curso');
+
+        $json = (new CustomObjectDefinitionExporter())->toJson($object);
+
+        $this->assertStringContainsString('"description": "Ação / curso"', $json);
+    }
 }
