@@ -16,39 +16,7 @@
     }
 </style>
 <div class="custom-object-details-modal">
-    <div class="panel shd-none mb-0">
-        <table class="table table-bordered table-striped mb-0">
-            <thead>
-            <tr>
-                <th>{{ 'custom.field.label.label'|trans }}</th>
-                <th>{{ 'custom.field.alias.label'|trans }}</th>
-                <th>{{ 'custom.field.type.label'|trans }}</th>
-                <th>{{ 'custom.field.label.required'|trans }}</th>
-                <th>{{ 'custom.field.is_unique_identifier.label'|trans }}</th>
-                <th>{{ 'custom.field.label.default_value'|trans }}</th>
-                <th>{{ 'custom.object.details.options'|trans }}</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for field in customObject.getCustomFields() %}
-                {% set default = field.getDefaultValue() %}
-                <tr>
-                    <td>{{ field.getLabel() }}</td>
-                    <td><code>{{ field.getAlias() }}</code></td>
-                    <td>{{ field.getTypeObject() ? field.getTypeObject().getName() : field.getType() }}</td>
-                    <td>{{ (field.isRequired() ? 'mautic.core.form.yes' : 'mautic.core.form.no')|trans }}</td>
-                    <td>{{ (field.getIsUniqueIdentifier() ? 'mautic.core.form.yes' : 'mautic.core.form.no')|trans }}</td>
-                    <td>{{ default is iterable ? default|join(', ') : (default is instanceof('DateTimeInterface') ? default|date('Y-m-d H:i') : default) }}</td>
-                    <td>
-                        {% if field.isChoiceType() %}
-                            {% for label, value in field.getChoices() %}{{ label }}{{ not loop.last ? ', ' : '' }}{% endfor %}
-                        {% endif %}
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    {{ include('@CustomObjects/CustomObject/_fields_table.html.twig') }}
     <div class="bottom-form-buttons">
         {% if canEdit %}
         <button type="button" id="custom-object-details-edit" class="btn btn-primary" onclick="mQuery('#MauticSharedModal').modal('hide'); Mautic.loadContent('{{ path('mautic_custom_object_edit', {'objectId': customObject.getId()})|e('js') }}');">{{ 'mautic.core.form.edit'|trans }}<i class="ri-edit-line"></i></button>

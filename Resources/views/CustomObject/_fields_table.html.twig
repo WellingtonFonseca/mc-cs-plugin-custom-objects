@@ -1,0 +1,42 @@
+{# The fields of a Custom Object, one per row (label, alias, type, required, unique identifier, default value, options). Used by the
+   details modal of the list and by the Fields tab of the object page; needs `customObject`. Long texts break inside their cell. #}
+<style>
+    .custom-object-fields-table td,
+    .custom-object-fields-table th {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+</style>
+    <div class="panel shd-none mb-0 custom-object-fields-table">
+        <table class="table table-bordered table-striped mb-0">
+            <thead>
+            <tr>
+                <th>{{ 'custom.field.label.label'|trans }}</th>
+                <th>{{ 'custom.field.alias.label'|trans }}</th>
+                <th>{{ 'custom.field.type.label'|trans }}</th>
+                <th>{{ 'custom.field.label.required'|trans }}</th>
+                <th>{{ 'custom.field.is_unique_identifier.label'|trans }}</th>
+                <th>{{ 'custom.field.label.default_value'|trans }}</th>
+                <th>{{ 'custom.object.details.options'|trans }}</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for field in customObject.getCustomFields() %}
+                {% set default = field.getDefaultValue() %}
+                <tr>
+                    <td>{{ field.getLabel() }}</td>
+                    <td><code>{{ field.getAlias() }}</code></td>
+                    <td>{{ field.getTypeObject() ? field.getTypeObject().getName() : field.getType() }}</td>
+                    <td>{{ (field.isRequired() ? 'mautic.core.form.yes' : 'mautic.core.form.no')|trans }}</td>
+                    <td>{{ (field.getIsUniqueIdentifier() ? 'mautic.core.form.yes' : 'mautic.core.form.no')|trans }}</td>
+                    <td>{{ default is iterable ? default|join(', ') : (default is instanceof('DateTimeInterface') ? default|date('Y-m-d H:i') : default) }}</td>
+                    <td>
+                        {% if field.isChoiceType() %}
+                            {% for label, value in field.getChoices() %}{{ label }}{{ not loop.last ? ', ' : '' }}{% endfor %}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
