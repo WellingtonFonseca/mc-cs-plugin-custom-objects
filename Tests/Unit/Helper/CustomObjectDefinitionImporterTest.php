@@ -405,18 +405,20 @@ class CustomObjectDefinitionImporterTest extends TestCase
 
         $this->assertSame([], $result->getAddedAliases());
         $this->assertSame(['a'], $result->getSkipped());
+        $this->assertSame([], $result->getTypeMismatches());
     }
 
-    public function testADifferentTypeIsSaidInTheSkippedList(): void
+    public function testADifferentTypeIsReportedApartFromTheSkippedOnes(): void
     {
         $this->existingObject();
         $this->fieldRepository->method('isAliasUnique')->willReturn(true);
         $definition                 = $this->definition();
         $definition['customFields'] = [['alias' => 'b', 'label' => 'B', 'type' => 'text']];
 
-        $skipped = $this->importer->import((string) json_encode($definition))->getSkipped();
+        $result = $this->importer->import((string) json_encode($definition));
 
-        $this->assertSame(['custom.object.import.skipped_type {"%alias%":"b","%existing%":"select","%file%":"text"}'], $skipped);
+        $this->assertSame(['b'], $result->getSkipped());
+        $this->assertSame(['custom.object.import.skipped_type {"%alias%":"b","%existing%":"select","%file%":"text"}'], $result->getTypeMismatches());
     }
 
     public function testAFieldAliasUsedByAnotherObjectIsStillAnError(): void

@@ -10,6 +10,7 @@ use Mautic\CoreBundle\Model\AuditLogModel;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Helper\CustomObjectDefinitionExporter;
+use MauticPlugin\CustomObjectsBundle\Helper\CustomObjectDefinitionImportAlerts;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
@@ -67,6 +68,8 @@ class ViewController extends CommonController
                     'stats'         => $stats,
                     'logs'          => $auditLogs,
                     'definitionJson' => $definitionExporter->toJson($customObject),
+                    // what an import of a definition just did to this object, shown once above the details
+                    'importAlerts'  => $request->getSession()->getFlashBag()->get(CustomObjectDefinitionImportAlerts::SESSION_KEY),
                 ],
                 'contentTemplate' => '@CustomObjects/CustomObject/detail.html.twig',
                 'passthroughVars' => [
