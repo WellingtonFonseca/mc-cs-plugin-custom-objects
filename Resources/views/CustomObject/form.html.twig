@@ -25,6 +25,11 @@
                         <li id="fields-tab">
                             <a href="#fields-container" role="tab" data-toggle="tab"> {{ 'mautic.form.tab.fields'|trans }}</a>
                         </li>
+                        {% if definitionJson is not empty %}
+                            <li id="definition-tab">
+                                <a href="#definition-container" role="tab" data-toggle="tab"> {{ 'custom.object.definition.tab'|trans }}</a>
+                            </li>
+                        {% endif %}
                     </ul>
                     <!--/ tabs controls -->
                     <div class="tab-content pa-md">
@@ -44,6 +49,12 @@
                                 </div>
                             </div>
                         </div>
+
+                        {% if definitionJson is not empty %}
+                            <div class="tab-pane fade bdr-w-0" id="definition-container">
+                                {{- include('@CustomObjects/CustomObject/_definition.html.twig') -}}
+                            </div>
+                        {% endif %}
 
                         <div class="tab-pane fade bdr-w-0" id="fields-container">
                             {{- include('@MauticForm/Builder/_style.html.twig') -}}

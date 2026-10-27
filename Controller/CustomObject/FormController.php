@@ -9,6 +9,7 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Form\Type\CustomObjectType;
+use MauticPlugin\CustomObjectsBundle\Helper\CustomObjectDefinitionExporter;
 use MauticPlugin\CustomObjectsBundle\Helper\LockFlashMessageHelper;
 use MauticPlugin\CustomObjectsBundle\Model\CustomFieldModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
@@ -52,6 +53,7 @@ class FormController extends AbstractFormController
         CustomObjectRouteProvider $routeProvider,
         CustomFieldTypeProvider $customFieldTypeProvider,
         CustomFieldModel $customFieldModel,
+        CustomObjectDefinitionExporter $definitionExporter,
         int $objectId
     ): Response {
         try {
@@ -82,7 +84,8 @@ class FormController extends AbstractFormController
             $customFieldTypeProvider,
             $customFieldModel,
             $customObject,
-            $routeProvider->buildEditRoute($objectId)
+            $routeProvider->buildEditRoute($objectId),
+            $definitionExporter->toJson($customObject)
         );
     }
 
@@ -120,7 +123,8 @@ class FormController extends AbstractFormController
         CustomFieldTypeProvider $customFieldTypeProvider,
         CustomFieldModel $customFieldModel,
         CustomObject $customObject,
-        string $route
+        string $route,
+        string $definitionJson = ''
     ): Response {
         $form = $formFactory->create(
             CustomObjectType::class,
@@ -137,6 +141,7 @@ class FormController extends AbstractFormController
                     'customFields'        => $customFieldModel->fetchCustomFieldsForObject($customObject),
                     'deletedFields'       => [],
                     'form'                => $form->createView(),
+                    'definitionJson'      => $definitionJson,
                 ],
                 'contentTemplate' => '@CustomObjects/CustomObject/form.html.twig',
                 'passthroughVars' => [

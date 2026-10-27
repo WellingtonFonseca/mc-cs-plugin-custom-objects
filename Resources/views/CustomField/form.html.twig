@@ -1,4 +1,5 @@
 {% set title = customField.id ? customField.label : customField.typeObject.name %}
+{% form_theme form '@CustomObjects/FormTheme/options_row.html.twig' %}
 {% set showProperties = form.options is defined or customField.typeObject.usePlaceholder() %}
 
 {% block content %}

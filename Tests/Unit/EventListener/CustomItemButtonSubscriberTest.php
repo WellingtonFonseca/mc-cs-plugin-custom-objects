@@ -233,9 +233,11 @@ class CustomItemButtonSubscriberTest extends TestCase
                     'data-confirm-callback' => 'executeAction',
                     'data-cancel-text'      => 'translated string',
                     'data-cancel-callback'  => 'dismissConfirmation',
+                    'id'                    => 'delete',
+                    'class'                 => 'danger',
                 ],
                 'btnText'   => 'mautic.core.form.delete',
-                'iconClass' => 'fa fa-fw fa-trash-o text-danger',
+                'iconClass' => 'ri-delete-bin-line',
                 'priority'  => 0,
             ], [
                 'attr' => [
@@ -411,9 +413,11 @@ class CustomItemButtonSubscriberTest extends TestCase
                     'data-confirm-callback' => 'executeAction',
                     'data-cancel-text'      => null,
                     'data-cancel-callback'  => 'dismissConfirmation',
+                    'id'                    => 'delete',
+                    'class'                 => 'danger',
                 ],
                 'btnText'   => 'mautic.core.form.delete',
-                'iconClass' => 'fa fa-fw fa-trash-o text-danger',
+                'iconClass' => 'ri-delete-bin-line',
                 'priority'  => 0,
             ], [
                 'attr' => [

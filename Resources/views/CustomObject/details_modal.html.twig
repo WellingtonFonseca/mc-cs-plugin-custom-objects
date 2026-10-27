@@ -1,53 +1,32 @@
 {#
-  Body of the modal opened by a click on an object's name in the list: the fields of the object, one per row (label,
-  alias, type, required, unique identifier, default value, options), then the footer (Editar only with permission, Detalhes, Fechar: a .bottom-form-buttons block that core copies into the modal footer, with a single .btn-primary like the contact modal). The shared modal is narrow by default, so only a
-  modal holding this body is widened (:has); every other use of the shared modal keeps its size. Long texts break inside
-  their cell instead of pushing the table out of the modal.
+  Body of the modal opened by a click on an object's name in the list: the tabs Campos (the fields table, _fields_table.html.twig, whose
+  cells break long texts instead of pushing the table out of the modal) and Clonar (the definition as JSON, read only), then the footer
+  (Editar only with permission, Detalhes, Fechar: a .bottom-form-buttons block that core copies into the modal footer, with a single
+  .btn-primary like the contact modal). The shared modal is narrow by default, so only a modal holding this body is widened (:has);
+  every other use of the shared modal keeps its size.
 #}
 <style>
     .modal-dialog:has(.custom-object-details-modal) {
         width: 1100px;
         max-width: 95vw;
     }
-    .custom-object-details-modal td,
-    .custom-object-details-modal th {
-        overflow-wrap: anywhere;
-        word-break: break-word;
-    }
 </style>
 <div class="custom-object-details-modal">
-    <div class="panel shd-none mb-0">
-        <table class="table table-bordered table-striped mb-0">
-            <thead>
-            <tr>
-                <th>{{ 'custom.field.label.label'|trans }}</th>
-                <th>{{ 'custom.field.alias.label'|trans }}</th>
-                <th>{{ 'custom.field.type.label'|trans }}</th>
-                <th>{{ 'custom.field.label.required'|trans }}</th>
-                <th>{{ 'custom.field.is_unique_identifier.label'|trans }}</th>
-                <th>{{ 'custom.field.label.default_value'|trans }}</th>
-                <th>{{ 'custom.object.details.options'|trans }}</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for field in customObject.getCustomFields() %}
-                {% set default = field.getDefaultValue() %}
-                <tr>
-                    <td>{{ field.getLabel() }}</td>
-                    <td><code>{{ field.getAlias() }}</code></td>
-                    <td>{{ field.getTypeObject() ? field.getTypeObject().getName() : field.getType() }}</td>
-                    <td>{{ (field.isRequired() ? 'mautic.core.form.yes' : 'mautic.core.form.no')|trans }}</td>
-                    <td>{{ (field.getIsUniqueIdentifier() ? 'mautic.core.form.yes' : 'mautic.core.form.no')|trans }}</td>
-                    <td>{{ default is iterable ? default|join(', ') : (default is instanceof('DateTimeInterface') ? default|date('Y-m-d H:i') : default) }}</td>
-                    <td>
-                        {% if field.isChoiceType() %}
-                            {% for label, value in field.getChoices() %}{{ label }}{{ not loop.last ? ', ' : '' }}{% endfor %}
-                        {% endif %}
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+    <ul class="nav nav-tabs nav-tabs-contained" role="tablist">
+        <li class="active">
+            <a href="#custom-object-modal-fields" data-toggle="tab">{{ 'custom.object.tab.fields'|trans }}</a>
+        </li>
+        <li id="definition-tab">
+            <a href="#custom-object-modal-definition" data-toggle="tab">{{ 'custom.object.definition.tab'|trans }}</a>
+        </li>
+    </ul>
+    <div class="tab-content">
+        <div class="tab-pane fade in active bdr-w-0" id="custom-object-modal-fields">
+            {{ include('@CustomObjects/CustomObject/_fields_table.html.twig') }}
+        </div>
+        <div class="tab-pane fade bdr-w-0" id="custom-object-modal-definition">
+            {{ include('@CustomObjects/CustomObject/_definition.html.twig') }}
+        </div>
     </div>
     <div class="bottom-form-buttons">
         {% if canEdit %}
