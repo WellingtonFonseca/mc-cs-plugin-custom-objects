@@ -20,27 +20,34 @@ class CustomObjectDefinitionImportAlerts
     }
 
     /**
+     * @param bool $preview the check shown BEFORE the person confirms: the same facts, in the future tense, and a new object lists its fields
+     *
      * @return array<int, array{type: string, message: string, items: string[]}>
      */
-    public function fromResult(CustomObjectDefinitionImportResult $result): array
+    public function fromResult(CustomObjectDefinitionImportResult $result, bool $preview = false): array
     {
         $name   = (string) $result->getCustomObject()->getName();
+        $suffix = $preview ? '.preview' : '';
         $alerts = [];
 
         if ($result->isCreated()) {
-            $alerts[] = $this->alert('success', 'custom.object.import.done', ['%name%' => $name]);
+            $alerts[] = $this->alert('success', 'custom.object.import.done'.$suffix, ['%name%' => $name], $preview ? $result->getAddedAliases() : []);
         } elseif ([] === $result->getAddedAliases()) {
-            $alerts[] = $this->alert('info', 'custom.object.import.nothing', ['%name%' => $name]);
+            $alerts[] = $this->alert('info', 'custom.object.import.nothing'.$suffix, ['%name%' => $name]);
         } else {
-            $alerts[] = $this->alert('success', 'custom.object.import.added', ['%name%' => $name], $result->getAddedAliases());
+            $alerts[] = $this->alert('success', 'custom.object.import.added'.$suffix, ['%name%' => $name], $result->getAddedAliases());
+        }
+
+        if (null !== $result->getCreatedCategory()) {
+            $alerts[] = $this->alert('info', 'custom.object.import.category'.$suffix, ['%name%' => $result->getCreatedCategory()]);
         }
 
         if ([] !== $result->getRequiredWithItems()) {
-            $alerts[] = $this->alert('warning', 'custom.object.import.required_with_items', ['%name%' => $name], $result->getRequiredWithItems());
+            $alerts[] = $this->alert('warning', 'custom.object.import.required_with_items'.$suffix, ['%name%' => $name], $result->getRequiredWithItems());
         }
 
         if ([] !== $result->getTypeMismatches()) {
-            $alerts[] = $this->alert('warning', 'custom.object.import.mismatch', ['%fields%' => implode('; ', $result->getTypeMismatches())]);
+            $alerts[] = $this->alert('warning', 'custom.object.import.mismatch'.$suffix, [], $result->getTypeMismatches());
         }
 
         return $alerts;

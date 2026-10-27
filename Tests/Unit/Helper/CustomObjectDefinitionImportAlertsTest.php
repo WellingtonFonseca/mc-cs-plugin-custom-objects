@@ -56,7 +56,7 @@ class CustomObjectDefinitionImportAlertsTest extends TestCase
         $alerts = $this->alerts->fromResult(new CustomObjectDefinitionImportResult($this->object, false, ['c'], ['b'], ['b (x)', 'e (y)']));
 
         $this->assertSame(['success', 'warning'], array_column($alerts, 'type'));
-        $this->assertSame('custom.object.import.mismatch {"%fields%":"b (x); e (y)"}', $alerts[1]['message']);
+        $this->assertSame(['type' => 'warning', 'message' => 'custom.object.import.mismatch []', 'items' => ['b (x)', 'e (y)']], $alerts[1]);
     }
 
     public function testRequiredFieldsAddedToAnObjectWithItemsAreAWarningWithTheirList(): void
@@ -77,5 +77,33 @@ class CustomObjectDefinitionImportAlertsTest extends TestCase
         $this->assertSame(['success', 'warning', 'warning'], array_column($alerts, 'type'));
         $this->assertStringStartsWith('custom.object.import.required_with_items', $alerts[1]['message']);
         $this->assertStringStartsWith('custom.object.import.mismatch', $alerts[2]['message']);
+    }
+
+    public function testThePreviewUsesTheFutureTextsAndListsTheFieldsOfANewObject(): void
+    {
+        $alerts = $this->alerts->fromResult(new CustomObjectDefinitionImportResult($this->object, true, ['a', 'b'], []), true);
+
+        $this->assertSame([['type' => 'success', 'message' => 'custom.object.import.done.preview {"%name%":"Cursos"}', 'items' => ['a', 'b']]], $alerts);
+    }
+
+    public function testThePreviewOfAnExistingObjectAndItsWarnings(): void
+    {
+        $alerts = $this->alerts->fromResult(new CustomObjectDefinitionImportResult($this->object, false, ['c'], ['b'], ['b (x)'], ['c']), true);
+
+        $this->assertSame(
+            ['custom.object.import.added.preview', 'custom.object.import.required_with_items.preview', 'custom.object.import.mismatch.preview'],
+            array_map(static fn (array $a): string => explode(' ', $a['message'])[0], $alerts)
+        );
+        $nothing = $this->alerts->fromResult(new CustomObjectDefinitionImportResult($this->object, false, [], ['a']), true);
+        $this->assertStringStartsWith('custom.object.import.nothing.preview', $nothing[0]['message']);
+    }
+
+    public function testACategoryThatIsCreatedIsAnInfoAfterTheObject(): void
+    {
+        $applied = $this->alerts->fromResult(new CustomObjectDefinitionImportResult($this->object, true, ['a'], [], [], [], 'Schools'));
+        $preview = $this->alerts->fromResult(new CustomObjectDefinitionImportResult($this->object, true, ['a'], [], [], [], 'Schools'), true);
+
+        $this->assertSame(['type' => 'info', 'message' => 'custom.object.import.category {"%name%":"Schools"}', 'items' => []], $applied[1]);
+        $this->assertSame('custom.object.import.category.preview {"%name%":"Schools"}', $preview[1]['message']);
     }
 }

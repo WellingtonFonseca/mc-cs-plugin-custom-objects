@@ -36,10 +36,26 @@ class CustomObjectDefinitionExporter
             'description'           => $customObject->getDescription(),
             'language'              => $customObject->getLanguage(),
             'type'                  => $customObject->getType() ?? CustomObject::TYPE_MASTER,
+            'category'              => $this->categoryToArray($customObject),
             'masterObjectAlias'     => $customObject->getMasterObject() ? $customObject->getMasterObject()->getAlias() : null,
             'relationshipObjectAlias' => $customObject->getRelationshipObject() ? $customObject->getRelationshipObject()->getAlias() : null,
             'customFields'          => array_map([$this, 'fieldToArray'], $fields),
         ];
+    }
+
+    /**
+     * The category is named by its alias (the one that exists on the other instance, or is made there) with its title and color.
+     *
+     * @return array<string, string|null>|null
+     */
+    private function categoryToArray(CustomObject $customObject): ?array
+    {
+        $category = $customObject->getCategory();
+        if (null === $category) {
+            return null;
+        }
+
+        return ['alias' => $category->getAlias(), 'title' => $category->getTitle(), 'color' => $category->getColor()];
     }
 
     public function toJson(CustomObject $customObject): string
