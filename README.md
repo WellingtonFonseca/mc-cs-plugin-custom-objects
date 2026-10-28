@@ -78,6 +78,10 @@ On the other instance, **Importar definição** (menu next to New on the objects
 - **Row menus:** the Delete item of an object and of an item has the `danger` class and core's delete icon, so core's red hover reaches it like in the other lists.
 - **Object edit form:** the edit and delete buttons of a field use core's ghost style (md size, like the form builder of core); delete asks for confirmation first (the field is only removed when the object is saved). The plugin JS is bundled in core's `app.js`: run `mautic:assets:generate` after deploying a change to `Assets/js`.
 
+## Change log and settings tile
+
+`CHANGELOG.md` lists what this fork changed, by day, from 2026-08-24 (newest first, one `## YYYY-MM-DD` block per day, one `- ` line per change, no versions; the upstream history is not in it). For it the plugin has a tile on Settings > Plugins (`Integration/CustomObjectsIntegration.php`: no keys, no features; born published; the plugin is turned off by the `custom_objects_enabled` parameter, not by its "Ativo" switch) and the modal shows the file in a "Histórico de mudanças" tab (`Helper/Changelog.php`, `Assets/js/plugin-changelog-tab.js`). After a deploy run `mautic:plugins:reload` and open Settings > Plugins once: the tile is created when the plugin version changes (0.0.31). Add a line to the block of the day to update the log; no code changes.
+
 ## Requirements
 
 - Plugin supports PHP 7.1+.
