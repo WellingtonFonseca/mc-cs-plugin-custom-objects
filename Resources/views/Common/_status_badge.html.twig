@@ -1,0 +1,13 @@
+{#
+  The badge of the Status column of the Custom Objects list (Assets/js/list-status.js keeps it in step with core's
+  toggle icon of the row, which stays in the name cell, hidden by custom-objects.css): an icon (play on green, stop on red) that opens on
+  hover to show the word, which is also its title.
+
+  Variables
+    - item
+#}
+{% set statusText = (item.isPublished() ? 'mautic.core.form.active' : 'mautic.core.form.inactive')|trans %}
+<span class="customobjects-badge customobjects-status customobjects-badge--{{ item.isPublished() ? 'production' : 'failed' }}"
+      data-state="{{ item.isPublished() ? 'published' : 'unpublished' }}"
+      data-text-published="{{ 'mautic.core.form.active'|trans }}" data-text-unpublished="{{ 'mautic.core.form.inactive'|trans }}"
+      title="{{ statusText }}" aria-label="{{ statusText }}"><i class="{{ item.isPublished() ? 'ri-play-fill' : 'ri-stop-fill' }}" aria-hidden="true"></i><span class="customobjects-status__text">{{ statusText }}</span></span>
