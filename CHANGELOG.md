@@ -2,6 +2,10 @@
 
 Só as mudanças feitas neste fork, a partir de 2026-08-24 (o que veio do plugin original não está aqui). Um bloco por dia, do mais novo para o mais antigo. Formato fixo: `## AAAA-MM-DD` e uma linha `- ` por mudança (a tela do plugin lê este arquivo).
 
+## 2026-10-28
+- Novo histórico de mudanças por dia (este arquivo), em uma aba própria do modal do plugin em Configurações > Plugins
+- O plugin ganhou o tile "Custom Objects" em Configurações > Plugins, já ligado e com o ícone do plugin (versão 0.0.31)
+
 ## 2026-10-27
 - Importar a definição de um Custom Object a partir do JSON da aba Clonar, com verificação antes de confirmar (o que seria feito, categoria, lista de tipos divergentes), botões Limpar e Confirmar, e o resultado como alertas na página do objeto
 - Aviso ao adicionar campos obrigatórios a um objeto que já tem itens
