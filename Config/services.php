@@ -12,7 +12,10 @@ return function (ContainerConfigurator $configurator): void {
         ->autoconfigure()
         ->public();
 
+    // Integration/CustomObjectsIntegration.php is registered in Config/config.php (services.integrations) with core's service ids, as every
+    // Mautic Integration is, so autowiring does not load it.
     $excludes = [
+        'Integration/CustomObjectsIntegration.php',
         'Provider/SessionProvider.php',
         'Report/ReportColumnsBuilder.php',
         'Serializer/ApiNormalizer.php',
