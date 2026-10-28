@@ -18,3 +18,18 @@ input[type=checkbox].form-control {
 .drop-here input[type="radio"] {
     width: initial !important;
 }
+
+/* The change log on the plugin's settings screen: a scrolling list of days. */
+.customobjects-changelog {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.customobjects-changelog__day {
+    margin-bottom: 12px;
+}
+
+.customobjects-changelog__day ul {
+    margin: 4px 0 0;
+    padding-left: 20px;
+}
