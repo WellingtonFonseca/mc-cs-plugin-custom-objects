@@ -1,23 +1,23 @@
 {#
   The plugin's change log (Integration::getFormNotes('custom'), drawn under the fields of the first tab of its settings
   screen). Assets/js/plugin-changelog-tab.js moves it into a tab of its own.
-  Needs: days (Service/Changelog::days()), a list of {date, items}.
+  Needs: days (Helper/Changelog::days()), a list of {date, items}.
 #}
 
 {% if days %}
     <div class="customobjects-changelog-block" data-tab-label="{{ 'custom.object.settings.changelog'|trans }}" data-onload-callback="customObjectsChangelogTab">
-    <h4 class="customobjects-changelog-title mt-lg mb-sm">{{ 'custom.object.settings.changelog'|trans }}</h4>
-    <div class="customobjects-changelog">
-        {% for day in days %}
-            <div class="customobjects-changelog__day">
-                <strong>{{ day.date }}</strong>
-                <ul>
-                    {% for item in day.items %}
-                        <li>{{ item }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        {% endfor %}
-    </div>
+        <h4 class="customobjects-changelog-title mt-lg mb-sm">{{ 'custom.object.settings.changelog'|trans }}</h4>
+        <div class="customobjects-changelog">
+            {% for day in days %}
+                <div class="customobjects-changelog__day">
+                    <strong>{{ day.date }}</strong>
+                    <ul>
+                        {% for item in day.items %}
+                            <li>{{ item }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endfor %}
+        </div>
     </div>
 {% endif %}
