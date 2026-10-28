@@ -10,7 +10,7 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
 $coParams = [
     'name'        => 'Custom Objects',
     'description' => 'Adds custom objects and fields features to Mautic',
-    'version'     => '0.0.30',
+    'version'     => '0.0.31',
     'author'      => 'Mautic, Inc.',
 
     'routes' => [
@@ -244,6 +244,29 @@ $coParams = [
     ],
 
     'services' => [
+        'integrations' => [
+            'mautic.integration.customobjects' => [
+                'class'     => MauticPlugin\CustomObjectsBundle\Integration\CustomObjectsIntegration::class,
+                'arguments' => [
+                    'event_dispatcher',
+                    'mautic.helper.cache_storage',
+                    'doctrine.orm.entity_manager',
+                    'session',
+                    'request_stack',
+                    'router',
+                    'translator',
+                    'monolog.logger.mautic',
+                    'mautic.helper.encryption',
+                    'mautic.lead.model.lead',
+                    'mautic.lead.model.company',
+                    'mautic.helper.paths',
+                    'mautic.core.model.notification',
+                    'mautic.lead.model.field',
+                    'mautic.plugin.model.integration_entity',
+                    'mautic.lead.model.dnc',
+                ],
+            ],
+        ],
         'models' => [
             'mautic.custom.model.field' => [
                 'class'     => MauticPlugin\CustomObjectsBundle\Model\CustomFieldModel::class,
