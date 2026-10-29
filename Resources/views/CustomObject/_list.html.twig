@@ -16,6 +16,10 @@
                     'routeBase': 'form'
                 }) }}
 
+                <th class="col-custom-status pa-0" scope="col">
+                    <span class="btn btn-ghost btn-block jc-space-between" style="pointer-events: none; color: inherit;"><span class="fw-b">{{ 'custom.object.status.column'|trans }}</span></span>
+                </th>
+
                 {{ include('@MauticCore/Helper/tableheader.html.twig', {
                     'sessionVar': sessionVar,
                     'orderBy': tableAlias~'.namePlural',
@@ -37,6 +41,7 @@
                         <td>
                             {{- include('@MauticCore/Helper/list_actions.html.twig', { 'item': item }) -}}
                         </td>
+                        <td class="col-custom-status">{{ include('@CustomObjects/Common/_status_badge.html.twig', { 'item': item }) }}</td>
                         <td>
                             <div>
                                 {{- include('@MauticCore/Helper/publishstatus_icon.html.twig',

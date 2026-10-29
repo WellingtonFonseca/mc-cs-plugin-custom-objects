@@ -33,3 +33,98 @@ input[type=checkbox].form-control {
     margin: 4px 0 0;
     padding-left: 20px;
 }
+
+/* Status of the Custom Objects list (Assets/js/list-status.js, ListStatusSubscriber): a column of its own right after the
+   menu column, with a badge that is a 22px circle holding an icon (play on green, stop on red); on hover it opens to the right and shows the word,
+   pushing the next cell (it is in the flow of the cell). Core's toggle icon is hidden and the first menu item is red / green on hover like the
+   status it leads to. The look is the twin of the status badge of MauticPatchesBundle and N8nDispatchBundle, duplicated on purpose. */
+.customobjects-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 2px 10px;
+    border-radius: 11px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: normal;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.customobjects-badge--production {
+    background-color: #43a047;
+}
+
+.customobjects-badge--failed {
+    background-color: #e53935;
+}
+
+.customobjects-badge--pending {
+    background-color: #fb8c00;
+}
+
+#custom-objects-table td {
+    white-space: nowrap; /* the cells never wrap: an open badge widens its column and the table scrolls, no row changes height under the pointer */
+}
+
+.customobjects-status {
+    display: inline-flex;
+    vertical-align: middle;
+    box-sizing: border-box;
+    height: 22px;
+    min-width: 0;
+    max-width: 22px;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+    justify-content: flex-start;
+    overflow: hidden;
+    transition: max-width 0.2s ease, box-shadow 0.2s ease;
+}
+
+.customobjects-status:hover {
+    max-width: 140px;
+    box-shadow: rgba(0, 0, 0, 0.2) 0 1px 4px 0;
+}
+
+.customobjects-status > i {
+    flex: 0 0 22px;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.customobjects-status__text {
+    padding: 0 10px 0 0;
+    opacity: 0;
+    transition: opacity 0.15s ease 0.05s;
+}
+
+.customobjects-status:hover .customobjects-status__text {
+    opacity: 1;
+}
+
+#custom-objects-table i[class*="-publish-icon"] {
+    display: none !important;
+}
+
+a[data-co-status-action]:hover {
+    color: var(--text-inverse) !important;
+}
+
+a[data-co-status-action="deactivate"]:hover {
+    background-color: var(--support-error) !important;
+}
+
+a[data-co-status-action="activate"]:hover {
+    background-color: var(--support-success) !important;
+}
+
+a[data-co-status-action]:hover * {
+    color: inherit !important;
+}
