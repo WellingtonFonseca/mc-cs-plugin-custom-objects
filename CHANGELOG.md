@@ -3,6 +3,8 @@
 Só as mudanças feitas neste fork, a partir de 2026-08-24 (o que veio do plugin original não está aqui). Um bloco por dia, do mais novo para o mais antigo. Formato fixo: `## AAAA-MM-DD` e uma linha `- ` por mudança (a tela do plugin lê este arquivo).
 
 ## 2026-10-28
+- A lista de objetos tem a coluna Status com o ícone de ativo e inativo, que abre ao passar o mouse; Ativar e Desativar é o primeiro item do menu da linha
+- O badge de status abre dentro da coluna, sem empurrar as outras, e os nomes não quebram de linha
 - Novo histórico de mudanças por dia (este arquivo), em uma aba própria do modal do plugin em Configurações > Plugins
 - O plugin ganhou o tile "Custom Objects" em Configurações > Plugins, já ligado e com o ícone do plugin (versão 0.0.31)
 
