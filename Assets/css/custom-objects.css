@@ -66,8 +66,8 @@ input[type=checkbox].form-control {
     background-color: #fb8c00;
 }
 
-td.col-custom-status {
-    white-space: nowrap;
+#custom-objects-table td {
+    white-space: nowrap; /* the cells never wrap: an open badge widens its column and the table scrolls, no row changes height under the pointer */
 }
 
 .customobjects-status {
