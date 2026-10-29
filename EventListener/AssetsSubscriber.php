@@ -35,6 +35,7 @@ class AssetsSubscriber implements EventSubscriberInterface
             $this->assetHelper->addScript('plugins/CustomObjectsBundle/Assets/js/custom-objects.js');
             $this->assetHelper->addScript('plugins/CustomObjectsBundle/Assets/js/co-form.js');
             $this->assetHelper->addScript('plugins/CustomObjectsBundle/Assets/js/plugin-changelog-tab.js');
+            $this->assetHelper->addScript('plugins/CustomObjectsBundle/Assets/js/list-status.js');
             $this->assetHelper->addStylesheet('plugins/CustomObjectsBundle/Assets/css/custom-objects.css');
         }
     }
