@@ -16,9 +16,10 @@ use Symfony\Component\Validator\Validation;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Every string column of these tables is VARCHAR(191). The Length constraint of each one must say 191: with 255 a value of
- * 192 to 255 characters passed the validation and failed in the database (a 500 on the API and on the form).
- * CustomItemTest checks the name of an item the same way.
+ * The string columns of these tables are VARCHAR(191) in a schema built from the entities (the old migrations of the original
+ * plugin declare some as 255). The Length constraint of each one must say 191: with 255 a value of 192 to 255 characters passed
+ * the validation and failed in the database (a 500 on the API and on the form). The number here is written out on purpose: it is
+ * the check of StringColumn::LENGTH. CustomItemTest checks the name of an item the same way.
  */
 final class StringLengthConstraintsTest extends TestCase
 {

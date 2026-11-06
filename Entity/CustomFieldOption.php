@@ -121,9 +121,9 @@ class CustomFieldOption implements \ArrayAccess
     public static function loadValidatorMetadata(ClassMetadata $metadata): void
     {
         $metadata->addPropertyConstraint('label', new Assert\NotBlank());
-        $metadata->addPropertyConstraint('label', new Assert\Length(['max' => 191]));
+        $metadata->addPropertyConstraint('label', new Assert\Length(['max' => StringColumn::LENGTH]));
         $metadata->addPropertyConstraint('value', new Assert\NotNull());
-        $metadata->addPropertyConstraint('value', new Assert\Length(['max' => 191]));
+        $metadata->addPropertyConstraint('value', new Assert\Length(['max' => StringColumn::LENGTH]));
         $metadata->addPropertyConstraint('order', new Assert\NotNull());
     }
 
