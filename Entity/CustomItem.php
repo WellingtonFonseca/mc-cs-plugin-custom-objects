@@ -244,7 +244,8 @@ class CustomItem extends FormEntity implements UniqueEntityInterface, UpsertInte
     public static function loadValidatorMetadata(ClassMetadata $metadata): void
     {
         $metadata->addPropertyConstraint('name', new Assert\NotBlank());
-        $metadata->addPropertyConstraint('name', new Assert\Length(['max' => 255]));
+        // The column is VARCHAR(191) (the utf8mb4 index limit): a longer name passed a limit of 255 and failed in the database (500).
+        $metadata->addPropertyConstraint('name', new Assert\Length(['max' => 191]));
     }
 
     /**
