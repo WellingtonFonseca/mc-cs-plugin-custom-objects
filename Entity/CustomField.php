@@ -323,12 +323,12 @@ class CustomField extends FormEntity implements UniqueEntityInterface, UuidInter
     public static function loadValidatorMetadata(ClassMetadata $metadata): void
     {
         $metadata->addPropertyConstraint('label', new Assert\NotBlank());
-        $metadata->addPropertyConstraint('label', new Assert\Length(['max' => 255]));
-        $metadata->addPropertyConstraint('alias', new Assert\Length(['max' => 255]));
+        $metadata->addPropertyConstraint('label', new Assert\Length(['max' => 191]));
+        $metadata->addPropertyConstraint('alias', new Assert\Length(['max' => 191]));
         $metadata->addPropertyConstraint('type', new Assert\NotBlank());
-        $metadata->addPropertyConstraint('type', new Assert\Length(['max' => 255]));
+        $metadata->addPropertyConstraint('type', new Assert\Length(['max' => 191]));
         $metadata->addPropertyConstraint('customObject', new Assert\NotBlank());
-        $metadata->addPropertyConstraint('defaultValue', new Assert\Length(['max' => 255]));
+        $metadata->addPropertyConstraint('defaultValue', new Assert\Length(['max' => 191]));
         $metadata->addConstraint(new Assert\Callback('validateDefaultValue'));
         $metadata->addConstraint(new AllowUniqueIdentifier());
     }
