@@ -188,6 +188,7 @@ final class CustomItemDeleteApiControllerTest extends TestCase
             'decimal'  => [1.5],
             'array'    => [[1]],
             'zeros'    => ['00'],
+            'too big'  => ['99999999999999999999'],
             'decimal text' => ['1.5'],
         ];
     }
@@ -299,5 +300,33 @@ final class CustomItemDeleteApiControllerTest extends TestCase
         $this->assertSame(2, $content['total']);
         $this->assertSame([1, 2], $content['deleted']);
         $this->assertSame([], $content['alreadyGone']);
+    }
+
+    public function testDeleteRollsBackAndRethrowsWhenTheDeleteFails(): void
+    {
+        $customObject = $this->customObject(1);
+
+        $this->customObjectModel->method('fetchEntityByAlias')->willReturn($customObject);
+        $this->customItemModel->method('fetchEntity')->willReturn($this->customItem(1, $customObject));
+        $this->customItemModel->method('delete')->willThrowException(new \RuntimeException('database is gone'));
+
+        $this->connection->expects($this->once())->method('rollBack');
+        $this->connection->expects($this->never())->method('commit');
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('database is gone');
+
+        $this->controller->deleteAction('documents', 1);
+    }
+
+    public function testDeleteOneReturns400ForAnIdBelowOne(): void
+    {
+        $this->customObjectModel->method('fetchEntityByAlias')->willReturn($this->customObject(1));
+        $this->connection->expects($this->never())->method('beginTransaction');
+
+        $response = $this->controller->deleteAction('documents', 0);
+
+        $this->assertSame(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+        $this->assertSame('Each "id" must be a positive integer.', $this->errorMessage($response));
     }
 }
