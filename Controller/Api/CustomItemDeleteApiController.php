@@ -33,10 +33,10 @@ use Symfony\Component\HttpFoundation\Response;
  * trigger that for many items at once — same caveat, bigger blast radius.
  *
  * The batch route mirrors CustomItemWriteApiController's "data" array and
- * single-DB-transaction behavior: if any id in the batch is missing,
- * not found, or belongs to a different Custom Object, the whole batch is
- * rolled back and nothing already deleted earlier in that same call stays
- * deleted.
+ * single-DB-transaction behavior: if any id belongs to a different Custom
+ * Object, the whole batch is rolled back and nothing already deleted earlier
+ * in that same call stays deleted. Both routes answer the same shape:
+ * {"total": N, "deleted": [ids], "alreadyGone": [ids that did not exist]}.
  */
 class CustomItemDeleteApiController extends AbstractController
 {
@@ -55,22 +55,7 @@ class CustomItemDeleteApiController extends AbstractController
             return new JsonResponse(['errors' => [['message' => $e->getMessage()]]], Response::HTTP_NOT_FOUND);
         }
 
-        try {
-            $customItem = $this->customItemModel->fetchEntity($itemId);
-        } catch (NotFoundException $e) {
-            return new JsonResponse(['errors' => [['message' => $e->getMessage()]]], Response::HTTP_NOT_FOUND);
-        }
-
-        if (!$this->belongsToCustomObject($customItem->getCustomObject(), $customObject)) {
-            return new JsonResponse(
-                ['errors' => [['message' => "Item with ID = {$itemId} was not found on Custom Object '{$objectAlias}'."]]],
-                Response::HTTP_NOT_FOUND
-            );
-        }
-
-        $this->customItemModel->delete($customItem);
-
-        return new JsonResponse(['id' => $itemId, 'deleted' => true]);
+        return $this->deleteItems($customObject, $objectAlias, [$itemId]);
     }
 
     public function batchDeleteAction(Request $request, string $objectAlias): JsonResponse
@@ -90,6 +75,8 @@ class CustomItemDeleteApiController extends AbstractController
             );
         }
 
+        $itemIds = [];
+
         foreach ($payload['data'] as $itemData) {
             if (!is_array($itemData) || empty($itemData['id'])) {
                 return new JsonResponse(
@@ -97,16 +84,44 @@ class CustomItemDeleteApiController extends AbstractController
                     Response::HTTP_BAD_REQUEST
                 );
             }
+
+            // An id that is not a positive integer would become 0 and be reported as "already gone": a typo must not look like a success.
+            if (!$this->isPositiveInteger($itemData['id'])) {
+                return new JsonResponse(
+                    ['errors' => [['message' => 'Each "id" must be a positive integer.']]],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+
+            $itemIds[] = (int) $itemData['id'];
         }
 
-        $deletedIds = [];
+        return $this->deleteItems($customObject, $objectAlias, $itemIds);
+    }
+
+    /**
+     * An id that does not exist is not an error: the caller wanted the item gone and it is gone, so the id is
+     * listed in "alreadyGone". An id repeated in the call is deleted once and is never "already gone".
+     * An item of ANOTHER Custom Object is a 404 that rolls back the whole call.
+     *
+     * @param int[] $itemIds
+     */
+    private function deleteItems(CustomObject $customObject, string $objectAlias, array $itemIds): JsonResponse
+    {
+        $deletedIds     = [];
+        $alreadyGoneIds = [];
 
         $this->em->getConnection()->beginTransaction();
 
         try {
-            foreach ($payload['data'] as $itemData) {
-                $itemId     = (int) $itemData['id'];
-                $customItem = $this->customItemModel->fetchEntity($itemId);
+            foreach (array_unique($itemIds) as $itemId) {
+                try {
+                    $customItem = $this->customItemModel->fetchEntity($itemId);
+                } catch (NotFoundException) {
+                    $alreadyGoneIds[] = $itemId;
+
+                    continue;
+                }
 
                 if (!$this->belongsToCustomObject($customItem->getCustomObject(), $customObject)) {
                     throw new NotFoundException("Item with ID = {$itemId} was not found on Custom Object '{$objectAlias}'.");
@@ -123,7 +138,16 @@ class CustomItemDeleteApiController extends AbstractController
             return new JsonResponse(['errors' => [['message' => $e->getMessage()]]], Response::HTTP_NOT_FOUND);
         }
 
-        return new JsonResponse(['total' => count($deletedIds), 'deleted' => $deletedIds]);
+        return new JsonResponse(['total' => count($deletedIds), 'deleted' => $deletedIds, 'alreadyGone' => $alreadyGoneIds]);
+    }
+
+    private function isPositiveInteger(mixed $id): bool
+    {
+        if (is_string($id)) {
+            return ctype_digit($id) && (int) $id > 0;
+        }
+
+        return is_int($id) && $id > 0;
     }
 
     private function belongsToCustomObject(CustomObject $itemOwner, CustomObject $customObject): bool
