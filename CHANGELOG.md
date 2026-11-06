@@ -6,6 +6,7 @@ Só as mudanças feitas neste fork, a partir de 2026-08-24 (o que veio do plugin
 - A API de apagar itens (um item ou um lote) agora responde sempre {total, deleted, alreadyGone}. Um id que já não existe não dá mais erro: aparece em alreadyGone e os outros itens são apagados
 - Um id repetido no mesmo lote é apagado uma vez, em vez de dar 404 com o id de um item que existe
 - Um id que não é um número inteiro positivo dá erro 400; um item de outro Custom Object continua dando 404 e nada é apagado
+- O nome de um item aceita no máximo 191 caracteres. Um nome maior dá erro 400 com essa mensagem, tanto na API quanto na tela; antes, de 192 a 255 caracteres dava erro 500
 
 ## 2026-10-28
 - A lista de objetos tem a coluna Status com o ícone de ativo e inativo, que abre ao passar o mouse; Ativar e Desativar é o primeiro item do menu da linha
