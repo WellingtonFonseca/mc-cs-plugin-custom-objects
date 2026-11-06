@@ -2,6 +2,11 @@
 
 Só as mudanças feitas neste fork, a partir de 2026-08-24 (o que veio do plugin original não está aqui). Um bloco por dia, do mais novo para o mais antigo. Formato fixo: `## AAAA-MM-DD` e uma linha `- ` por mudança (a tela do plugin lê este arquivo).
 
+## 2026-11-06
+- A API de apagar itens (um item ou um lote) agora responde sempre {total, deleted, alreadyGone}. Um id que já não existe não dá mais erro: aparece em alreadyGone e os outros itens são apagados
+- Um id repetido no mesmo lote é apagado uma vez, em vez de dar 404 com o id de um item que existe
+- Um id que não é um número inteiro positivo dá erro 400; um item de outro Custom Object continua dando 404 e nada é apagado
+
 ## 2026-10-28
 - A lista de objetos tem a coluna Status com o ícone de ativo e inativo, que abre ao passar o mouse; Ativar e Desativar é o primeiro item do menu da linha
 - O badge de status abre dentro da coluna, sem empurrar as outras, e os nomes não quebram de linha
