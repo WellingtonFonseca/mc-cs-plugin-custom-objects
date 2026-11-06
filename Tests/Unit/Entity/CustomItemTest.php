@@ -16,6 +16,8 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefCustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\Validator\Validation;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 #[AllowMockObjectsWithoutExpectations]
@@ -206,5 +208,37 @@ class CustomItemTest extends \PHPUnit\Framework\TestCase
         $item->setDefaultValuesForMissingFields();
 
         $this->assertCount(3, $item->getCustomFieldValues());
+    }
+
+    /**
+     * The name column of custom_item is VARCHAR(191): a name of 192 to 255 characters used to pass the validation
+     * (the limit was 255) and fail in the database, which the API answered with a 500.
+     */
+    #[DataProvider('nameLengthProvider')]
+    public function testNameIsValidUpToTheLengthOfTheColumn(int $length, int $expectedErrors): void
+    {
+        $item = new CustomItem(new CustomObject());
+        $item->setName(str_repeat('n', $length));
+
+        $validator = Validation::createValidatorBuilder()->addMethodMapping('loadValidatorMetadata')->getValidator();
+        $errors    = $validator->validate($item);
+
+        $this->assertCount($expectedErrors, $errors);
+
+        if ($expectedErrors > 0) {
+            $this->assertStringContainsString('191', (string) $errors->get(0)->getMessage());
+        }
+    }
+
+    /**
+     * @return array<string, array{int, int}>
+     */
+    public static function nameLengthProvider(): array
+    {
+        return [
+            'at the limit'    => [191, 0],
+            'one over'        => [192, 1],
+            'old limit (255)' => [255, 1],
+        ];
     }
 }
