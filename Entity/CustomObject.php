@@ -201,12 +201,12 @@ class CustomObject extends FormEntity implements UniqueEntityInterface
 
     public static function loadValidatorMetadata(ClassMetadata $metadata): void
     {
-        $metadata->addPropertyConstraint('alias', new Assert\Length(['max' => 255]));
+        $metadata->addPropertyConstraint('alias', new Assert\Length(['max' => StringColumn::LENGTH]));
         $metadata->addPropertyConstraint('nameSingular', new Assert\NotBlank());
-        $metadata->addPropertyConstraint('nameSingular', new Assert\Length(['max' => 255]));
+        $metadata->addPropertyConstraint('nameSingular', new Assert\Length(['max' => StringColumn::LENGTH]));
         $metadata->addPropertyConstraint('namePlural', new Assert\NotBlank());
-        $metadata->addPropertyConstraint('namePlural', new Assert\Length(['max' => 255]));
-        $metadata->addPropertyConstraint('description', new Assert\Length(['max' => 255]));
+        $metadata->addPropertyConstraint('namePlural', new Assert\Length(['max' => StringColumn::LENGTH]));
+        $metadata->addPropertyConstraint('description', new Assert\Length(['max' => StringColumn::LENGTH]));
         $metadata->addConstraint(new CustomObjectTypeValues());
     }
 

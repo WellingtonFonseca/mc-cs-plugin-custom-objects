@@ -7,6 +7,7 @@ Só as mudanças feitas neste fork, a partir de 2026-08-24 (o que veio do plugin
 - Um id repetido no mesmo lote é apagado uma vez, em vez de dar 404 com o id de um item que existe
 - Um id que não é um número inteiro positivo dá erro 400; um item de outro Custom Object continua dando 404 e nada é apagado
 - O nome de um item aceita no máximo 191 caracteres. Um nome maior dá erro 400 com essa mensagem, tanto na API quanto na tela; antes, de 192 a 255 caracteres dava erro 500
+- Os campos de texto de objetos, campos e opções dos campos (alias, nomes, descrição, rótulo, tipo, valor padrão) também aceitam no máximo 191 caracteres, o tamanho das colunas. Um texto maior mostra uma mensagem no formulário em vez de um erro 500
 
 ## 2026-10-28
 - A lista de objetos tem a coluna Status com o ícone de ativo e inativo, que abre ao passar o mouse; Ativar e Desativar é o primeiro item do menu da linha
