@@ -2,6 +2,9 @@
 
 Só as mudanças feitas neste fork, a partir de 2026-08-24 (o que veio do plugin original não está aqui). Um bloco por dia, do mais novo para o mais antigo. Formato fixo: `## AAAA-MM-DD` e uma linha `- ` por mudança (a tela do plugin lê este arquivo).
 
+## 2026-11-11
+- Novo ícone do plugin (uma matrioska), no tile de Configurações > Plugins e na lista de plugins. Ícone "Matryoshka" da coleção Linear Womens Day Elements, do SVG Repo (svgrepo.com/svg/157655/matryoshka), licença CC0. Obrigado a quem desenhou
+
 ## 2026-11-06
 - A API de apagar itens (um item ou um lote) agora responde sempre {total, deleted, alreadyGone}. Um id que já não existe não dá mais erro: aparece em alreadyGone e os outros itens são apagados
 - Um id repetido no mesmo lote é apagado uma vez, em vez de dar 404 com o id de um item que existe
