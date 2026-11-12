@@ -276,11 +276,15 @@ class CustomItemButtonSubscriber implements EventSubscriberInterface
         $this->permissionProvider->canCreate($customObjectId);
 
         return [
+            // 'btn' in the class: the toolbar keeps a button with it outside the gear menu (core's own New button has the same attributes)
             'attr' => [
-                'href' => $this->routeProvider->buildNewRoute($customObjectId),
+                'class'       => 'btn btn-primary',
+                'href'        => $this->routeProvider->buildNewRoute($customObjectId),
+                'data-toggle' => 'ajax',
+                'id'          => 'new',
             ],
             'btnText'   => 'mautic.core.form.new',
-            'iconClass' => 'fa fa-plus',
+            'iconClass' => 'ri-add-line',
             'priority'  => 500,
         ];
     }
