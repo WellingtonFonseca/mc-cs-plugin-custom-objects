@@ -133,3 +133,9 @@ a[data-co-status-action]:hover * {
 .list-toolbar > .btn:only-of-type + .input-group > input {
     border-radius: 0;
 }
+
+/* the gear menu of the list toolbar sits at the right edge of the page: it opens to the left, or its long items (Histórico de importação) leave the screen */
+.list-toolbar .dropdown > .dropdown-menu {
+    left: auto;
+    right: 0;
+}
