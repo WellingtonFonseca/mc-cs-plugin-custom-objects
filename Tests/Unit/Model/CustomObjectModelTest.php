@@ -586,13 +586,13 @@ class CustomObjectModelTest extends TestCase
         $this->queryBuilder->expects($this->exactly(2))
             ->method('andWhere')
             ->willReturnCallback($this->consecutiveCalls([
-                [CustomObject::TABLE_ALIAS.'.name LIKE %:search%'],
+                ['CustomObject.nameSingular LIKE :search OR CustomObject.namePlural LIKE :search OR CustomObject.alias LIKE :search'],
                 [CustomObject::TABLE_ALIAS.'.createdBy', 22]
             ], null, false, $this->queryBuilder, 'andWhere'));
 
         $this->queryBuilder->expects($this->once())
             ->method('setParameter')
-            ->with('search', 'Unicorn');
+            ->with('search', '%Unicorn%');
 
         $this->queryBuilder->expects($this->once())
             ->method('getQuery')

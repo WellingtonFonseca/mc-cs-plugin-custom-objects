@@ -235,8 +235,10 @@ class CustomObjectModel extends FormModel
         $search = $tableConfig->getParameter('search');
 
         if ($search) {
-            $queryBuilder->andWhere(CustomObject::TABLE_ALIAS.'.name LIKE %:search%');
-            $queryBuilder->setParameter('search', $search);
+            // the entity has no `name`: the list search looks in the two names and the alias
+            $alias = CustomObject::TABLE_ALIAS;
+            $queryBuilder->andWhere("{$alias}.nameSingular LIKE :search OR {$alias}.namePlural LIKE :search OR {$alias}.alias LIKE :search");
+            $queryBuilder->setParameter('search', '%'.$search.'%');
         }
 
         return $this->applyOwnerFilter($queryBuilder);

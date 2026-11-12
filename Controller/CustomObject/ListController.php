@@ -47,6 +47,7 @@ class ListController extends CommonController
         }
 
         $tableConfig = new TableConfig($limit, $page, $orderBy, $orderByDir);
+        $tableConfig->addParameter('search', $search);
 
         $sessionProvider->setPage($page);
         $sessionProvider->setPageLimit($limit);
