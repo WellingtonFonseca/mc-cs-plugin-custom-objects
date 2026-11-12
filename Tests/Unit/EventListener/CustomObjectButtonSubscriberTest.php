@@ -161,10 +161,13 @@ class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
                 'priority'  => 500,
             ]], [[
                 'attr' => [
-                    'href' => 'generated/new/route',
+                    'class'       => 'btn btn-primary',
+                    'href'        => 'generated/new/route',
+                    'data-toggle' => 'ajax',
+                    'id'          => 'new',
                 ],
                 'btnText'   => 'mautic.core.form.new',
-                'iconClass' => 'fa fa-plus',
+                'iconClass' => 'ri-add-line',
                 'priority'  => 500,
             ]], [[
                 'attr' => [
