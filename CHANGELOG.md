@@ -2,6 +2,10 @@
 
 Só as mudanças feitas neste fork, a partir de 2026-08-24 (o que veio do plugin original não está aqui). Um bloco por dia, do mais novo para o mais antigo. Formato fixo: `## AAAA-MM-DD` e uma linha `- ` por mudança (a tela do plugin lê este arquivo).
 
+## 2026-11-12
+- A lista de Custom Objects e a lista de itens têm a mesma barra de Campos personalizados: busca, menu de engrenagem (importações e exportação) e botão Novo. As ações do topo da página saíram
+- A busca da lista de Custom Objects agora funciona: procura nos dois nomes e no alias do objeto
+
 ## 2026-11-11
 - Novo ícone do plugin (uma matrioska), no tile de Configurações > Plugins e na lista de plugins. Ícone "Matryoshka" da coleção Linear Womens Day Elements, do SVG Repo (svgrepo.com/svg/157655/matryoshka), licença CC0. Obrigado a quem desenhou
 
