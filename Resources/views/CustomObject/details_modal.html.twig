@@ -20,7 +20,8 @@
             <a href="#custom-object-modal-definition" data-toggle="tab">{{ 'custom.object.definition.tab'|trans }}</a>
         </li>
     </ul>
-    <div class="tab-content">
+    {# Only the top padding: a gap under the tabs, while the side padding would indent the table away from the modal title. #}
+    <div class="tab-content pt-md">
         <div class="tab-pane fade in active bdr-w-0" id="custom-object-modal-fields">
             {{ include('@CustomObjects/CustomObject/_fields_table.html.twig') }}
         </div>

@@ -2,6 +2,9 @@
 
 Só as mudanças feitas neste fork, a partir de 2026-08-24 (o que veio do plugin original não está aqui). Um bloco por dia, do mais novo para o mais antigo. Formato fixo: `## AAAA-MM-DD` e uma linha `- ` por mudança (a tela do plugin lê este arquivo).
 
+## 2026-11-13
+- Na janela de um Custom Object (clique no nome na lista), a tabela de campos não fica mais colada nas abas
+
 ## 2026-11-12
 - A lista de Custom Objects e a lista de itens têm a mesma barra de Campos personalizados: busca, menu de engrenagem (importações e exportação) e botão Novo. As ações do topo da página saíram
 - A busca da lista de Custom Objects agora funciona: procura nos dois nomes e no alias do objeto
