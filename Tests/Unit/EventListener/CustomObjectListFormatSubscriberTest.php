@@ -8,9 +8,12 @@ use MauticPlugin\CustomObjectsBundle\CustomObjectEvents;
 use MauticPlugin\CustomObjectsBundle\Event\CustomObjectListFormatEvent;
 use MauticPlugin\CustomObjectsBundle\EventListener\CustomObjectListFormatSubscriber;
 use MauticPlugin\CustomObjectsBundle\Helper\TokenFormatter;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class CustomObjectListFormatSubscriberTest extends TestCase
 {
     /**

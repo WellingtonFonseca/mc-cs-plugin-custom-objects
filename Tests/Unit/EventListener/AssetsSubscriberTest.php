@@ -8,10 +8,14 @@ use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\CoreBundle\Twig\Helper\AssetsHelper;
 use MauticPlugin\CustomObjectsBundle\EventListener\AssetsSubscriber;
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Asset\Packages;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('risk:INFRA')]
 class AssetsSubscriberTest extends \PHPUnit\Framework\TestCase
 {
     private $packages;

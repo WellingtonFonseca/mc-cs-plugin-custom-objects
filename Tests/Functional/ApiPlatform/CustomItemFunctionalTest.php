@@ -11,9 +11,13 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueText;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
+#[Group('risk:CRITICO')]
 final class CustomItemFunctionalTest extends AbstractApiPlatformFunctionalTest
 {
     private CustomItemModel $customItemModel;

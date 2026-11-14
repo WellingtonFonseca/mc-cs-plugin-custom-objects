@@ -6,7 +6,10 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Entity;
 
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefCustomItem;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class CustomItemXrefCustomItemTest extends \PHPUnit\Framework\TestCase
 {
     public function testGettersIfCustomItemAIsLower(): void

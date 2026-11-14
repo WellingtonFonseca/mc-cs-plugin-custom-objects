@@ -11,8 +11,12 @@ use Doctrine\DBAL\Statement;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\EntityManager;
 use MauticPlugin\CustomObjectsBundle\Migrations\Version_0_0_30;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class TextValueIndexMigrationTest extends TestCase
 {
     public function testAddsTheIndexWhenItIsMissing(): void

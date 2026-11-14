@@ -13,9 +13,13 @@ use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Helper\SegmentFilterValues;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:segment')]
+#[Group('area:co-items')]
+#[Group('risk:FLUXO')]
 class SegmentFilterValuesTest extends TestCase
 {
     private Connection&MockObject $connection;

@@ -18,6 +18,7 @@ use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Exception\UndefinedTransformerException;
 use MauticPlugin\CustomObjectsBundle\Form\Validator\Constraints\AllowUniqueIdentifier;
 use MauticPlugin\CustomObjectsBundle\Helper\CsvHelper;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Form\DataTransformerInterface;
 use Symfony\Component\Validator\Constraints\Callback;
 use Symfony\Component\Validator\Constraints\Length;
@@ -28,6 +29,8 @@ use Symfony\Component\Validator\Violation\ConstraintViolationBuilderInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class CustomFieldTest extends \PHPUnit\Framework\TestCase
 {
     use ConsecutiveCallsTrait;

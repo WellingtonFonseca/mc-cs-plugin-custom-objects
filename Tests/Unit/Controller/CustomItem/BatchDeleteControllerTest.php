@@ -16,10 +16,13 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProviderFactory;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpFoundation\Request;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
 #[\AllowDynamicProperties]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class BatchDeleteControllerTest extends ControllerTestCase
 {
     use ConsecutiveCallsTrait;

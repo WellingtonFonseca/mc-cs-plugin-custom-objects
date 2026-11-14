@@ -6,7 +6,10 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Form\Validator;
 
 use MauticPlugin\CustomObjectsBundle\Form\Validator\Constraints\CustomObjectTypeValues;
 use MauticPlugin\CustomObjectsBundle\Form\Validator\Constraints\CustomObjectTypeValuesValidator;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:co-objects')]
+#[Group('risk:FLUXO')]
 class CustomObjectTypeValuesTest extends \PHPUnit\Framework\TestCase
 {
     /**

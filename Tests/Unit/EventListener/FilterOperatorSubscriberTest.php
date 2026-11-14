@@ -11,10 +11,14 @@ use Mautic\LeadBundle\Segment\Query\QueryBuilder;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\EventListener\FilterOperatorSubscriber;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[Group('area:segment')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 final class FilterOperatorSubscriberTest extends \PHPUnit\Framework\TestCase
 {
     /**

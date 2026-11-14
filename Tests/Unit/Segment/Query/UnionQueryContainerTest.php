@@ -8,8 +8,12 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Driver;
 use Mautic\LeadBundle\Segment\Query\QueryBuilder as SegmentQueryBuilder;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\UnionQueryContainer;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:segment')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class UnionQueryContainerTest extends TestCase
 {
     /**

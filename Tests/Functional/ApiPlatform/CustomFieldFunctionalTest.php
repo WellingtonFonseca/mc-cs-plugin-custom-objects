@@ -3,8 +3,11 @@
 namespace MauticPlugin\CustomObjectsBundle\Tests\Functional\ApiPlatform;
 
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpFoundation\Response;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 final class CustomFieldFunctionalTest extends AbstractApiPlatformFunctionalTest
 {
     public function testCustomFieldCRUD(): void

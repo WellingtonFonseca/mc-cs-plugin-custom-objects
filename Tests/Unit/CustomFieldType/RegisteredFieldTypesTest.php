@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\CustomFieldType;
 
+use PHPUnit\Framework\Attributes\Group;
+
 /**
  * Guards what a new Custom Field type needs besides its own class: adding
  * one without these breaks the UI, not the code. The "decimal" type first
@@ -11,6 +13,8 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\CustomFieldType;
  * (Save/Close of the modal) threw a Twig LoaderError as soon as a field of
  * that type was on it.
  */
+#[Group('area:co-objects')]
+#[Group('risk:UI')]
 class RegisteredFieldTypesTest extends \PHPUnit\Framework\TestCase
 {
     private const BUNDLE_DIR = __DIR__.'/../../..';

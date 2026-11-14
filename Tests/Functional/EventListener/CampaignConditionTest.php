@@ -9,11 +9,16 @@ use Mautic\CoreBundle\Test\Session\FixedMockFileSessionStorage;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Tests\Functional\DataFixtures\Traits\CustomObjectsTrait;
 use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 use Symfony\Component\Security\Http\Session\SessionAuthenticationStrategy;
 
+#[Group('area:campaign')]
+#[Group('area:co-items')]
+#[Group('risk:FLUXO')]
+#[Group('risk:CRITICO')]
 class CampaignConditionTest extends MauticMysqlTestCase
 {
     use CustomObjectsTrait;

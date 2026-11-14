@@ -4,8 +4,12 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Functional\Controller\CustomObj
 
 use Mautic\CoreBundle\Test\MauticMysqlTestCase;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpFoundation\Request;
 
+#[Group('area:co-objects')]
+#[Group('risk:CRITICO')]
+#[Group('risk:DADOS')]
 class DeleteControllerTest extends MauticMysqlTestCase
 {
     public function testDeleteChildObject()

@@ -9,8 +9,12 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Tests\Functional\DataFixtures\Traits\CustomObjectsTrait;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class UpsertFunctionalTest extends \Mautic\CoreBundle\Test\MauticMysqlTestCase
 {
     use CustomObjectsTrait;

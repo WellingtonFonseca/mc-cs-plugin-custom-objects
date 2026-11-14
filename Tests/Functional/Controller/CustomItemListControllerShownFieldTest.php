@@ -20,9 +20,13 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefContact;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefCustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpFoundation\Request;
 
+#[Group('area:co-items')]
+#[Group('risk:FLUXO')]
+#[Group('risk:UI')]
 class CustomItemListControllerShownFieldTest extends MauticMysqlTestCase
 {
     /**

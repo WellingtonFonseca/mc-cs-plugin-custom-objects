@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Translations;
 
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -11,6 +12,8 @@ use PHPUnit\Framework\TestCase;
  * follow the system language: each text is a translation key with an entry in en_US AND pt_BR. A key only in en_US shows
  * in English in a Portuguese system.
  */
+#[Group('area:translations')]
+#[Group('risk:UI')]
 class CampaignConditionTranslationsTest extends TestCase
 {
     private const KEYS = [

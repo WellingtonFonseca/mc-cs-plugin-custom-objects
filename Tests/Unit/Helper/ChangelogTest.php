@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Helper;
 
 use MauticPlugin\CustomObjectsBundle\Helper\Changelog;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:plugin-settings')]
+#[Group('risk:UI')]
 class ChangelogTest extends TestCase
 {
     public function testItReadsOneBlockPerDayInTheFileOrder(): void

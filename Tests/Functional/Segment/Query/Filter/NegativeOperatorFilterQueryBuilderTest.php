@@ -16,7 +16,11 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:segment')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class NegativeOperatorFilterQueryBuilderTest extends MauticMysqlTestCase
 {
     private CustomItemModel $customItemModel;

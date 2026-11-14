@@ -10,7 +10,11 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldOption;
 use MauticPlugin\CustomObjectsBundle\Form\DataTransformer\OptionsToStringTransformer;
 use MauticPlugin\CustomObjectsBundle\Model\CustomFieldModel;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class OptionsToStringTransformerTest extends \PHPUnit\Framework\TestCase
 {
     public function testTransformWithEmptyOptions(): void

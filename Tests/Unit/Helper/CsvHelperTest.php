@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Helper;
 
 use MauticPlugin\CustomObjectsBundle\Helper\CsvHelper;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class CsvHelperTest extends \PHPUnit\Framework\TestCase
 {
     public function testArrayToCsvLine(): void

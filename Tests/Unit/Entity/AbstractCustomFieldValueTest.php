@@ -9,6 +9,7 @@ use MauticPlugin\CustomObjectsBundle\Entity\AbstractCustomFieldValue;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Validator\Constraints\Callback;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
@@ -16,6 +17,8 @@ use Symfony\Component\Validator\Mapping\ClassMetadata;
 use Symfony\Component\Validator\Violation\ConstraintViolationBuilderInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class AbstractCustomFieldValueTest extends \PHPUnit\Framework\TestCase
 {
     use ConsecutiveCallsTrait;

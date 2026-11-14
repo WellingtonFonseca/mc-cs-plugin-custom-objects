@@ -13,6 +13,7 @@ use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -21,6 +22,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * The first item of the row menu of the Custom Objects list: "Desativar" for a published object, "Ativar" for an unpublished one, only for
  * who may edit it.
  */
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('risk:FLUXO')]
 class ListStatusSubscriberTest extends TestCase
 {
     private CustomObjectPermissionProvider $objectPermission;

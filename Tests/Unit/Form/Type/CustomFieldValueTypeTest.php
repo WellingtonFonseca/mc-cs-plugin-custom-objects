@@ -10,11 +10,14 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueInterface;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Exception\UndefinedTransformerException;
 use MauticPlugin\CustomObjectsBundle\Form\Type\CustomFieldValueType;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Form\DataTransformerInterface;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
+#[Group('area:co-objects')]
+#[Group('risk:FLUXO')]
 class CustomFieldValueTypeTest extends \PHPUnit\Framework\TestCase
 {
     private $formBuilder;

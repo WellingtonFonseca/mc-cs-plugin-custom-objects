@@ -7,7 +7,11 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Form\DataTransformer;
 use JMS\Serializer\SerializerInterface;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField\Params;
 use MauticPlugin\CustomObjectsBundle\Form\DataTransformer\ParamsToStringTransformer;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class ParamsToStringTransformerTest extends \PHPUnit\Framework\TestCase
 {
     public function testTransform(): void

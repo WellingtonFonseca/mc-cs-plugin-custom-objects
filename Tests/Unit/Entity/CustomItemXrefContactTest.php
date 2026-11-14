@@ -7,7 +7,10 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Entity;
 use Mautic\LeadBundle\Entity\Lead;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefContact;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class CustomItemXrefContactTest extends \PHPUnit\Framework\TestCase
 {
     public function testGetters(): void

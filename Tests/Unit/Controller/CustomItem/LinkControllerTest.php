@@ -14,7 +14,10 @@ use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:co-items')]
+#[Group('risk:FLUXO')]
 class LinkControllerTest extends ControllerTestCase
 {
     private const ITEM_ID = 22;

@@ -7,8 +7,11 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\CustomFieldType;
 use Mautic\LeadBundle\Provider\FilterOperatorProviderInterface;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\UrlType;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class UrlTypeTest extends \PHPUnit\Framework\TestCase
 {
     private $translator;

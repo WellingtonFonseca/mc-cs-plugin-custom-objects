@@ -16,8 +16,11 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueText;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Exception\InvalidValueException;
 use MauticPlugin\CustomObjectsBundle\Helper\ItemFieldFilter;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class ItemFieldFilterTest extends TestCase
 {
     private ItemFieldFilter $filter;

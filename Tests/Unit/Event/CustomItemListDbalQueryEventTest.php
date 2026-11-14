@@ -7,7 +7,10 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Event;
 use Doctrine\DBAL\Query\QueryBuilder;
 use MauticPlugin\CustomObjectsBundle\DTO\TableConfig;
 use MauticPlugin\CustomObjectsBundle\Event\CustomItemListDbalQueryEvent;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class CustomItemListDbalQueryEventTest extends \PHPUnit\Framework\TestCase
 {
     public function testGettersSetters(): void

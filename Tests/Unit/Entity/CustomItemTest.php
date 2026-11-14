@@ -15,9 +15,12 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefCompany;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefCustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Validator\Validation;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class CustomItemTest extends \PHPUnit\Framework\TestCase
 {
     public function testClone(): void

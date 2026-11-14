@@ -7,9 +7,13 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Functional\Controller\CustomIte
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItemExportScheduler;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\CustomObjectTestCase;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
+#[Group('risk:FLUXO')]
 class ExportControllerTest extends CustomObjectTestCase
 {
     private CustomObject $customObject;

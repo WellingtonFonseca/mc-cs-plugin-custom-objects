@@ -8,8 +8,12 @@ use Mautic\CoreBundle\Test\MauticMysqlTestCase;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldOption;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomObjectRepository;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpFoundation\Response;
 
+#[Group('area:co-objects')]
+#[Group('risk:FLUXO')]
+#[Group('risk:DADOS')]
 class CustomObjectFormTest extends MauticMysqlTestCase
 {
     /**

@@ -11,7 +11,11 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Event\CustomItemEvent;
 use MauticPlugin\CustomObjectsBundle\Event\CustomObjectEvent;
 use MauticPlugin\CustomObjectsBundle\EventListener\AuditLogSubscriber;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class AuditLogSubscriberTest extends \PHPUnit\Framework\TestCase
 {
     private $auditLogModel;

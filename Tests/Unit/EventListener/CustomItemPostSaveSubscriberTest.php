@@ -11,10 +11,13 @@ use MauticPlugin\CustomObjectsBundle\Event\CustomItemEvent;
 use MauticPlugin\CustomObjectsBundle\EventListener\CustomItemPostSaveSubscriber;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 
+#[Group('area:co-items')]
+#[Group('risk:FLUXO')]
 class CustomItemPostSaveSubscriberTest extends TestCase
 {
     public function testGetSubscribedEvents(): void

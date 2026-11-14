@@ -13,7 +13,12 @@ use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomItemXrefContactRepository;
 use MauticPlugin\CustomObjectsBundle\Tests\Functional\DataFixtures\Traits\CustomObjectsTrait;
 use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:contacts')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
+#[Group('risk:DADOS')]
 final class ContactSubscriberTest extends MauticMysqlTestCase
 {
     use CustomObjectsTrait;

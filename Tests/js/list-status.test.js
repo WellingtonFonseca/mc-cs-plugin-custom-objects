@@ -1,3 +1,4 @@
+// Test-tags: areas=co-objects,co-items risks=UI
 // The state logic of Assets/js/list-status.js: what core's icon says about a template. The DOM part is checked in the browser
 // (scripts/5/e2e/tests/custom-object-status.spec.js).
 const test = require('node:test');

@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Provider;
 
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProvider;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Session\Session;
 
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('risk:FLUXO')]
 class SessionProviderTest extends TestCase
 {
     /**

@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\CustomFieldType\DataTransformer;
 
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\DataTransformer\CsvTransformer;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class CsvTransformerTest extends \PHPUnit\Framework\TestCase
 {
     public function test(): void

@@ -6,7 +6,11 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Helper;
 
 use MauticPlugin\CustomObjectsBundle\DTO\Token;
 use MauticPlugin\CustomObjectsBundle\Helper\TokenParser;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:email')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class TokenParserTest extends \PHPUnit\Framework\TestCase
 {
     public function testFindTokens(): void

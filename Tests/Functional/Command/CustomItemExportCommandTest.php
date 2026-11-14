@@ -7,9 +7,12 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Functional\Command;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\CustomObjectTestCase;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
 
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class CustomItemExportCommandTest extends CustomObjectTestCase
 {
     protected $useCleanupRollback = false;

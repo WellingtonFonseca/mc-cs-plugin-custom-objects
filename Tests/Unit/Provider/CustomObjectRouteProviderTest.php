@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Provider;
 
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Routing\RouterInterface;
 
+#[Group('area:co-objects')]
+#[Group('risk:FLUXO')]
 class CustomObjectRouteProviderTest extends \PHPUnit\Framework\TestCase
 {
     private const OBJECT_ID = 33;

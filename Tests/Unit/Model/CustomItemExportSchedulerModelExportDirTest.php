@@ -7,6 +7,7 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Model;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\CoreBundle\Helper\PathsHelper;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemExportSchedulerModel;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -15,6 +16,8 @@ use PHPUnit\Framework\TestCase;
  * setting is empty (MAUTIC_CUSTOM_ITEM_EXPORT_DIR unset resolves to null, and the file used to be written at the
  * root of the disk). The folder is created when missing.
  */
+#[Group('area:co-items')]
+#[Group('risk:INFRA')]
 class CustomItemExportSchedulerModelExportDirTest extends TestCase
 {
     private CoreParametersHelper&MockObject $parameters;

@@ -10,6 +10,7 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldOption;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 use Symfony\Component\Validator\Validation;
@@ -21,6 +22,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * the validation and failed in the database (a 500 on the API and on the form). The number here is written out on purpose: it is
  * the check of StringColumn::LENGTH. CustomItemTest checks the name of an item the same way.
  */
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 final class StringLengthConstraintsTest extends TestCase
 {
     private const COLUMN_LENGTH = 191;

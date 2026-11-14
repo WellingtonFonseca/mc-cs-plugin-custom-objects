@@ -15,11 +15,14 @@ use Mautic\CoreBundle\Security\Permissions\CorePermissions;
 use Mautic\CoreBundle\Translation\Translator;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemXrefContactModel;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class CustomItemXrefContactModelTest extends \PHPUnit\Framework\TestCase
 {
     private $customItem;

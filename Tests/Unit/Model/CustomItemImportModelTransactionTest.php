@@ -19,6 +19,7 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\InvalidValueException;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemImportModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -31,6 +32,8 @@ use Mautic\CoreBundle\Helper\UserHelper;
  * to be refused but leave an item with only its name behind. A row is one transaction: rolled back when the save fails.
  * (CustomItemImportModelTest skips itself on a core without LeadRepository::exists, so these live apart.)
  */
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class CustomItemImportModelTransactionTest extends TestCase
 {
     private CustomItemModel&MockObject $customItemModel;

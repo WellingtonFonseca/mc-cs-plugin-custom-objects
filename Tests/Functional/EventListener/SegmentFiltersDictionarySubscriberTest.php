@@ -9,8 +9,12 @@ use Mautic\LeadBundle\Event\SegmentDictionaryGenerationEvent;
 use MauticPlugin\CustomObjectsBundle\EventListener\SegmentFiltersDictionarySubscriber;
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
 use MauticPlugin\CustomObjectsBundle\Tests\Functional\DataFixtures\Traits\FixtureObjectsTrait;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 
+#[Group('area:segment')]
+#[Group('area:co-items')]
+#[Group('risk:FLUXO')]
 class SegmentFiltersDictionarySubscriberTest extends MauticMysqlTestCase
 {
     use FixtureObjectsTrait;

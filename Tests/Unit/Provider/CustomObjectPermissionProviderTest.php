@@ -8,10 +8,15 @@ use Mautic\CoreBundle\Entity\FormEntity;
 use Mautic\CoreBundle\Security\Permissions\CorePermissions;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Tests methods in the AbstractPermissionProvider by CustomObjectPermissionProvider.
  */
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('area:users-roles')]
+#[Group('risk:FLUXO')]
 class CustomObjectPermissionProviderTest extends \PHPUnit\Framework\TestCase
 {
     private $permissions;

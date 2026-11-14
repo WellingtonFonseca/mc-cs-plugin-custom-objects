@@ -7,9 +7,13 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\EventListener;
 use Mautic\LeadBundle\Event\LeadListFiltersChoicesEvent;
 use Mautic\LeadBundle\LeadEvents;
 use MauticPlugin\CustomObjectsBundle\EventListener\SegmentTextInOperatorSubscriber;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[Group('area:segment')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class SegmentTextInOperatorSubscriberTest extends TestCase
 {
     private const TEXT_OPERATORS = ['equals' => '=', 'not equal' => '!=', 'contém' => 'like', 'not like' => '!like', 'começar com' => 'startsWith', 'contains' => 'contains'];

@@ -8,7 +8,10 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Doctrine\ORM\EntityManager;
 use MauticPlugin\CustomObjectsBundle\Model\CustomFieldOptionModel;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:co-objects')]
+#[Group('risk:CRITICO')]
 class CustomFieldOptionModelTest extends \PHPUnit\Framework\TestCase
 {
     private $entityManager;

@@ -15,6 +15,7 @@ use MauticPlugin\CustomObjectsBundle\Model\CustomItemXrefContactModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
@@ -22,6 +23,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 #[\AllowDynamicProperties]
+#[Group('area:co-items')]
+#[Group('risk:FLUXO')]
 class ViewControllerTest extends ControllerTestCase
 {
     private const OBJECT_ID = 33;

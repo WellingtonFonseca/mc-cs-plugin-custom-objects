@@ -9,9 +9,13 @@ use Mautic\LeadBundle\LeadEvents;
 use Mautic\LeadBundle\Segment\ContactSegmentFilterCrate;
 use MauticPlugin\CustomObjectsBundle\EventListener\SegmentFilterDecoratorDelegateSubscriber;
 use MauticPlugin\CustomObjectsBundle\Segment\Decorator\MultiselectDecorator;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:segment')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class SegmentFilterDecoratorDelegateSubscriberTest extends TestCase
 {
     /**

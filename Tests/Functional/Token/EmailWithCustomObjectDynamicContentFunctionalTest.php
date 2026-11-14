@@ -17,9 +17,13 @@ use MauticPlugin\CustomObjectsBundle\Model\CustomFieldValueModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Tests\Functional\DataFixtures\Traits\CustomObjectsTrait;
 use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpFoundation\Request;
 
+#[Group('area:campaign')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class EmailWithCustomObjectDynamicContentFunctionalTest extends MauticMysqlTestCase
 {
     use CustomObjectsTrait;

@@ -13,10 +13,14 @@ use Mautic\LeadBundle\Entity\Lead;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefContact;
 use MauticPlugin\CustomObjectsBundle\Tests\Functional\DataFixtures\Traits\CustomObjectsTrait;
 use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpFoundation\Request;
 
 #[\AllowDynamicProperties]
+#[Group('area:email')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class EmailTokenTest extends MauticMysqlTestCase
 {
     use CustomObjectsTrait;

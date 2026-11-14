@@ -7,8 +7,11 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Event;
 use Mautic\CoreBundle\Service\FlashBag;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Event\CustomObjectEvent;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class CustomObjectEventTest extends TestCase
 {
     /**

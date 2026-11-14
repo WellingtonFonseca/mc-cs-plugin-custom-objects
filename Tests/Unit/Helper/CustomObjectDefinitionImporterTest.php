@@ -25,6 +25,7 @@ use MauticPlugin\CustomObjectsBundle\Repository\CustomObjectRepository;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Mautic\CoreBundle\Security\Permissions\CorePermissions;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -34,6 +35,8 @@ use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class CustomObjectDefinitionImporterTest extends TestCase
 {
     /** @var CustomObjectModel|MockObject */

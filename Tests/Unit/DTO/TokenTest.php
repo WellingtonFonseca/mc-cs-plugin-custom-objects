@@ -3,8 +3,12 @@
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\DTO;
 
 use MauticPlugin\CustomObjectsBundle\DTO\Token;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:email')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class TokenTest extends TestCase
 {
     public function testAll(): void

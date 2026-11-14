@@ -23,10 +23,14 @@ use MauticPlugin\CustomObjectsBundle\Event\CustomItemXrefEntityDiscoveryEvent;
 use MauticPlugin\CustomObjectsBundle\Event\CustomItemXrefEntityEvent;
 use MauticPlugin\CustomObjectsBundle\EventListener\CustomItemXrefContactSubscriber;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomItemRepository;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[Group('area:contacts')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class CustomItemXrefContactSubscriberTest extends TestCase
 {
     use ConsecutiveCallsTrait;

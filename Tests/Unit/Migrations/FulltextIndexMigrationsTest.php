@@ -13,8 +13,12 @@ use Doctrine\ORM\EntityManager;
 use Mautic\IntegrationsBundle\Migration\AbstractMigration;
 use MauticPlugin\CustomObjectsBundle\Migrations\Version_0_0_12;
 use MauticPlugin\CustomObjectsBundle\Migrations\Version_0_0_29;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class FulltextIndexMigrationsTest extends TestCase
 {
     public function testVersion0029DoesNothingWhenAllFulltextIndexesExist(): void

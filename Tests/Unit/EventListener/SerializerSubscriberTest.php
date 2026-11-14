@@ -25,10 +25,14 @@ use MauticPlugin\CustomObjectsBundle\EventListener\SerializerSubscriber;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomItemXrefContactRepository;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[Group('area:contacts')]
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class SerializerSubscriberTest extends \PHPUnit\Framework\TestCase
 {
     private $configProvider;
