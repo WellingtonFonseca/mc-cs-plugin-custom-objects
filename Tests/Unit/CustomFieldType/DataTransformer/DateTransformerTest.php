@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\CustomFieldType\DataTransformer;
 
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\DataTransformer\DateTransformer;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class DateTransformerTest extends \PHPUnit\Framework\TestCase
 {
     public function test(): void

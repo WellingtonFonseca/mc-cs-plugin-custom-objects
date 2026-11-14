@@ -7,7 +7,11 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Repository;
 use Doctrine\DBAL\Driver\Statement;
 use Doctrine\DBAL\Query\QueryBuilder;
 use MauticPlugin\CustomObjectsBundle\Repository\DbalQueryTrait;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('risk:INFRA')]
 class DbalQueryTraitTest extends \PHPUnit\Framework\TestCase
 {
     public function testExecuteSelectIfSelect(): void

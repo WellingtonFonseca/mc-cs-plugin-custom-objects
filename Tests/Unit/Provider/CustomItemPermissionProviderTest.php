@@ -9,7 +9,12 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('area:users-roles')]
+#[Group('risk:FLUXO')]
 class CustomItemPermissionProviderTest extends \PHPUnit\Framework\TestCase
 {
     private const OBJECT_ID = 33;

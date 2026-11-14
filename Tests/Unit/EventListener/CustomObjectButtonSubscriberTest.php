@@ -12,9 +12,12 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[Group('area:co-objects')]
+#[Group('risk:FLUXO')]
 class CustomObjectButtonSubscriberTest extends \PHPUnit\Framework\TestCase
 {
     use ConsecutiveCallsTrait;

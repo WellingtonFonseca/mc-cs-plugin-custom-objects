@@ -17,9 +17,13 @@ use MauticPlugin\CustomObjectsBundle\Repository\DbalQueryTrait;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\CustomFieldFilterQueryBuilder;
 use MauticPlugin\CustomObjectsBundle\Tests\Functional\DataFixtures\Traits\FixtureObjectsTrait;
 use MauticPlugin\CustomObjectsBundle\Tests\Functional\Exception\FixtureNotFoundException;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
+#[Group('area:segment')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class CustomFieldFilterQueryBuilderTest extends MauticMysqlTestCase
 {
     use FixtureObjectsTrait;

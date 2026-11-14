@@ -9,8 +9,13 @@ use Mautic\LeadBundle\Model\LeadModel;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomItemRepository;
 use MauticPlugin\CustomObjectsBundle\Tests\Functional\DataFixtures\Traits\CustomObjectsTrait;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpFoundation\Response;
 
+#[Group('area:contacts')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
+#[Group('risk:DADOS')]
 class ApiSubscriberTest extends MauticMysqlTestCase
 {
     use CustomObjectsTrait;

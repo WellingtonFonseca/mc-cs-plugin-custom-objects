@@ -15,6 +15,7 @@ use MauticPlugin\CustomObjectsBundle\Helper\MergedItemCriteriaMatcher;
 use MauticPlugin\CustomObjectsBundle\Model\CustomFieldModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -26,6 +27,9 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * The form of the campaign condition "<object> field value", built with real Symfony forms: the item name offered as a
  * field, the operators of each field, the one criterion of its own and the `additionalCriteria` collection.
  */
+#[Group('area:campaign')]
+#[Group('area:co-items')]
+#[Group('risk:FLUXO')]
 final class CampaignConditionFieldValueTypeTest extends TestCase
 {
     private FormFactoryInterface $formFactory;

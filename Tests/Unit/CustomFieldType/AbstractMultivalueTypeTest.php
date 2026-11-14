@@ -15,10 +15,13 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueOption;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Helper\CsvHelper;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class AbstractMultivalueTypeTest extends \PHPUnit\Framework\TestCase
 {
     use ConsecutiveCallsTrait;

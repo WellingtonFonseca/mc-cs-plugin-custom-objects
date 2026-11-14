@@ -17,10 +17,14 @@ use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomItemXrefContactRepository;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[Group('area:contacts')]
+#[Group('area:co-items')]
+#[Group('risk:FLUXO')]
 class ContactSubscriberTest extends \PHPUnit\Framework\TestCase
 {
     use ConsecutiveCallsTrait;

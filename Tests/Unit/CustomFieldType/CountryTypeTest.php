@@ -7,9 +7,12 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\CustomFieldType;
 use Mautic\LeadBundle\Provider\FilterOperatorProviderInterface;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\CountryType;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueText;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class CountryTypeTest extends \PHPUnit\Framework\TestCase
 {
     private $translator;

@@ -12,8 +12,11 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueDate;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Exception\InvalidValueException;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class DateTypeTest extends \PHPUnit\Framework\TestCase
 {
     private $translator;

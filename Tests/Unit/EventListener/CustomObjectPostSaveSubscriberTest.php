@@ -9,8 +9,11 @@ use MauticPlugin\CustomObjectsBundle\Event\CustomObjectEvent;
 use MauticPlugin\CustomObjectsBundle\EventListener\CustomObjectPostSaveSubscriber;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class CustomObjectPostSaveSubscriberTest extends TestCase
 {
     public function testPostSaveRelationshipObject(): void

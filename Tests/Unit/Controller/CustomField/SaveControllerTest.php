@@ -17,10 +17,13 @@ use MauticPlugin\CustomObjectsBundle\Model\CustomFieldModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldRouteProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Form\FormFactory;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
+#[Group('area:co-objects')]
+#[Group('risk:FLUXO')]
 class SaveControllerTest extends AbstractFieldControllerTest
 {
     private $formFactory;

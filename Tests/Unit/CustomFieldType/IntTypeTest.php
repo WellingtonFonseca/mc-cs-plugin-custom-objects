@@ -9,8 +9,11 @@ use MauticPlugin\CustomObjectsBundle\CustomFieldType\IntType;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueInt;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class IntTypeTest extends \PHPUnit\Framework\TestCase
 {
     private $translator;

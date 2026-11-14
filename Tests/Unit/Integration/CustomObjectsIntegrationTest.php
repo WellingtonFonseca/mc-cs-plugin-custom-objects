@@ -6,8 +6,11 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Integration;
 
 use Mautic\PluginBundle\Entity\Integration;
 use MauticPlugin\CustomObjectsBundle\Integration\CustomObjectsIntegration;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:co-objects')]
+#[Group('risk:INFRA')]
 class CustomObjectsIntegrationTest extends TestCase
 {
     private function integration(): CustomObjectsIntegration

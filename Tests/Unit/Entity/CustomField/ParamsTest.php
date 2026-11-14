@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Entity\CustomField;
 
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField\Params;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class ParamsTest extends \PHPUnit\Framework\TestCase
 {
     public function testConstructorAndToArray()

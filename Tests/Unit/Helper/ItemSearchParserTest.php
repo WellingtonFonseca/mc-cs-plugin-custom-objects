@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Helper;
 
 use MauticPlugin\CustomObjectsBundle\Helper\ItemSearchParser;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class ItemSearchParserTest extends TestCase
 {
     private ItemSearchParser $parser;

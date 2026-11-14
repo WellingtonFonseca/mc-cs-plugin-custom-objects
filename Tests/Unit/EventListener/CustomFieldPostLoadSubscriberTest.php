@@ -12,8 +12,11 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomField\Params;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\EventListener\CustomFieldPostLoadSubscriber;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class CustomFieldPostLoadSubscriberTest extends \PHPUnit\Framework\TestCase
 {
     private const FIELD_TYPE = 'text';

@@ -13,6 +13,7 @@ use MauticPlugin\CustomObjectsBundle\Form\Type\CustomFieldType;
 use MauticPlugin\CustomObjectsBundle\Form\Type\CustomObjectType;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomObjectRepository;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -23,6 +24,8 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[Group('area:co-objects')]
+#[Group('risk:FLUXO')]
 class CustomObjectTypeTest extends TestCase
 {
     use ConsecutiveCallsTrait;

@@ -9,9 +9,12 @@ use MauticPlugin\CustomObjectsBundle\CustomFieldType\AbstractTextType;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueText;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class AbstractTextTypeTest extends \PHPUnit\Framework\TestCase
 {
     private $translator;

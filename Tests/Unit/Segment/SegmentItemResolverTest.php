@@ -17,6 +17,7 @@ use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\CustomItemNameFilterQu
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\CustomObjectMergedFilterQueryBuilder;
 use MauticPlugin\CustomObjectsBundle\Segment\SegmentItemMatcher;
 use MauticPlugin\CustomObjectsBundle\Segment\SegmentItemResolver;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -26,6 +27,9 @@ use PHPUnit\Framework\TestCase;
  * Fixture: Custom Object #1 'disciplina' with fields #1 nome (text), #2 posicao (int), #3 inicio (date). Another object's
  * field is #9.
  */
+#[Group('area:segment')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class SegmentItemResolverTest extends TestCase
 {
     private const OBJECT_ID = 1;

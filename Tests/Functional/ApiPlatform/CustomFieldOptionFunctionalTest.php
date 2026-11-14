@@ -8,9 +8,12 @@ use MauticPlugin\CustomObjectsBundle\CustomFieldType\MultiselectType;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Helper\CsvHelper;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 final class CustomFieldOptionFunctionalTest extends AbstractApiPlatformFunctionalTest
 {
     public function testCustomFieldOptionCRUD(): void

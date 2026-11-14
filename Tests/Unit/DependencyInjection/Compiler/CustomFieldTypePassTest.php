@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\DependencyInjection\Compiler;
 
 use MauticPlugin\CustomObjectsBundle\DependencyInjection\Compiler\CustomFieldTypePass;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[Group('area:co-objects')]
+#[Group('risk:INFRA')]
 class CustomFieldTypePassTest extends \PHPUnit\Framework\TestCase
 {
     use ConsecutiveCallsTrait;

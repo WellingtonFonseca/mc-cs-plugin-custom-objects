@@ -8,9 +8,13 @@ use MauticPlugin\CustomObjectsBundle\Controller\SegmentFilterValuesController;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Helper\SegmentFilterValues;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
+#[Group('area:segment')]
+#[Group('area:co-items')]
+#[Group('risk:FLUXO')]
 class SegmentFilterValuesControllerTest extends TestCase
 {
     public function testItAnswersTheValuesOfTheField(): void

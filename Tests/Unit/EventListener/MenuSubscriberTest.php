@@ -10,9 +10,13 @@ use MauticPlugin\CustomObjectsBundle\EventListener\MenuSubscriber;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemRouteProvider;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('risk:UI')]
 class MenuSubscriberTest extends TestCase
 {
     use ConsecutiveCallsTrait;

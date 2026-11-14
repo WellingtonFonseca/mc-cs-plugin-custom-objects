@@ -7,9 +7,12 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Helper;
 use MauticPlugin\CustomObjectsBundle\DTO\CustomObjectDefinitionImportResult;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Helper\CustomObjectDefinitionImportAlerts;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[Group('area:co-objects')]
+#[Group('risk:FLUXO')]
 class CustomObjectDefinitionImportAlertsTest extends TestCase
 {
     private CustomObjectDefinitionImportAlerts $alerts;

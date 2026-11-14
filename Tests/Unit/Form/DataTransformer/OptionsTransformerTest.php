@@ -7,7 +7,11 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Form\DataTransformer;
 use Doctrine\Common\Collections\ArrayCollection;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldOption;
 use MauticPlugin\CustomObjectsBundle\Form\DataTransformer\OptionsTransformer;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class OptionsTransformerTest extends \PHPUnit\Framework\TestCase
 {
     public function testTransform(): void

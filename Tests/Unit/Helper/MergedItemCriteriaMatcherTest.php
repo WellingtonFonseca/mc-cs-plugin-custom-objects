@@ -13,6 +13,7 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Helper\MergedItemCriteriaMatcher;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterHelper;
 use MauticPlugin\CustomObjectsBundle\Model\CustomFieldModel;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -20,6 +21,9 @@ use PHPUnit\Framework\TestCase;
  * Several criteria of a campaign condition must hold on the SAME item: they go into ONE merged filter, the one the
  * merged segment query (createMergedItemIdsQuery) answers.
  */
+#[Group('area:segment')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class MergedItemCriteriaMatcherTest extends TestCase
 {
     private ContactSegmentFilterFactory&MockObject $factory;

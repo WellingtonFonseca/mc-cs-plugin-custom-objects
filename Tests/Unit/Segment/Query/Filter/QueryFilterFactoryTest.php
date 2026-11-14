@@ -14,9 +14,13 @@ use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\CustomItemNameFilterQu
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\CustomObjectMergedFilterQueryBuilder;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\QueryFilterFactory;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\UnionQueryContainer;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:segment')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class QueryFilterFactoryTest extends TestCase
 {
     /**

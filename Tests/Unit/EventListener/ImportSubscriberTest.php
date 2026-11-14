@@ -20,10 +20,13 @@ use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomFieldRepository;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Form\Form;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class ImportSubscriberTest extends \PHPUnit\Framework\TestCase
 {
     use ConsecutiveCallsTrait;

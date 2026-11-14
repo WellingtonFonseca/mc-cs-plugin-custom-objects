@@ -7,7 +7,11 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\DTO;
 use Doctrine\DBAL\Query\QueryBuilder as DbalQueryBuilder;
 use Doctrine\ORM\QueryBuilder as OrmQueryBuilder;
 use MauticPlugin\CustomObjectsBundle\DTO\TableConfig;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('risk:FLUXO')]
 class TableConfigTest extends \PHPUnit\Framework\TestCase
 {
     private const LIMIT = 10;

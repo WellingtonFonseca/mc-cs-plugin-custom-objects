@@ -17,10 +17,14 @@ use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\CustomFieldFilterQuery
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\CustomItemNameFilterQueryBuilder;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\QueryFilterFactory;
 use Monolog\Logger;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[Group('area:campaign')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class DynamicContentSubscriberTest extends TestCase
 {
     use ConsecutiveCallsTrait;

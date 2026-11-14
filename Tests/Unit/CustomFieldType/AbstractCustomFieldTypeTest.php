@@ -9,8 +9,11 @@ use MauticPlugin\CustomObjectsBundle\CustomFieldType\AbstractCustomFieldType;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\EmailType;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Exception\UndefinedTransformerException;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class AbstractCustomFieldTypeTest extends \PHPUnit\Framework\TestCase
 {
     private $translator;

@@ -16,10 +16,13 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProviderFactory;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
+#[Group('area:co-objects')]
+#[Group('risk:CRITICO')]
 class DeleteControllerTest extends ControllerTestCase
 {
     private const OBJECT_ID = 33;

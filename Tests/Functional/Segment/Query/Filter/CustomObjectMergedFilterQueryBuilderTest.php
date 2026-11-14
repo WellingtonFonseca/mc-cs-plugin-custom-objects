@@ -9,7 +9,11 @@ use Mautic\LeadBundle\Entity\LeadList;
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
 use MauticPlugin\CustomObjectsBundle\Tests\Functional\DataFixtures\Traits\FixtureObjectsTrait;
 use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:segment')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class CustomObjectMergedFilterQueryBuilderTest extends MauticMysqlTestCase
 {
     use FixtureObjectsTrait;

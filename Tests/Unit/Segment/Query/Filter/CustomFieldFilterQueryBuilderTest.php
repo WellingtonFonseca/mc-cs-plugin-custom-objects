@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Segment\Query\Filter;
 
 use MauticPlugin\CustomObjectsBundle\Segment\Query\Filter\CustomFieldFilterQueryBuilder;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:segment')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class CustomFieldFilterQueryBuilderTest extends \PHPUnit\Framework\TestCase
 {
     /**

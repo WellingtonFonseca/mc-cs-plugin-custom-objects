@@ -11,9 +11,13 @@ use MauticPlugin\CustomObjectsBundle\CustomFieldType\CustomFieldTypeInterface;
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterFactory;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomFieldRepository;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:segment')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class QueryFilterFactoryTest extends TestCase
 {
     /**

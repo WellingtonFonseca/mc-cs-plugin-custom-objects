@@ -14,10 +14,13 @@ use Doctrine\Persistence\ManagerRegistry;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomObjectRepository;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class CustomObjectRepositoryTest extends TestCase
 {
     use ConsecutiveCallsTrait;

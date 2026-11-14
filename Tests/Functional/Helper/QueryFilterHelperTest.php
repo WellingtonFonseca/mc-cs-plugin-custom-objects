@@ -14,7 +14,11 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomFieldRepository;
 use MauticPlugin\CustomObjectsBundle\Segment\Query\UnionQueryContainer;
 use MauticPlugin\CustomObjectsBundle\Tests\Functional\DataFixtures\Traits\FixtureObjectsTrait;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:segment')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class QueryFilterHelperTest extends MauticMysqlTestCase
 {
     use FixtureObjectsTrait;

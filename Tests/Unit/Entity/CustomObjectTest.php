@@ -9,11 +9,14 @@ use Mautic\CategoryBundle\Entity\Category;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Mapping\ClassMetadata;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class CustomObjectTest extends \PHPUnit\Framework\TestCase
 {
     use ConsecutiveCallsTrait;

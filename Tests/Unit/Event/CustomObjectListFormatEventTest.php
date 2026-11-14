@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Event;
 
 use MauticPlugin\CustomObjectsBundle\Event\CustomObjectListFormatEvent;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class CustomObjectListFormatEventTest extends TestCase
 {
     public function testAll(): void

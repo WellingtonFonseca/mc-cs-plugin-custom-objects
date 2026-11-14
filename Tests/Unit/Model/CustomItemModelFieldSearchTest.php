@@ -18,6 +18,7 @@ use MauticPlugin\CustomObjectsBundle\Model\CustomFieldValueModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomItemRepository;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -28,6 +29,8 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
  * The item list search with "alias:value" terms. The free-text path
  * (no colon) is covered by CustomItemModelTest.
  */
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class CustomItemModelFieldSearchTest extends TestCase
 {
     private CustomItemModel $model;

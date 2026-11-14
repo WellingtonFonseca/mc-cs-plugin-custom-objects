@@ -17,10 +17,13 @@ use MauticPlugin\CustomObjectsBundle\Event\CustomItemXrefEntityDiscoveryEvent;
 use MauticPlugin\CustomObjectsBundle\Event\CustomItemXrefEntityEvent;
 use MauticPlugin\CustomObjectsBundle\EventListener\CustomItemXrefCustomItemSubscriber;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomItemRepository;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class CustomItemXrefCustomItemSubscriberTest extends TestCase
 {
     use ConsecutiveCallsTrait;

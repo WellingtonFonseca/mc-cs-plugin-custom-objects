@@ -13,7 +13,11 @@ use MauticPlugin\CustomObjectsBundle\EventListener\CampaignSubscriber;
 use MauticPlugin\CustomObjectsBundle\Model\CustomFieldValueModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Tests\Functional\DataFixtures\Traits\CustomObjectsTrait;
+use PHPUnit\Framework\Attributes\Group;
 
+#[Group('area:campaign')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class CampaignSubscriberTest extends MauticMysqlTestCase
 {
     use CustomObjectsTrait;

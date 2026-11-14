@@ -14,8 +14,11 @@ use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
 use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class UnlinkControllerTest extends ControllerTestCase
 {
     public const ITEM_ID = 22;

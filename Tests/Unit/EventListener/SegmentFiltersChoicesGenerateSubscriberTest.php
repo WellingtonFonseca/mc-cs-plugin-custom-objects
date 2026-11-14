@@ -23,12 +23,16 @@ use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomFieldTypeProvider;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomObjectRepository;
 use MauticPlugin\CustomObjectsBundle\Tests\ProjectVersionTrait;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[Group('area:segment')]
+#[Group('area:co-items')]
+#[Group('risk:FLUXO')]
 class SegmentFiltersChoicesGenerateSubscriberTest extends TestCase
 {
     use ConsecutiveCallsTrait;

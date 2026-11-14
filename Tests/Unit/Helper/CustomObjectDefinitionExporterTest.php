@@ -10,10 +10,13 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\UndefinedTransformerException;
 use MauticPlugin\CustomObjectsBundle\Helper\CustomObjectDefinitionExporter;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\CustomFieldTypeInterface;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 
+#[Group('area:co-objects')]
+#[Group('risk:DADOS')]
 class CustomObjectDefinitionExporterTest extends TestCase
 {
     private function field(string $alias, int $order, string $type = 'text'): CustomField

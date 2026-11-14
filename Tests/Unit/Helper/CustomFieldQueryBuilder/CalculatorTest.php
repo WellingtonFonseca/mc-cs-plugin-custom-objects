@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Helper\CustomFieldQueryBuilder;
 
 use MauticPlugin\CustomObjectsBundle\Helper\QueryFilterFactory\Calculator;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:co-objects')]
+#[Group('risk:CRITICO')]
 class CalculatorTest extends TestCase
 {
     private const COLUMN_SUFFIX_LOWER  = 'lower';

@@ -4,8 +4,12 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Form\Validator;
 
 use MauticPlugin\CustomObjectsBundle\Form\Validator\Constraints\AllowUniqueIdentifier;
 use MauticPlugin\CustomObjectsBundle\Form\Validator\Constraints\AllowUniqueIdentifierValidator;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('risk:FLUXO')]
 class AllowUniqueIdentifierTest extends TestCase
 {
     /**

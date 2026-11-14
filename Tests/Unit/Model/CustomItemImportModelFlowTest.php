@@ -25,6 +25,7 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefContact;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemImportModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -35,6 +36,8 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
  * How one CSV row becomes an item: which columns are read, how the special ones (name, id, linked contacts) are matched, the owner,
  * the transaction of the row and the contacts it links.
  */
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class CustomItemImportModelFlowTest extends TestCase
 {
     private EntityManager&MockObject $em;

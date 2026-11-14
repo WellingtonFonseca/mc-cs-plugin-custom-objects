@@ -13,8 +13,12 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueText;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpFoundation\Request;
 
+#[Group('area:co-items')]
+#[Group('risk:FLUXO')]
+#[Group('risk:DADOS')]
 class CustomItemListControllerSearchTest extends MauticMysqlTestCase
 {
     protected $useCleanupRollback = false;

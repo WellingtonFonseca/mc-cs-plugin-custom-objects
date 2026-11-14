@@ -6,8 +6,12 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Helper;
 
 use MauticPlugin\CustomObjectsBundle\Exception\InvalidCustomObjectFormatListException;
 use MauticPlugin\CustomObjectsBundle\Helper\TokenFormatter;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:email')]
+#[Group('area:co-items')]
+#[Group('risk:CRITICO')]
 class TokenFormatterTest extends TestCase
 {
     /**

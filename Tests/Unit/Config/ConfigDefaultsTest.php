@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Config;
 
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 
+#[Group('area:co-objects')]
+#[Group('area:co-items')]
+#[Group('risk:INFRA')]
 class ConfigDefaultsTest extends TestCase
 {
     /**

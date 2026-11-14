@@ -27,12 +27,15 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemImportModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[Group('area:co-items')]
+#[Group('risk:DADOS')]
 class CustomItemImportModelTest extends \PHPUnit\Framework\TestCase
 {
     use ConsecutiveCallsTrait;

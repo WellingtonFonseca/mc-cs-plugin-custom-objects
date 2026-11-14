@@ -14,11 +14,14 @@ use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectRouteProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProvider;
 use MauticPlugin\CustomObjectsBundle\Provider\SessionProviderFactory;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\Controller\ControllerTestCase;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 #[\AllowDynamicProperties]
+#[Group('area:co-objects')]
+#[Group('risk:FLUXO')]
 class ListControllerTest extends ControllerTestCase
 {
     private const PAGE = 3;

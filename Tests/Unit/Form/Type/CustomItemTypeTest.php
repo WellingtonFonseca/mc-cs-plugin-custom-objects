@@ -9,6 +9,7 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Form\Type\CustomFieldValueType;
 use MauticPlugin\CustomObjectsBundle\Form\Type\CustomItemType;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
@@ -19,6 +20,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Valid;
 use MauticPlugin\CustomObjectsBundle\Tests\Unit\ConsecutiveCallsTrait;
 
+#[Group('area:co-items')]
+#[Group('risk:FLUXO')]
 class CustomItemTypeTest extends TestCase
 {
     use ConsecutiveCallsTrait;

@@ -7,8 +7,11 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\CustomFieldType;
 use Mautic\LeadBundle\Provider\FilterOperatorProviderInterface;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\MultiselectType;
 use MauticPlugin\CustomObjectsBundle\Helper\CsvHelper;
+use PHPUnit\Framework\Attributes\Group;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[Group('area:co-objects')]
+#[Group('risk:UI')]
 class MultiselectTypeTest extends \PHPUnit\Framework\TestCase
 {
     private $translator;

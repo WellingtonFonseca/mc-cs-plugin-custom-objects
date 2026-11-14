@@ -6,11 +6,14 @@ namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Form\Validator;
 
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Form\Validator\Constraints\CustomObjectTypeValuesValidator;
+use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 use Symfony\Component\Validator\Violation\ConstraintViolationBuilderInterface;
 
+#[Group('area:co-objects')]
+#[Group('risk:FLUXO')]
 class CustomObjectTypeValuesValidatorTest extends \PHPUnit\Framework\TestCase
 {
     /**
