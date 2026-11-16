@@ -90,6 +90,640 @@ On the other instance, **Importar definição** (menu next to New on the objects
 
 See [Wiki](https://github.com/acquia/mc-cs-plugin-custom-objects/wiki)
 
+## REST API guide
+
+This document explains how to read and write Custom Objects/Custom Items in this Mautic
+stack, using the real HTTP verbs, against a running instance.
+
+Background reading (not repeated here): `wiki/custom-objects-plugin.md` (workspace wiki)
+explains why this API surface looks the way it does, and
+`wiki/custom-objects-seed.md` (workspace wiki) has the concrete field aliases
+used in the examples below (`courses` object, fields `cursid`/`cursname`). That object was an
+old seed and no longer exists in the local database (the current objects are `disciplina`,
+`atividade` and `documents`): read the examples as the shape of the calls, and swap in a real
+alias.
+
+### The one thing to understand first
+
+Custom Items are created, updated, and listed **directly**, against the Custom Object
+itself — no contact required:
+
+- `GET /api/customobjects/{objectAlias}/items` — list/search
+- `POST /api/customobjects/{objectAlias}/items` — create only, `id` must be absent
+- `PATCH /api/customobjects/{objectAlias}/items` — update only, `id` is required and must exist
+- `PUT /api/customobjects/{objectAlias}/items` — upsert by `id` (Mautic core's own convention)
+- `DELETE /api/customobjects/{objectAlias}/items/{itemId}` — delete one item by id (see its
+  section below — it also unlinks, but only as a side effect, with a caveat)
+- `DELETE /api/customobjects/{objectAlias}/items` — delete a batch, `{"data": [{"id": ...}]}`
+
+These routes were purpose-built for this project and added to the plugin — there was no
+REST resource for Custom Items before.
+
+**POST and PATCH are strictly split — neither falls back to the other's behavior, and neither
+upserts.** Send `id` on a POST entry and it's a 400, no item created. Omit `id` on a PATCH
+entry, or send one that doesn't exist, and it's also a 400, no item touched. Custom Items have
+no dedup/uniqueness (see `wiki/custom-objects-seed.md` (workspace wiki)), so a
+silent fallback either way could produce a duplicate item or a confusingly-wrong update with
+no error to catch it — these two verbs are for callers who already know, from their own
+lookup, whether the item exists.
+
+**PUT is the one exception, and matches Mautic core's own upsert convention** (see the PUT
+section below): `id` present and found = update; `id` present but not found, or absent
+entirely = create. Added for API callers who expect that standard Mautic behavior and don't
+want to look up existence themselves first — it carries the same silent-fallback risk POST/
+PATCH were built to avoid, so prefer POST/PATCH (with your own existence check) when you
+control the caller and want that risk closed off; use PUT when you're building for callers
+who expect the platform-standard verb and won't do that check.
+
+**Linking an item to a contact is a separate concern**, and still only works one way: through
+the **Contact API** (`/api/contacts/...`). The plugin listens for contact create/edit
+requests and looks for an extra top-level `customObjects` key in the payload — saving that
+way both writes the item(s) *and* auto-links them to the contact. There is no "link" call on
+the direct routes above; use the contact route whenever you actually need the link, use the
+direct routes for everything else. This also covers the common case now that items are
+usually created unlinked: `PATCH /api/contacts/{id}/edit` with just the item's `id` (no
+`attributes` needed) links an already-existing item to that contact — see "Linking an
+already-existing item to a contact" under PATCH below.
+
+Creating a Custom Object type itself (e.g. defining `courses` and its fields) has no API —
+admin-UI only, session-authenticated, verified below.
+
+All examples use HTTP Basic Auth (the Mautic admin user/password from `.env`) and were run
+against a live local stack (`docker compose up`) on 2026-08-25.
+
+```bash
+AUTH="admin:<password from .env>"
+BASE="http://localhost:8080"
+```
+
+---
+
+### GET — read
+
+#### List/search all items on a Custom Object (no contact involved)
+
+```bash
+# every item on "courses"
+curl -s -u "$AUTH" "$BASE/api/customobjects/courses/items"
+
+# filtered by one field
+curl -s -u "$AUTH" "$BASE/api/customobjects/courses/items?cursid=311-999"
+
+# multiple filters = AND, not OR
+curl -s -u "$AUTH" "$BASE/api/customobjects/disciplines/items?discclass=3110987_54321&discstart=2026-09-20"
+```
+
+Verified live:
+
+```json
+{"total":1,"items":[{"id":1,"name":"311-999 - nome do meu curso","attributes":{"cursname":"nome do meu curso","cursid":"311-999"}}]}
+```
+
+Every query parameter is `<fieldAlias>=<value>`, joined with AND. Every field type can be
+filtered (same code as the item list search on the screen):
+
+```json
+{
+  "text, textarea, email, phone, url, hidden, select-like": "EXACT value",
+  "int, decimal, date, datetime": "exact, or a leading >, >=, <, <= (URL-encode > and <): ?progresso=%3E%3D0.5",
+  "date": "matches the whole day; dd/mm/yyyy or yyyy-mm-dd",
+  "multiselect": "matches when the item has that option"
+}
+```
+
+Errors: `404` if the object alias or a filter field alias doesn't exist, `400` if the value is
+invalid for the field's type (for example `?inicio=31/02/2026`), `401` with no/bad auth.
+There is **no pagination**: any query parameter that is not a field alias (`limit`, `page`,
+`name`...) answers `404`, and a call without filters returns every item of the object. Filter by
+a field when the object is big. The field values of all the items are read in batch, so the
+number of SQL queries does not grow with the number of items returned.
+
+#### Read the items linked to one contact
+
+Only useful when you specifically need to know *which items are linked to which contact* —
+for plain item lookups, use the direct list/search above instead.
+
+```bash
+curl -s -u "$AUTH" "$BASE/api/contacts/3?includeCustomObjects=true"
+```
+
+Adds a `customObjects` key to the contact response:
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "alias": "courses",
+      "data": [
+        {
+          "id": 5,
+          "name": "curso teste doc",
+          "attributes": { "cursname": "curso teste doc", "cursid": "DOC-001" }
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### Limitation: you can't filter by `name`
+
+Every query string parameter is matched against the Custom Object's **custom fields**
+(`cursid`, `cursname`, etc.) — not against the item's own built-in `name` column. Filtering
+by `name` fails the same way an unknown field would:
+
+```bash
+curl -s -u "$AUTH" "$BASE/api/customobjects/courses/items?name=311-999%20-%20nome%20do%20meu%20curso"
+```
+
+Verified live: `HTTP 404`, `{"errors":[{"message":"Field 'name' not found on Custom Object 'courses'."}]}`.
+If you need to find an item by its `name`, list/filter by a custom field instead (e.g.
+`cursid`) and read `name` off the result — there's no way to search by `name` directly today.
+
+---
+
+### POST — create
+
+#### Create item(s) directly (no contact involved)
+
+```bash
+curl -s -u "$AUTH" -X POST "$BASE/api/customobjects/courses/items" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "data": [
+      {"name": "curso teste doc", "attributes": {"cursid": "DOC-001", "cursname": "curso teste doc"}}
+    ]
+  }'
+```
+
+`id` must be **absent** on every entry — POST only creates. Sending `id` here is a 400, not
+an update (use PATCH below for that). A single request can carry multiple entries in `data`
+to create several items at once — verified live with a 3-item batch, all 3 created correctly
+in one call.
+
+Verified live:
+
+```json
+{"total":1,"items":[{"id":11,"name":"curso teste doc2","attributes":{"cursname":"curso teste doc2","cursid":"DOC-002"}}]}
+```
+
+Sending `id` anyway:
+
+```bash
+curl -s -u "$AUTH" -X POST "$BASE/api/customobjects/courses/items" \
+  -H "Content-Type: application/json" \
+  -d '{"data": [{"id": 1, "name": "não deveria funcionar", "attributes": {"cursid": "X"}}]}'
+# 400 {"errors":[{"message":"POST never accepts \"id\" — it only creates new items, it never updates one. Use PATCH to update."}]}
+```
+
+`name` is required on the item object — omitting it fails validation with `400`
+`"This value should not be blank."` (see `wiki/custom-objects-seed.md` (workspace wiki)
+for the same gotcha under the contact route, where the same missing-`name` case instead
+surfaces as an unhelpful generic 500 — the direct endpoint reports it cleanly).
+
+`name` has at most **191 characters**: a longer name fails with `400` `"This value is too long. It should have 191 characters or less."` (before, 192 to 255 characters answered a 500). Field values of type text have no such limit.
+
+Errors: `404` if the object alias doesn't exist; `400` if the body has no `data` array, an
+entry isn't an object, an entry has `id`, an `attributes` key isn't a real field alias on
+that object, or an item fails validation; `401` with no/bad auth.
+
+#### Create a contact and link a brand-new item in the same request
+
+Only needed when you actually want the **link** to a contact — use this instead of (or in
+addition to) the direct create above. Put a `customObjects.data` array alongside the normal
+contact fields; an item with no `id` is always created new and gets auto-linked.
+
+```bash
+curl -s -u "$AUTH" -X POST "$BASE/api/contacts/new" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "api-doc-tester@email.com",
+    "ra": "9998887776",
+    "fullname": "API Doc Tester",
+    "customObjects": {
+      "data": [
+        {
+          "alias": "courses",
+          "data": [
+            {"name": "curso teste doc", "attributes": {"cursid": "DOC-001", "cursname": "curso teste doc"}}
+          ]
+        }
+      ]
+    }
+  }'
+```
+
+Verified live: `HTTP 201`, contact created (`id: 3`), and the item existed right after,
+both from `?includeCustomObjects=true` and from
+`GET /api/customobjects/courses/items?cursid=DOC-001`.
+
+Same `name`-required rule applies, but through this route a missing `name` fails with an
+unhelpful generic 500 instead of a clean 400 (see
+`wiki/custom-objects-seed.md` (workspace wiki)) — one more reason to prefer the
+direct route above unless you specifically need the contact link.
+
+---
+
+### PATCH — partial update
+
+#### Update item(s) directly (no contact involved)
+
+Same path as the direct POST, same `data` array shape — but on PATCH, `id` is **required**
+on every entry. PATCH only updates; it never creates. Send only the fields you're changing.
+
+```bash
+curl -s -u "$AUTH" -X PATCH "$BASE/api/customobjects/courses/items" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "data": [
+      {"id": 11, "attributes": {"cursname": "curso teste doc (atualizado)"}}
+    ]
+  }'
+```
+
+Verified live: `HTTP 200`, and a follow-up search showed only `cursname` changed —
+`cursid` and everything else on the item untouched.
+
+If **any** entry in the `data` array is missing `id`, the whole request is rejected before
+anything is written — a batch can't partially apply:
+
+```bash
+curl -s -u "$AUTH" -X PATCH "$BASE/api/customobjects/courses/items" \
+  -H "Content-Type: application/json" \
+  -d '{"data": [{"id": 11, "attributes": {"cursname": "ok"}}, {"attributes": {"cursname": "sem id"}}]}'
+```
+
+Verified live: `HTTP 400`,
+`{"errors":[{"message":"PATCH requires \"id\" on every entry in \"data\" — it only updates existing items, it never creates one. Use POST to create."}]}`
+— and the first entry's update (`id: 11`) was confirmed **not** applied either.
+
+#### Batching multiple updates in one call
+
+`data` can hold several entries with different `id`s — all are applied in the same request,
+no need to call once per item. Verified live: created 3 items, then updated all 3 in a
+single PATCH, each with a different `cursname` — all 3 came back correctly updated:
+
+```bash
+curl -s -u "$AUTH" -X PATCH "$BASE/api/customobjects/courses/items" \
+  -H "Content-Type: application/json" \
+  -d '{"data": [
+    {"id": 13, "attributes": {"cursname": "curso a ATUALIZADO"}},
+    {"id": 14, "attributes": {"cursname": "curso b ATUALIZADO"}},
+    {"id": 15, "attributes": {"cursname": "curso c ATUALIZADO"}}
+  ]}'
+```
+
+#### A batch is one DB transaction — a failure partway through rolls back everything already written
+
+Applies to `POST`, `PATCH`, and `PUT` alike. If entry 3 of a 3-entry `data` array fails for
+any reason (validation error, unknown field alias, `id` not found on `PATCH`, etc.), entries
+1 and 2 — even though they'd have succeeded on their own and were already written to the DB
+by the time entry 3 failed — get rolled back too. A successful response means every entry in
+that call's `data` committed together; a `400` response means none of them did.
+
+This wasn't true when the endpoint was first built — only the `id`-presence rule (checked in
+a pass over the whole array before any item was saved) was atomic. Reproduced live: a 3-item
+`POST` where items 1-2 were valid and item 3 was missing a required field returned `400`, but
+a follow-up `GET` showed items 1-2 had been created anyway. Fixed by wrapping the whole save
+loop in one `Doctrine\ORM\EntityManagerInterface` transaction
+(`Controller/Api/CustomItemWriteApiController.php`) — re-ran the identical request afterward
+and confirmed items 1-2 were no longer left behind.
+
+#### An `id` that doesn't exist is a 400 on PATCH — use PUT if you want the create fallback
+
+Mautic core's own entity API (`ApiBundle/Controller/CommonApiController.php::editEntityAction`,
+used by e.g. `/api/contacts/{id}/edit`) has an upsert rule: if the given `id` doesn't exist,
+`PATCH` 404s but `PUT` creates a new entity instead. **PATCH here matches that — it never
+falls back to create.** POST also rejects `id` outright (see POST section above). If you want
+the create-on-missing-id fallback, that's what `PUT` is for on this route — see the PUT
+section further down:
+
+```bash
+curl -s -u "$AUTH" -X PATCH "$BASE/api/customobjects/courses/items" \
+  -H "Content-Type: application/json" \
+  -d '{"data": [{"id": 99999, "attributes": {"cursid": "X"}}]}'
+# 400 {"errors":[{"message":"Custom Item with ID = 99999 was not found"}]}
+```
+
+Deliberate on PATCH: Custom Items have no dedup (see
+`wiki/custom-objects-seed.md` (workspace wiki)), so a silent create-on-invalid-id
+here could mask a bug in the caller's own id lookup (e.g. an ETL matching the wrong `id_turma`)
+by quietly creating a stray item instead of failing loudly. If you'd rather have that fallback
+than the error — e.g. you're not doing your own existence check first — use PUT instead.
+
+##### Renaming an item (its `name`, not an attribute)
+
+`name` is the item's own field, separate from `attributes` — send it alongside (or instead
+of) `attributes`:
+
+```bash
+curl -s -u "$AUTH" -X PATCH "$BASE/api/customobjects/courses/items" \
+  -H "Content-Type: application/json" \
+  -d '{"data": [{"id": 11, "name": "DOC-002 - renomeado via patch direto"}]}'
+```
+
+Verified live: `HTTP 200`, `name` changed, `attributes` left exactly as they were.
+
+#### Update an existing contact and/or its linked items
+
+Only needed when the update should also touch the contact, or when you're relying on the
+auto-link. Same `customObjects.data` shape, item `id` = update — but here `id` stays
+optional per entry (you can mix an update and a create in the same call, one entry with
+`id`, another without).
+
+```bash
+curl -s -u "$AUTH" -X PATCH "$BASE/api/contacts/3/edit" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customObjects": {
+      "data": [
+        {
+          "alias": "courses",
+          "data": [
+            {"id": 5, "attributes": {"cursname": "curso teste doc (atualizado)"}}
+          ]
+        }
+      ]
+    }
+  }'
+```
+
+Verified live: `HTTP 200`, and a follow-up search showed only `cursname` changed —
+`cursid` and everything else on the item untouched.
+
+##### Linking an already-existing item to a contact
+
+This is the piece that only this route can do — since items are now usually created
+unlinked (via the direct POST above), linking one to a contact afterward needs its own call.
+Pass just the item's `id`, no `attributes` or `name` needed — the plugin links on save
+regardless of whether anything on the item actually changed:
+
+```bash
+curl -s -u "$AUTH" -X PATCH "$BASE/api/contacts/1/edit" \
+  -H "Content-Type: application/json" \
+  -d '{"customObjects": {"data": [{"alias": "courses", "data": [{"id": 12}]}]}}'
+```
+
+Verified live: item `id: 12` (created directly, moments earlier, with no link to anyone) was
+confirmed **absent** from contact `1`'s `?includeCustomObjects=true` response before this
+call, and **present** right after — nothing about the item itself changed, only the link was
+created. The same call works to link an item that's already linked to a *different* contact
+too (it doesn't move the link, it adds one — an item can be linked to more than one contact).
+
+This is also how the seeded `courses` item got renamed to `"<cursid> - <cursname>"` (see
+`wiki/custom-objects-seed.md` (workspace wiki)), same `name`-alongside-`attributes`
+rule as the direct route above:
+
+```bash
+curl -s -u "$AUTH" -X PATCH "$BASE/api/contacts/1/edit" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customObjects": {
+      "data": [
+        {
+          "alias": "courses",
+          "data": [
+            {"id": 1, "name": "311-999 - nome do meu curso"}
+          ]
+        }
+      ]
+    }
+  }'
+```
+
+Verified live: `HTTP 200`, item `id: 1`'s `name` changed to `"311-999 - nome do meu
+curso"`, `attributes` (`cursid`, `cursname`) left exactly as they were — omitting
+`attributes` from the payload leaves it untouched, only `name` is affected.
+
+---
+
+### PUT — full update
+
+#### Upsert item(s) directly (no contact involved)
+
+Same path/body shape as POST and PATCH — but PUT upserts by `id`, matching Mautic core's own
+convention on its entity edit routes
+(`ApiBundle/Controller/CommonApiController.php::editEntityAction`, used by e.g.
+`/api/contacts/{id}/edit`): `id` present and found = update; `id` present but not found, or
+absent entirely = create (a fresh `id` is assigned — you can't force a specific one).
+
+```bash
+# no id -> creates
+curl -s -u "$AUTH" -X PUT "$BASE/api/customobjects/courses/items" \
+  -H "Content-Type: application/json" \
+  -d '{"data": [{"name": "PUT-CREATE-NOID", "attributes": {"cursid": "PUT-01", "cursname": "criado via put sem id"}}]}'
+```
+
+Verified live: `HTTP 200`, item created (`id: 17`).
+
+```bash
+# existing id -> updates
+curl -s -u "$AUTH" -X PUT "$BASE/api/customobjects/courses/items" \
+  -H "Content-Type: application/json" \
+  -d '{"data": [{"id": 17, "attributes": {"cursname": "atualizado via put"}}]}'
+```
+
+Verified live: `HTTP 200`, `cursname` updated on item `17`, rest untouched.
+
+```bash
+# nonexistent id -> falls back to create, a *different* id comes back
+curl -s -u "$AUTH" -X PUT "$BASE/api/customobjects/courses/items" \
+  -H "Content-Type: application/json" \
+  -d '{"data": [{"id": 88888, "name": "PUT-UPSERT-FALLBACK", "attributes": {"cursid": "PUT-02"}}]}'
+```
+
+Verified live: `HTTP 200`, a new item was created with `id: 18` — the requested `88888` was
+never a real id, and does not appear anywhere in the response.
+
+**This is the one place on the direct route where a wrong `id` is silently absorbed instead
+of erroring.** POST and PATCH (above) deliberately reject a mismatched `id` instead, precisely
+to avoid this kind of silent create — PUT exists as the explicit opt-in for callers who want
+the standard Mautic upsert behavior anyway and are willing to accept that risk (e.g. a race
+where an item is deleted between your own lookup and this call: with PATCH you'd get a clean
+400 to catch and react to; with PUT you'd silently get a new item instead, with no error to
+notice the race happened).
+
+Errors: `404` if the object alias doesn't exist; `400` if the body has no `data` array, an
+entry isn't an object, an `attributes` key isn't a real field alias on that object, or an item
+fails validation; `401` with no/bad auth. No `id`-related 400 exists on this verb — that's the
+whole point of upsert.
+
+#### `PUT` via the contact route
+
+`PUT` also works through the contact route, same URL as PATCH (`/api/contacts/{id}/edit`),
+same `customObjects` payload shape, same result. Mautic's contact API routes both `PUT` and
+`PATCH` to the same edit handler, and the plugin's hook doesn't distinguish between them —
+it fires either way.
+
+```bash
+curl -s -u "$AUTH" -X PUT "$BASE/api/contacts/3/edit" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "api-doc-tester@email.com",
+    "ra": "9998887776",
+    "fullname": "API Doc Tester",
+    "customObjects": {
+      "data": [
+        {
+          "alias": "courses",
+          "data": [
+            {"id": 5, "attributes": {"cursname": "curso teste doc (via PUT)"}}
+          ]
+        }
+      ]
+    }
+  }'
+```
+
+Verified live: `HTTP 200`, item `id: 5`'s `cursname` updated to "curso teste doc (via
+PUT)" — identical behavior to PATCH for the Custom Items part. The difference between PUT
+and PATCH that applies elsewhere in REST (full replace vs. partial merge) is not something
+this plugin's hook implements; for Custom Items, always send only the `id` plus whatever
+attributes you're changing, with either verb.
+
+Renaming an item's `name` works the same way as under PATCH above — just swap the verb:
+
+```bash
+curl -s -u "$AUTH" -X PUT "$BASE/api/contacts/1/edit" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "wellington@email.com",
+    "ra": "3110987654",
+    "fullname": "Wellington Fonseca",
+    "customObjects": {
+      "data": [
+        {
+          "alias": "courses",
+          "data": [
+            {"id": 1, "name": "311-999 - nome do meu curso"}
+          ]
+        }
+      ]
+    }
+  }'
+```
+
+Verified live: `HTTP 200`, `name` updated, `attributes` untouched — same result as PATCH.
+Note PUT still needs the contact's other required fields (`ra`, `fullname`) in the body;
+PATCH doesn't. Confirmed by sending the same request with only `customObjects` and no
+contact fields: `HTTP 400`, `"ra: This field is required., fullname: This field is
+required."` — the `customObjects` part is never even reached, and the item's `name` stayed
+unchanged. PATCH is a true partial update for the contact itself; PUT is not.
+
+---
+
+### Unlinking an item from a contact — still not available as a real "unlink" via API
+
+**Practical consequence: a link made by mistake through the API stays until someone fixes it
+by hand.** The direct PATCH and the contact-hook PATCH both link on an `id` match with no
+confirmation step and no API undo — link the wrong item to the wrong contact and there is no
+follow-up API call that reverses it. Double-check the `id` (and which contact) before sending
+a linking PATCH, especially in scripts.
+
+There is still no route that only removes the *association* while keeping the item itself
+intact and available to relink or to any other contact it's linked to. The plugin does have
+an `unlinkEntity()` method (`Model/CustomItemModel.php`) and a route for it,
+`POST /custom/item/{itemId}/unlink/{entityType}/{entityId}.json` — but it's registered under
+the admin-UI route group (`/custom/item/...`, not `/api/...`), session-authenticated only.
+Confirmed live:
+
+```bash
+curl -s -u "$AUTH" -X POST "$BASE/s/custom/item/1/unlink/contact/1.json" -D - -o /dev/null
+# HTTP/1.1 302 Found
+# Location: http://localhost:8080/s/login
+```
+
+Valid API Basic Auth credentials still redirect to the login page instead of unlinking
+anything — item `1` was confirmed still linked to contact `1` afterward. Two ways to get an
+unlink effect today:
+
+- If the item is exclusive to one contact (never shared, current use case for
+  `courses`/`disciplines`): use `DELETE` below — it removes the item's links as a side effect.
+- If the item is or might be linked to more than one contact/company, and you need to remove
+  only one of those links while the item keeps existing: use the admin UI (logged in as a
+  user), or delete the row directly from `custom_item_xref_contact` in the database
+  (`custom_item_id`, `contact_id`) — same direct-DB approach used elsewhere in this doc when
+  the API has no route for something.
+
+---
+
+### DELETE — delete an item (and unlink it, as a side effect)
+
+```bash
+curl -s -u "$AUTH" -X DELETE "$BASE/api/customobjects/courses/items/29"
+
+# several items in one call (one DB transaction)
+curl -s -u "$AUTH" -X DELETE "$BASE/api/customobjects/documents/items" \
+  -H "Content-Type: application/json" -d '{"data": [{"id": 13451}, {"id": 13452}]}'
+# {"total":2,"deleted":[13451,13452],"alreadyGone":[]}
+# an id that does not exist is NOT an error: it is listed in "alreadyGone" and the rest is deleted;
+# an id repeated in the call is deleted once (it never shows in "alreadyGone");
+# 404 and NOTHING deleted if an id belongs to another Custom Object;
+# 400 if the body has no "data" array, an entry has no "id", or an "id" is not a positive integer
+```
+
+The single and the batch route answer the same shape, so a caller reads one format:
+`{"total": N, "deleted": [ids], "alreadyGone": [ids that did not exist]}`. A DELETE that finds the
+item already gone is a success: the item is not there, which is what the caller wanted. Read
+`alreadyGone` to catch a wrong id.
+
+Added `DELETE /api/customobjects/{objectAlias}/items/{itemId}` — before this, there was no way
+to delete a Custom Item through the API at all (not through the contact route, not through the
+direct `/api/customobjects/{alias}/items` route, and the only existing delete route,
+`/custom/object/{objectId}/item/delete/{itemId}`, is admin-UI, session-authenticated, under
+`/s`, same login-redirect behavior as the unlink route above).
+
+Verified live: `HTTP 200`, `{"total": 1, "deleted": [29], "alreadyGone": []}`, item confirmed gone from a follow-up
+`GET /api/customobjects/courses/items`.
+
+```json
+{
+  "errors": "404 if the object alias doesn't exist; 200 with the id in "alreadyGone" if the item id doesn't exist; 404 if the item exists but belongs to a different Custom Object than the one in the URL; 401 with no/bad auth",
+  "no body": "DELETE takes no request body — the item id is in the URL"
+}
+```
+
+**This also removes the item's contact/company links, because the database foreign key
+(`custom_item_xref_contact.custom_item_id`, and the equivalent company/custom-item xref
+tables) cascades on delete** — deleting the item deletes its xref rows automatically. Verified
+live end to end: linked a fresh item to contact `1` via the contact PATCH hook, confirmed the
+link with `GET /api/contacts/1?includeCustomObjects=true`, deleted the item through this
+route, and it was gone from that same contact response afterward.
+
+**The caveat:** this is only an unlink *as a side effect* of a permanent delete (no
+trash/recovery) — not a real, targeted unlink. If an item is ever linked to more than one
+contact or company, `DELETE` removes it — and every one of its links — for all of them at
+once, not just the one you meant to detach. It's only safe to use this as "unlink" while each
+item stays exclusive to one contact, which is the current design for `courses`/`disciplines`.
+If items start being shared across contacts, use the workaround in the "Unlinking" section
+above instead (admin UI or direct DB row delete on `custom_item_xref_contact`) so the item and
+its other links survive.
+
+Deleting a contact (`DELETE /api/contacts/{id}/delete`, a separate, pre-existing API call)
+still does **not** delete its linked Custom Items — verified live previously: after deleting a
+contact, its items were still returned by `GET /api/customobjects/courses/items`, just no
+longer linked to any contact. `DELETE` on the item route is the only way to remove the item
+itself.
+
+---
+
+### Quick reference
+
+| Verb | Endpoint | What it does |
+|---|---|---|
+| GET | `/api/customobjects/{alias}/items[?field=value...]` | List/search items on one Custom Object, no contact — `field` must be a custom field alias, **not** `name` |
+| POST | `/api/customobjects/{alias}/items` (`data[]`, `id` forbidden) | Create item(s) directly, no contact — create-only, 400 if `id` present on any entry |
+| PATCH | `/api/customobjects/{alias}/items` (`data[]`, `id` required) | Update item(s) directly, no contact — update-only, 400 if `id` missing **or** doesn't exist on any entry (no upsert, unlike core's PUT) |
+| PUT | `/api/customobjects/{alias}/items` (`data[]`, `id` optional) | Upsert item(s) directly, no contact — `id` found = update, `id` missing/not-found = create (fresh id assigned) |
+| DELETE | `/api/customobjects/{alias}/items/{itemId}` | Delete one item by id — also removes its contact/company links via DB cascade, but permanently and for every link at once (see caveat above); not a targeted unlink |
+| DELETE | `/api/customobjects/{alias}/items` (`data[]`, `id` required) | Delete several items in one transaction — an unknown id is listed in `alreadyGone`, a foreign id cancels the whole batch (404) |
+| GET | `/api/contacts/{id}?includeCustomObjects=true` | Read items linked to one contact |
+| POST | `/api/contacts/new` (+ `customObjects.data`, no item `id`) | Create a contact and/or new Custom Item(s), auto-linked |
+| PATCH/PUT | `/api/contacts/{id}/edit` (+ `customObjects.data`, item `id` = update) | Update contact and/or Custom Item(s), keeps/creates the link |
+| PATCH/PUT | `/api/contacts/{id}/edit` (+ `customObjects.data`, item `id` only, no `attributes`) | Link an already-existing item to this contact, nothing else changed |
+| *(none)* | *(none)* | Targeted unlink (item survives, only the association is removed) — not exposed via API, admin UI or direct DB only |
+
 ## Tests
 
 The plugin has currently test coverage of 91%. Each new PR must be covered by tests to be considered to be merged. To run the tests execute `composer test -- --filter CustomObjects` from the Mautic root dir.
