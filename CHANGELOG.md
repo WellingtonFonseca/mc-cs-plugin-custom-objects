@@ -2,6 +2,9 @@
 
 Só as mudanças feitas neste fork, a partir de 2026-08-24 (o que veio do plugin original não está aqui). Um bloco por dia, do mais novo para o mais antigo. Formato fixo: `## AAAA-MM-DD` e uma linha `- ` por mudança (a tela do plugin lê este arquivo).
 
+## 2026-11-18
+- A janela de configurações do plugin abre em uma aba Sobre, com o ícone, o nome e uma frase sobre o plugin. A janela fica mais larga (780 px)
+
 ## 2026-11-13
 - Na janela de um Custom Object (clique no nome na lista), a tabela de campos não fica mais colada nas abas
 
