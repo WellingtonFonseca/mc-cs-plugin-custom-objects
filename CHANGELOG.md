@@ -3,6 +3,8 @@
 Só as mudanças feitas neste fork, a partir de 2026-08-24 (o que veio do plugin original não está aqui). Um bloco por dia, do mais novo para o mais antigo. Formato fixo: `## AAAA-MM-DD` e uma linha `- ` por mudança (a tela do plugin lê este arquivo).
 
 ## 2026-11-19
+- A API de criar e alterar itens (POST, PATCH, PUT) não dá mais erro 500 quando dois pedidos gravam itens com campo de seleção múltipla ao mesmo tempo. A causa era um deadlock do banco (1213): o plugin apagava as opções antigas mesmo quando o item era novo, e dois pedidos travavam um ao outro. Agora ele só apaga quando existem opções, e apaga pelo id
+- Quando o banco ainda assim cancela um pedido por deadlock ou por espera de bloqueio, a API de itens responde 503 com o cabeçalho Retry-After: 1 e não salva nada. Quem chama deve repetir o pedido inteiro. No n8n de produção, ative Retry On Fail para o status 503 (quem configura é o Wellington)
 - O alias do Custom Object agora é um índice único: dois objetos nunca ficam com o mesmo alias, nem se dois pedidos de criação chegarem juntos (um cria, o outro recebe 409). Ao atualizar o plugin (mautic:plugins:reload), a migração para sem alterar nada se já existirem aliases repetidos, e diz quais são. Maiúsculas, acentos e espaço no fim contam como o mesmo alias
 - Nova API para o tipo de Custom Object: POST /api/customobjects cria o objeto com seus campos (o mesmo JSON da aba Clonar, com isPublished opcional), GET /api/customobjects/{alias} lê, DELETE /api/customobjects/{alias} apaga (com os itens). Alias que já existe dá 409 sem salvar nada; apagar um objeto usado em filtro de segmento, ou um objeto mestre que tem objeto filho, dá 409 (com a lista dos segmentos, ou o nome do filho)
 
