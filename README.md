@@ -145,8 +145,8 @@ usually created unlinked: `PATCH /api/contacts/{id}/edit` with just the item's `
 `attributes` needed) links an already-existing item to that contact — see "Linking an
 already-existing item to a contact" under PATCH below.
 
-Creating a Custom Object type itself (e.g. defining `courses` and its fields) has no API —
-admin-UI only, session-authenticated, verified below.
+The Custom Object type itself (the object and its fields) has its own routes: see "The Custom
+Object type" below.
 
 All examples use HTTP Basic Auth (the Mautic admin user/password from `.env`) and were run
 against a live local stack (`docker compose up`) on 2026-08-25.
@@ -708,6 +708,35 @@ itself.
 
 ---
 
+### The Custom Object type — create, read and delete the object
+
+The object (not its items) is created, read and deleted with the same Basic Auth. The body of the
+create is the JSON of the Clone tab (`format` `custom-object-definition`, `version` 1), with an
+optional `isPublished` (default `true`). The rules are the ones of the Clone tab.
+
+```bash
+curl -s -u "$AUTH" -X POST "$BASE/api/customobjects" -H 'Content-Type: application/json' -d '{
+  "format": "custom-object-definition", "version": 1,
+  "alias": "prova", "nameSingular": "Prova", "namePlural": "Provas", "type": 0,
+  "customFields": [{"alias": "provanome", "label": "Nome", "type": "text", "order": 0}]
+}'
+# 201 {"id":7,"alias":"prova","customFields":[{"id":31,"alias":"provanome","type":"text"}]}
+
+curl -s -u "$AUTH" "$BASE/api/customobjects/prova"            # the same JSON + id of the object and of each field
+curl -s -u "$AUTH" -X DELETE "$BASE/api/customobjects/prova"   # {"alias":"prova","deleted":true,"alreadyGone":false}
+```
+
+- Create: `400` with the list of every problem of the file (nothing is saved); `409` when the alias
+  already exists (nothing is saved, the fields of the file are NOT added); `403` without the permission to create.
+  Risk: the alias index is not unique, so two POSTs of the same new alias at the same moment can both succeed.
+- A field alias is unique in the whole instance and must be clean (lower case, letters, digits, hyphen).
+- Delete: its fields and its items go with it. An alias that does not exist is `200` with `"alreadyGone": true`
+  (after the permission check: `403` without the permission, for any alias).
+  An object used by the filter of a segment is `409` with `segments: [{id, name}]`. A master object that has a child
+  is `409` naming the child: delete the child first. Campaigns that use its fields are not checked.
+
+---
+
 ### Quick reference
 
 | Verb | Endpoint | What it does |
@@ -718,6 +747,9 @@ itself.
 | PUT | `/api/customobjects/{alias}/items` (`data[]`, `id` optional) | Upsert item(s) directly, no contact — `id` found = update, `id` missing/not-found = create (fresh id assigned) |
 | DELETE | `/api/customobjects/{alias}/items/{itemId}` | Delete one item by id — also removes its contact/company links via DB cascade, but permanently and for every link at once (see caveat above); not a targeted unlink |
 | DELETE | `/api/customobjects/{alias}/items` (`data[]`, `id` required) | Delete several items in one transaction — an unknown id is listed in `alreadyGone`, a foreign id cancels the whole batch (404) |
+| POST | `/api/customobjects` (Clone tab JSON) | Create a Custom Object type with its fields — 201 with the ids, 400 with all errors, 409 if the alias exists |
+| GET | `/api/customobjects/{alias}` | Read the type (Clone tab JSON + ids) |
+| DELETE | `/api/customobjects/{alias}` | Delete the type, its fields and its items — idempotent (`alreadyGone`), 409 if a segment filter uses it or it has a child object |
 | GET | `/api/contacts/{id}?includeCustomObjects=true` | Read items linked to one contact |
 | POST | `/api/contacts/new` (+ `customObjects.data`, no item `id`) | Create a contact and/or new Custom Item(s), auto-linked |
 | PATCH/PUT | `/api/contacts/{id}/edit` (+ `customObjects.data`, item `id` = update) | Update contact and/or Custom Item(s), keeps/creates the link |

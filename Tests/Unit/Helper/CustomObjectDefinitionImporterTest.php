@@ -11,6 +11,7 @@ use MauticPlugin\CustomObjectsBundle\CustomFieldType\CustomFieldTypeInterface;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldFactory;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
+use MauticPlugin\CustomObjectsBundle\Exception\DefinitionAlreadyExistsException;
 use MauticPlugin\CustomObjectsBundle\Exception\DefinitionImportException;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
@@ -317,6 +318,85 @@ class CustomObjectDefinitionImporterTest extends TestCase
         $this->assertFalse($field->isShowInContactDetailList());
         $this->assertNull($field->getStoredDefaultValue());
         $this->assertSame(0, $field->getOrder());
+    }
+
+    public function testTheObjectIsPublishedWhenTheFileSaysNothingAboutIt(): void
+    {
+        $object = $this->importer->import((string) json_encode($this->definition()))->getCustomObject();
+
+        $this->assertTrue($object->getIsPublished());
+    }
+
+    public function testTheObjectIsPublishedWhenTheFileSaysTrue(): void
+    {
+        $definition                = $this->definition();
+        $definition['isPublished'] = true;
+
+        $this->assertTrue($this->importer->import((string) json_encode($definition))->getCustomObject()->getIsPublished());
+    }
+
+    public function testTheObjectIsNotPublishedWhenTheFileSaysFalse(): void
+    {
+        $definition                = $this->definition();
+        $definition['isPublished'] = false;
+
+        $this->assertFalse($this->importer->import((string) json_encode($definition))->getCustomObject()->getIsPublished());
+    }
+
+    public function testTheIsPublishedOfTheFileIsIgnoredForAnExistingObject(): void
+    {
+        $existing = $this->existingObject();
+        $before   = $existing->getIsPublished();
+        $definition                = $this->definition();
+        $definition['isPublished'] = !$before;
+
+        $this->importer->import((string) json_encode($definition));
+
+        $this->assertSame($before, $existing->getIsPublished());
+    }
+
+    public function testCreateOnlyRefusesAnAliasThatExistsAndSavesNothing(): void
+    {
+        $existing = $this->existingObject();
+        $before   = array_map(static fn (CustomField $field): ?string => $field->getAlias(), $existing->getCustomFields()->toArray());
+        // a file that would ADD a field to the existing object: the create-only import must not get that far
+        $definition                 = $this->definition();
+        $definition['alias']        = 'course';
+        $definition['customFields'] = [['alias' => 'newfield', 'label' => 'N', 'type' => 'text']];
+        $this->model->expects($this->never())->method('save');
+        $this->connection->expects($this->never())->method('beginTransaction');
+        $this->fieldRepository->expects($this->never())->method('isAliasUnique');
+        $this->permissionProvider->expects($this->never())->method('canEdit');
+
+        try {
+            $this->importer->import((string) json_encode($definition), true, true);
+            $this->fail('A create-only import of an alias that exists should be refused');
+        } catch (DefinitionAlreadyExistsException $e) {
+            $this->assertSame(['custom.object.import.error.exists {"%alias%":"course"}'], $e->getErrors());
+        }
+
+        $this->assertSame($before, array_map(static fn (CustomField $field): ?string => $field->getAlias(), $existing->getCustomFields()->toArray()));
+    }
+
+    public function testCreateOnlyCreatesANewObjectLikeTheNormalImport(): void
+    {
+        $this->model->expects($this->once())->method('save');
+
+        $result = $this->importer->import((string) json_encode($this->definition()), true, true);
+
+        $this->assertTrue($result->isCreated());
+        $this->assertSame('course', $result->getCustomObject()->getAlias());
+    }
+
+    public function testWithoutCreateOnlyAnExistingAliasStillReceivesTheMissingFields(): void
+    {
+        $this->existingObject();
+        $this->fieldRepository->method('isAliasUnique')->willReturn(false);
+        $definition                 = $this->definition();
+        $definition['alias']        = 'course';
+        $definition['customFields'] = [['alias' => 'newfield', 'label' => 'N', 'type' => 'text']];
+
+        $this->assertFalse($this->importer->import((string) json_encode($definition))->isCreated());
     }
 
     public function testARelationshipObjectKeepsItsTypeAndItsMaster(): void

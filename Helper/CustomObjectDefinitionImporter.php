@@ -14,6 +14,7 @@ use MauticPlugin\CustomObjectsBundle\Entity\CustomField\Params;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldFactory;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomFieldOption;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
+use MauticPlugin\CustomObjectsBundle\Exception\DefinitionAlreadyExistsException;
 use MauticPlugin\CustomObjectsBundle\Exception\DefinitionImportException;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
@@ -31,7 +32,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * alias of the field); what the object already has is never changed, and the data of the object in the file (names, type, related objects)
  * is ignored. Everything wrong with the file is collected first and thrown together (DefinitionImportException), so one attempt shows all of
  * it, and nothing is saved unless there is no error. With $apply false nothing is saved either way: it answers what an import WOULD do (the
- * check shown before the person confirms). The `order` of the file only gives the sequence of the new fields: in a new object they
+ * check shown before the person confirms). The optional `isPublished` of the file (default true) is read only for a new object: the exporter
+ * does not write it. The `order` of the file only gives the sequence of the new fields: in a new object they
  * are numbered 0, 1, 2...; in an existing one they continue after the last number it uses.
  */
 class CustomObjectDefinitionImporter
@@ -54,9 +56,12 @@ class CustomObjectDefinitionImporter
     }
 
     /**
+     * With $createOnly an alias that exists is refused (DefinitionAlreadyExistsException) before anything else is read or saved, instead of
+     * receiving the missing fields: what the REST create needs.
+     *
      * @throws DefinitionImportException
      */
-    public function import(string $json, bool $apply = true): CustomObjectDefinitionImportResult
+    public function import(string $json, bool $apply = true, bool $createOnly = false): CustomObjectDefinitionImportResult
     {
         $definition = json_decode($json, true);
         if (!is_array($definition)) {
@@ -64,6 +69,10 @@ class CustomObjectDefinitionImporter
         }
 
         $existing = $this->findExisting($definition);
+        if ($createOnly && $existing instanceof CustomObject) {
+            throw new DefinitionAlreadyExistsException([$this->t('custom.object.import.error.exists', ['%alias%' => (string) $existing->getAlias()])]);
+        }
+
         $errors   = $this->validateObject($definition);
         if ($existing instanceof CustomObject) {
             $errors = array_merge($errors, $this->validateExisting($existing));
@@ -103,6 +112,7 @@ class CustomObjectDefinitionImporter
         $customObject->setLanguage($definition['language'] ?? null);
         $customObject->setType((int) ($definition['type'] ?? CustomObject::TYPE_MASTER));
         $customObject->setMasterObject($master);
+        $customObject->setIsPublished((bool) ($definition['isPublished'] ?? true));
 
         foreach ($fields as $order => $rawField) {
             $customObject->addCustomField($this->buildField($customObject, $rawField, $order));
