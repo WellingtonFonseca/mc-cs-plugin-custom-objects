@@ -98,8 +98,26 @@ class AssetsSubscriberTest extends \PHPUnit\Framework\TestCase
         $this->assetsSubscriber->loadAssets($this->requestEvent);
 
         $head = $this->assetsHelper->getHeadDeclarations();
-        $this->assertStringContainsString('plugin-about-tab.js', $head);
+        foreach (['custom-objects.js', 'co-form.js', 'plugin-about-tab.js', 'plugin-changelog-tab.js', 'list-status.js', 'custom-objects.css'] as $asset) {
+            $this->assertStringContainsString('Assets/'.('css' === substr($asset, -3) ? 'css' : 'js').'/'.$asset, $head);
+        }
         $this->assertLessThan(strpos($head, 'plugin-changelog-tab.js'), strpos($head, 'plugin-about-tab.js'));
+    }
+
+    public function testOnlyAPathThatStartsWithSLoadsTheAssets(): void
+    {
+        $this->configProvider->method('pluginIsEnabled')->willReturn(true);
+        $this->requestEvent->method('isMainRequest')->willReturn(true);
+        $this->requestEvent->method('getRequest')->willReturn($this->request);
+        $this->request->method('getPathInfo')->willReturn('/api/s/dashboard');
+        $paths = $this->createMock(PathsHelper::class);
+        $paths->method('getSystemPath')->willReturn('');
+        $this->assetsHelper->setPathsHelper($paths);
+        $this->packages->method('getUrl')->willReturnArgument(0);
+
+        $this->assetsSubscriber->loadAssets($this->requestEvent);
+
+        $this->assertSame('', $this->assetsHelper->getHeadDeclarations());
     }
 
     public function testTheModalThatHoldsTheAboutBlockIsWidenedTo780px(): void

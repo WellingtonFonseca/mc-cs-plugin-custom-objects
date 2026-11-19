@@ -20,7 +20,7 @@ input[type=checkbox].form-control {
 }
 
 /* The "Sobre" tab of the plugin's settings modal (Assets/js/plugin-about-tab.js). The modal is core's 600px: only the one that holds
-   the About block is widened, to the 780px of the resend modal of N8nDispatchBundle. */
+   the About block is widened, to 780px. */
 .modal-dialog:has(.customobjects-about-block) {
     width: 780px;
     max-width: 95vw;
