@@ -217,6 +217,21 @@ $coParams = [
             ],
         ],
         'api' => [
+            'mautic_api_customobjectcreate' => [
+                'path'       => '/customobjects',
+                'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\Api\CustomObjectApiController::createAction',
+                'method'     => 'POST',
+            ],
+            'mautic_api_customobjectview' => [
+                'path'       => '/customobjects/{objectAlias}',
+                'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\Api\CustomObjectApiController::viewAction',
+                'method'     => 'GET',
+            ],
+            'mautic_api_customobjectdelete' => [
+                'path'       => '/customobjects/{objectAlias}',
+                'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\Api\CustomObjectApiController::deleteAction',
+                'method'     => 'DELETE',
+            ],
             'mautic_api_customitemslist' => [
                 'path'       => '/customobjects/{objectAlias}/items',
                 'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\Api\CustomItemSearchApiController::listAction',

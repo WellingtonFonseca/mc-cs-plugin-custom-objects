@@ -2,6 +2,9 @@
 
 Só as mudanças feitas neste fork, a partir de 2026-08-24 (o que veio do plugin original não está aqui). Um bloco por dia, do mais novo para o mais antigo. Formato fixo: `## AAAA-MM-DD` e uma linha `- ` por mudança (a tela do plugin lê este arquivo).
 
+## 2026-11-19
+- Nova API para o tipo de Custom Object: POST /api/customobjects cria o objeto com seus campos (o mesmo JSON da aba Clonar, com isPublished opcional), GET /api/customobjects/{alias} lê, DELETE /api/customobjects/{alias} apaga (com os itens). Alias que já existe dá 409 sem salvar nada; apagar um objeto usado em filtro de segmento, ou um objeto mestre que tem objeto filho, dá 409 (com a lista dos segmentos, ou o nome do filho)
+
 ## 2026-11-18
 - A janela de configurações do plugin abre em uma aba Sobre, com o ícone, o nome e uma frase sobre o plugin. A janela fica mais larga (780 px)
 
