@@ -19,6 +19,31 @@ input[type=checkbox].form-control {
     width: initial !important;
 }
 
+/* The "Sobre" tab of the plugin's settings modal (Assets/js/plugin-about-tab.js). The modal is core's 600px: only the one that holds
+   the About block is widened, to the 780px of the resend modal of N8nDispatchBundle. */
+.modal-dialog:has(.customobjects-about-block) {
+    width: 780px;
+    max-width: 95vw;
+}
+
+.customobjects-about {
+    padding: 24px 16px;
+}
+
+.customobjects-about__icon {
+    height: 160px;
+    margin: 0 auto 16px;
+}
+
+.customobjects-about__title {
+    margin: 0 0 8px;
+}
+
+.customobjects-about__text {
+    max-width: 520px;
+    margin: 0 auto;
+}
+
 /* The change log on the plugin's settings screen: a scrolling list of days. */
 .customobjects-changelog {
     max-height: 60vh;

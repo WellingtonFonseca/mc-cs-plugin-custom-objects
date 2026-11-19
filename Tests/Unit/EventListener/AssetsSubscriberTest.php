@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\EventListener;
 
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
+use Mautic\CoreBundle\Helper\PathsHelper;
 use Mautic\CoreBundle\Twig\Helper\AssetsHelper;
 use MauticPlugin\CustomObjectsBundle\EventListener\AssetsSubscriber;
 use MauticPlugin\CustomObjectsBundle\Provider\ConfigProvider;
@@ -15,7 +16,9 @@ use Symfony\Component\HttpKernel\Event\RequestEvent;
 
 #[Group('area:co-objects')]
 #[Group('area:co-items')]
+#[Group('area:plugin-settings')]
 #[Group('risk:INFRA')]
+#[Group('risk:UI')]
 class AssetsSubscriberTest extends \PHPUnit\Framework\TestCase
 {
     private $packages;
@@ -78,6 +81,32 @@ class AssetsSubscriberTest extends \PHPUnit\Framework\TestCase
             ->willReturn('/email/unsubscribe/5c9f4105548a6783784018');
 
         $this->assetsSubscriber->loadAssets($this->requestEvent);
+    }
+
+    public function testTheAboutScriptIsLoadedBeforeTheChangeLogScript(): void
+    {
+        $this->configProvider->method('pluginIsEnabled')->willReturn(true);
+        $this->requestEvent->method('isMainRequest')->willReturn(true);
+        $this->requestEvent->method('getRequest')->willReturn($this->request);
+        $this->request->method('getPathInfo')->willReturn('/s/dashboard');
+        // AssetsHelper is final: the real one runs and its output is read. Core hands it the paths helper by a setter (TwigPass).
+        $paths = $this->createMock(PathsHelper::class);
+        $paths->method('getSystemPath')->willReturn('');
+        $this->assetsHelper->setPathsHelper($paths);
+        $this->packages->method('getUrl')->willReturnArgument(0);
+
+        $this->assetsSubscriber->loadAssets($this->requestEvent);
+
+        $head = $this->assetsHelper->getHeadDeclarations();
+        $this->assertStringContainsString('plugin-about-tab.js', $head);
+        $this->assertLessThan(strpos($head, 'plugin-changelog-tab.js'), strpos($head, 'plugin-about-tab.js'));
+    }
+
+    public function testTheModalThatHoldsTheAboutBlockIsWidenedTo780px(): void
+    {
+        $css = file_get_contents(__DIR__.'/../../../Assets/css/custom-objects.css');
+
+        $this->assertMatchesRegularExpression('/\.modal-dialog:has\(\.customobjects-about-block\)\s*\{\s*width: 780px;/', $css);
     }
 
     public function testPluginEnabled(): void
