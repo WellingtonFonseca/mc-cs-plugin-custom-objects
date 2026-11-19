@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Helper;
 
+use Doctrine\DBAL\Exception\RetryableException;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Mautic\CategoryBundle\Entity\Category;
 use Mautic\CategoryBundle\Model\CategoryModel;
@@ -136,12 +138,18 @@ class CustomObjectDefinitionImporter
         }
 
         if ($apply) {
-            $this->applyInTransaction(function () use ($newCategory, $category, $customObject): void {
+            $requestedAlias = (string) $customObject->getAlias();
+            $this->applyInTransaction(function () use ($newCategory, $category, $customObject, $requestedAlias): void {
                 if ($newCategory) {
                     $this->categoryModel->saveEntity($category);
                 }
                 $this->customObjectModel->save($customObject);
-            });
+                // CustomObjectModel::save renames a taken alias (adds 1, 2...) for the form. A copy must keep the alias of the file: when a
+                // parallel create took it after our check, the renamed alias is free and the unique index would never refuse it
+                if ($customObject->getAlias() !== $requestedAlias) {
+                    throw new DefinitionAlreadyExistsException([$this->t('custom.object.import.error.exists', ['%alias%' => $requestedAlias])]);
+                }
+            }, $requestedAlias);
         }
 
         return new CustomObjectDefinitionImportResult($customObject, true, array_column($fields, 'alias'), [], [], $createdCategory);
@@ -271,18 +279,42 @@ class CustomObjectDefinitionImporter
      * Everything the apply saves (the category, then the object with its fields) goes in one database transaction: a failure leaves nothing
      * behind and is said as an error of the file instead of a server error.
      */
-    private function applyInTransaction(callable $save): void
+    private function applyInTransaction(callable $save, ?string $newAlias = null): void
     {
         $connection = $this->entityManager->getConnection();
         $connection->beginTransaction();
         try {
             $save();
             $connection->commit();
+        } catch (UniqueConstraintViolationException|RetryableException $e) {
+            $connection->rollBack();
+
+            // a parallel create of the same alias won the race: the unique index refused ours, or MySQL gave us a deadlock / lock wait timeout
+            // (RetryableException) on that index. Any other cause (the unique index of relationship_object) leaves the alias free: a plain error
+            if (null !== $newAlias && $this->aliasExistsInDatabase($newAlias)) {
+                throw new DefinitionAlreadyExistsException([$this->t('custom.object.import.error.exists', ['%alias%' => $newAlias])]);
+            }
+
+            throw new DefinitionImportException([$this->t('custom.object.import.error.save', ['%message%' => $e->getMessage()])]);
+        } catch (DefinitionAlreadyExistsException $e) {
+            $connection->rollBack();
+
+            throw $e;
         } catch (\Throwable $e) {
             $connection->rollBack();
 
             throw new DefinitionImportException([$this->t('custom.object.import.error.save', ['%message%' => $e->getMessage()])]);
         }
+    }
+
+    /**
+     * Through the connection, not the ORM or the repository: after a failed flush the entity manager is closed.
+     */
+    private function aliasExistsInDatabase(string $alias): bool
+    {
+        $table = $this->entityManager->getClassMetadata(CustomObject::class)->getTableName();
+
+        return (int) $this->entityManager->getConnection()->fetchOne('SELECT COUNT(*) FROM '.$table.' WHERE alias = ?', [$alias]) > 0;
     }
 
     private function hasItems(CustomObject $customObject): bool

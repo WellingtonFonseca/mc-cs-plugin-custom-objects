@@ -728,7 +728,7 @@ curl -s -u "$AUTH" -X DELETE "$BASE/api/customobjects/prova"   # {"alias":"prova
 
 - Create: `400` with the list of every problem of the file (nothing is saved); `409` when the alias
   already exists (nothing is saved, the fields of the file are NOT added); `403` without the permission to create.
-  Risk: the alias index is not unique, so two POSTs of the same new alias at the same moment can both succeed.
+  The alias is a unique index: two POSTs of the same new alias at the same moment make one object (201) and refuse the other (409).
 - A field alias is unique in the whole instance and must be clean (lower case, letters, digits, hyphen).
 - Delete: its fields and its items go with it. An alias that does not exist is `200` with `"alreadyGone": true`
   (after the permission check: `403` without the permission, for any alias).
