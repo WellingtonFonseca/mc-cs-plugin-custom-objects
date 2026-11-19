@@ -170,7 +170,7 @@ class CustomObject extends FormEntity implements UniqueEntityInterface
 
         $builder->setTable(self::TABLE_NAME)
             ->setCustomRepositoryClass(CustomObjectRepository::class)
-            ->addIndex(['alias'], 'alias');
+            ->addUniqueConstraint(['alias'], 'alias_unique');
 
         $builder->createOneToMany('customFields', CustomField::class)
             ->setOrderBy(['order' => 'ASC'])

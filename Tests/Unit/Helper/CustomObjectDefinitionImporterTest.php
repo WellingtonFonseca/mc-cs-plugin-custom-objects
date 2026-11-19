@@ -24,6 +24,11 @@ use MauticPlugin\CustomObjectsBundle\Repository\CustomFieldRepository;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomItemRepository;
 use MauticPlugin\CustomObjectsBundle\Repository\CustomObjectRepository;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Driver\Exception as DriverException;
+use Doctrine\DBAL\Exception\DeadlockException;
+use Doctrine\DBAL\Exception\LockWaitTimeoutException;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\EntityManagerInterface;
 use Mautic\CoreBundle\Security\Permissions\CorePermissions;
 use PHPUnit\Framework\Attributes\Group;
@@ -772,6 +777,121 @@ class CustomObjectDefinitionImporterTest extends TestCase
         $this->connection->expects($this->never())->method('rollBack');
 
         $this->importer->import((string) json_encode($this->definition()));
+    }
+
+    public function testAUniqueIndexViolationOfAnAliasThatExistsNowIsAnAlreadyExists(): void
+    {
+        // a parallel create won the race: the unique index of custom_object.alias refused ours
+        $this->model->method('save')->willThrowException($this->uniqueViolation());
+        $this->mapTable('mtc_custom_object');
+        $this->connection->expects($this->once())->method('fetchOne')
+            ->with($this->stringContains('mtc_custom_object'), ['course'])->willReturn(1);
+        $this->connection->expects($this->once())->method('rollBack');
+        $this->connection->expects($this->never())->method('commit');
+
+        try {
+            $this->importer->import((string) json_encode($this->definition()));
+            $this->fail('A lost race must be refused');
+        } catch (DefinitionAlreadyExistsException $e) {
+            $this->assertSame(['custom.object.import.error.exists {"%alias%":"course"}'], $e->getErrors());
+        }
+    }
+
+    public function testAUniqueIndexViolationOfAnotherIndexStaysAGenericImportError(): void
+    {
+        // e.g. the unique index of relationship_object: the alias is still free
+        $this->model->method('save')->willThrowException($this->uniqueViolation());
+        $this->mapTable('custom_object');
+        $this->connection->method('fetchOne')->willReturn(0);
+        $this->connection->expects($this->once())->method('rollBack');
+
+        try {
+            $this->importer->import((string) json_encode($this->definition()));
+            $this->fail('The violation must be an import error');
+        } catch (DefinitionImportException $e) {
+            $this->assertNotInstanceOf(DefinitionAlreadyExistsException::class, $e);
+            $this->assertStringContainsString('custom.object.import.error.save', $e->getMessage());
+        }
+    }
+
+    public function testAnAliasThatTheModelRenamedIsAnAlreadyExistsAndIsRolledBack(): void
+    {
+        // CustomObjectModel::save adds 1, 2... to a taken alias for the form: a copy must never be saved under another alias
+        $this->model->method('save')->willReturnCallback(static function (CustomObject $object): CustomObject {
+            $object->setAlias($object->getAlias().'1');
+
+            return $object;
+        });
+        $this->connection->expects($this->once())->method('beginTransaction');
+        $this->connection->expects($this->once())->method('rollBack');
+        $this->connection->expects($this->never())->method('commit');
+
+        try {
+            $this->importer->import((string) json_encode($this->definition()));
+            $this->fail('A renamed alias must be refused');
+        } catch (DefinitionAlreadyExistsException $e) {
+            // the alias of the error is the one that was asked for, not the renamed one
+            $this->assertSame(['custom.object.import.error.exists {"%alias%":"course"}'], $e->getErrors());
+        }
+    }
+
+    public function testAnAliasThatTheModelKeptIsCommitted(): void
+    {
+        $this->connection->expects($this->once())->method('commit');
+        $this->connection->expects($this->never())->method('rollBack');
+
+        $this->assertSame('course', $this->importer->import((string) json_encode($this->definition()))->getCustomObject()->getAlias());
+    }
+
+    public function testADeadlockOfARaceOnAnAliasThatExistsNowIsAnAlreadyExists(): void
+    {
+        // with several parallel creates MySQL may give a loser a deadlock instead of a duplicate key
+        $this->model->method('save')->willThrowException(new DeadlockException($this->createMock(DriverException::class), null));
+        $this->mapTable('custom_object');
+        $this->connection->method('fetchOne')->willReturn(1);
+        $this->connection->expects($this->once())->method('rollBack');
+
+        $this->expectException(DefinitionAlreadyExistsException::class);
+        $this->importer->import((string) json_encode($this->definition()));
+    }
+
+    public function testALockWaitTimeoutWithTheAliasStillFreeStaysAGenericImportError(): void
+    {
+        $this->model->method('save')->willThrowException(new LockWaitTimeoutException($this->createMock(DriverException::class), null));
+        $this->mapTable('custom_object');
+        $this->connection->method('fetchOne')->willReturn(0);
+        $this->connection->expects($this->once())->method('rollBack');
+
+        try {
+            $this->importer->import((string) json_encode($this->definition()));
+            $this->fail('The timeout must be an import error');
+        } catch (DefinitionImportException $e) {
+            $this->assertNotInstanceOf(DefinitionAlreadyExistsException::class, $e);
+        }
+    }
+
+    public function testTheAliasIsLookedUpThroughTheConnectionNotTheClosedEntityManager(): void
+    {
+        $this->model->method('save')->willThrowException($this->uniqueViolation());
+        $this->mapTable('custom_object');
+        $this->connection->method('fetchOne')->willReturn(1);
+        // after a failed flush the entity manager is closed: no query through the ORM or the repository
+        $this->objectRepository->expects($this->once())->method('findOneBy'); // only the first lookup of import()
+
+        $this->expectException(DefinitionAlreadyExistsException::class);
+        $this->importer->import((string) json_encode($this->definition()));
+    }
+
+    private function uniqueViolation(): UniqueConstraintViolationException
+    {
+        return new UniqueConstraintViolationException($this->createMock(DriverException::class), null);
+    }
+
+    private function mapTable(string $table): void
+    {
+        $metadata = $this->createMock(ClassMetadata::class);
+        $metadata->method('getTableName')->willReturn($table);
+        $this->entityManager->method('getClassMetadata')->with(CustomObject::class)->willReturn($metadata);
     }
 
     public function testTheCheckOpensNoTransaction(): void

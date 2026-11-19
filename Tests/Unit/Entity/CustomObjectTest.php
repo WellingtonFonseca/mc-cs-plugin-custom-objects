@@ -21,6 +21,16 @@ class CustomObjectTest extends \PHPUnit\Framework\TestCase
 {
     use ConsecutiveCallsTrait;
 
+    public function testTheAliasIsAUniqueConstraintAndNotAPlainIndex(): void
+    {
+        $metadata = new \Doctrine\ORM\Mapping\ClassMetadata(CustomObject::class);
+        CustomObject::loadMetadata($metadata);
+
+        // two objects with one alias (a race of two creates) must be refused by the database
+        $this->assertSame(['alias'], $metadata->table['uniqueConstraints']['alias_unique']['columns']);
+        $this->assertArrayNotHasKey('alias', $metadata->table['indexes'] ?? []);
+    }
+
     public function testClone(): void
     {
         $object = new CustomObject();
