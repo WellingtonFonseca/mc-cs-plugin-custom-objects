@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Controller\Api;
 
+use Doctrine\DBAL\Exception\RetryableException;
 use Doctrine\ORM\EntityManagerInterface;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
@@ -46,6 +47,9 @@ use Symfony\Component\HttpFoundation\Response;
  * already written earlier in that same batch is rolled back too. Only a
  * whole-request failure is atomic this way; a successful response commits
  * every entry in "data" together.
+ *
+ * A deadlock or a lock wait timeout of the database is a 503 with "Retry-After: 1": the batch is rolled back, so the caller repeats the whole
+ * request (Retry On Fail in n8n).
  */
 class CustomItemWriteApiController extends AbstractController
 {
@@ -117,6 +121,23 @@ class CustomItemWriteApiController extends AbstractController
             $this->em->getConnection()->rollBack();
 
             return new JsonResponse(['errors' => [['message' => $e->getMessage()]]], Response::HTTP_BAD_REQUEST);
+        } catch (RetryableException) {
+            // a deadlock or a lock wait timeout: the database undid the work of the batch and the transaction is rolled back here too, so
+            // repeating the WHOLE request is safe. The entity manager is closed after this kind of error: nothing else may use the ORM.
+            $this->em->getConnection()->rollBack();
+
+            $response = new JsonResponse(
+                ['errors' => [['message' => 'The database was busy with another write and the request was stopped. Nothing was saved: repeat the whole request.']]],
+                Response::HTTP_SERVICE_UNAVAILABLE
+            );
+            $response->headers->set('Retry-After', '1');
+
+            return $response;
+        } catch (\Throwable $e) {
+            // without this the transaction stays open on the shared connection after a failed write
+            $this->em->getConnection()->rollBack();
+
+            throw $e;
         }
 
         return new JsonResponse([

@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Tests\Unit\Model;
 
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Doctrine\DBAL\Result;
 use Doctrine\DBAL\Statement;
 use Doctrine\ORM\AbstractQuery;
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Mautic\LeadBundle\Provider\FilterOperatorProviderInterface;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\IntType;
 use MauticPlugin\CustomObjectsBundle\CustomFieldType\TextType;
@@ -48,7 +50,11 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
     {
         parent::setUp();
 
-        $this->customObject           = $this->createMock(CustomObject::class);
+        if (!defined('MAUTIC_TABLE_PREFIX')) {
+            define('MAUTIC_TABLE_PREFIX', '');
+        }
+
+        $this->customObject         = $this->createMock(CustomObject::class);
         $this->customItem             = $this->createMock(CustomItem::class);
         $this->customField            = $this->createMock(CustomField::class);
         $this->entityManager          = $this->createMock(EntityManager::class);
@@ -365,17 +371,42 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
         $this->customFieldValueModel->save($value);
     }
 
+    /**
+     * The options of an item are looked up WITHOUT a lock and deleted by their ids (the primary key), never by a range scan of the
+     * index of custom_field_id: a DELETE that finds nothing takes a next-key lock on the end of that index, and two transactions that
+     * insert there wait for each other (deadlock 1213 of the item POST with a multiselect field).
+     *
+     * @param int[]|string[] $existingIds the ids of the rows the item has now
+     */
+    private function optionsOfTheItem(array $existingIds, string $table = 'custom_field_value_option'): void
+    {
+        $metadata = $this->createMock(ClassMetadata::class);
+        $metadata->method('getTableName')->willReturn($table);
+        $this->entityManager->method('getClassMetadata')->with(\MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueOption::class)->willReturn($metadata);
+        $this->entityManager->method('getConnection')->willReturn($this->connection);
+        $this->connection->expects($this->once())->method('fetchFirstColumn')
+            ->with($this->callback(function (string $sql) use ($table): bool {
+                $this->assertStringContainsString("FROM {$table} WHERE custom_field_id = ? AND custom_item_id = ?", $sql);
+                $this->assertStringNotContainsString('FOR UPDATE', $sql);
+                $this->assertStringNotContainsString('SHARE MODE', $sql);
+
+                return true;
+            }), [44, 99])
+            ->willReturn($existingIds);
+    }
+
     public function testEachOptionIsTrimmedAndSavedAsItsOwnValue(): void
     {
-        $item  = $this->createMock(CustomItem::class);
+        // setUp makes getReference() answer $this->customItem (the first stub with a value wins in PHPUnit): save() swaps the item for it, so
+        // the item with id 99 is that mock
+        $item  = $this->customItem;
         $item->method('getId')->willReturn(99);
         $field = $this->createMock(CustomField::class);
         $field->method('getId')->willReturn(44);
         $field->method('canHaveMultipleValues')->willReturn(true);
         $value = new \MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueOption($field, $item, ' red , green ');
-        $query = $this->createMock(AbstractQuery::class);
-        $query->method('execute')->willReturn(0);
-        $this->entityManager->method('createQuery')->willReturn($query);
+        $this->optionsOfTheItem([]);
+        $this->connection->expects($this->never())->method('executeStatement');
         $this->violationList->method('count')->willReturn(0);
         $this->validator->method('validate')->willReturn($this->violationList);
         $saved = [];
@@ -449,7 +480,6 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
     public function testSaveForMultivalueField(): void
     {
         $customFieldValue = $this->createMock(CustomFieldValueInterface::class);
-        $query            = $this->createMock(AbstractQuery::class);
 
         $customFieldValue->expects($this->exactly(2))
             ->method('getCustomField')
@@ -479,17 +509,10 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
             ->method('canHaveMultipleValues')
             ->willReturn(true);
 
-        $this->entityManager->expects($this->once())
-            ->method('createQuery')
-            ->with('
-            delete from MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueOption cfvo  
-            where cfvo.customField = 44
-            and cfvo.customItem = 99
-        ')
-            ->willReturn($query);
-
-        $query->expects($this->once())
-            ->method('execute')
+        // the item has two options now: the DELETE gets exactly their ids (the driver may give them as strings), by the primary key
+        $this->optionsOfTheItem(['11', '12']);
+        $this->connection->expects($this->once())->method('executeStatement')
+            ->with('DELETE FROM custom_field_value_option WHERE id IN (?)', [[11, 12]], [ArrayParameterType::INTEGER])
             ->willReturn(2);
 
         $this->entityManager->expects($this->exactly(3))
@@ -507,7 +530,6 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
     public function testSaveForMultivalueFieldWithNoOptionsProvided(): void
     {
         $customFieldValue = $this->createMock(CustomFieldValueInterface::class);
-        $query            = $this->createMock(AbstractQuery::class);
 
         $customFieldValue->expects($this->exactly(2))
             ->method('getCustomField')
@@ -536,18 +558,11 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
             ->method('canHaveMultipleValues')
             ->willReturn(true);
 
-        $this->entityManager->expects($this->once())
-            ->method('createQuery')
-            ->with('
-            delete from MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueOption cfvo  
-            where cfvo.customField = 44
-            and cfvo.customItem = 99
-        ')
-            ->willReturn($query);
-
-        $query->expects($this->once())
-            ->method('execute')
-            ->willReturn(2);
+        // an empty value still removes the options the item had before
+        $this->optionsOfTheItem([7]);
+        $this->connection->expects($this->once())->method('executeStatement')
+            ->with('DELETE FROM custom_field_value_option WHERE id IN (?)', [[7]], [ArrayParameterType::INTEGER])
+            ->willReturn(1);
 
         $this->entityManager->expects($this->never())
             ->method('persist');
@@ -556,5 +571,67 @@ class CustomFieldValueModelTest extends \PHPUnit\Framework\TestCase
             ->method('validate');
 
         $this->customFieldValueModel->save($customFieldValue);
+    }
+
+    private function multiValue(mixed $value): \MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueOption
+    {
+        // save() swaps the item for what getReference() answers, and setUp makes that $this->customItem (the first stub with a value wins in
+        // PHPUnit, so a later getReference() stub would be ignored): the item with id 99 is that mock
+        $item = $this->customItem;
+        $item->method('getId')->willReturn(99);
+        $field = $this->createMock(CustomField::class);
+        $field->method('getId')->willReturn(44);
+        $field->method('canHaveMultipleValues')->willReturn(true);
+        $this->violationList->method('count')->willReturn(0);
+        $this->validator->method('validate')->willReturn($this->violationList);
+
+        return new \MauticPlugin\CustomObjectsBundle\Entity\CustomFieldValueOption($field, $item, $value);
+    }
+
+    public function testANewItemHasNoOptionsSoNothingIsDeleted(): void
+    {
+        // the case of the deadlock: an item that was just inserted has no option rows, so no DELETE (and no lock on the end of the index) runs
+        $this->optionsOfTheItem([]);
+        $this->connection->expects($this->never())->method('executeStatement');
+        $this->entityManager->expects($this->exactly(2))->method('persist');
+
+        $this->customFieldValueModel->save($this->multiValue('grad,pos'));
+    }
+
+    public function testAnEmptyValueOfAnItemWithoutOptionsDeletesNothing(): void
+    {
+        $this->optionsOfTheItem([]);
+        $this->connection->expects($this->never())->method('executeStatement');
+        $this->entityManager->expects($this->never())->method('persist');
+
+        $this->customFieldValueModel->save($this->multiValue(''));
+    }
+
+    public function testTheTableNameKeepsThePrefixOfTheInstall(): void
+    {
+        $this->optionsOfTheItem([5], 'mtc_custom_field_value_option');
+        $this->connection->expects($this->once())->method('executeStatement')
+            ->with('DELETE FROM mtc_custom_field_value_option WHERE id IN (?)', [[5]], [ArrayParameterType::INTEGER])
+            ->willReturn(1);
+
+        $this->customFieldValueModel->save($this->multiValue(['grad']));
+    }
+
+    public function testTheOldOptionsOfAnExistingItemAreDeletedByIdBeforeTheNewOnesAreSaved(): void
+    {
+        $this->optionsOfTheItem([3, 4]);
+        $order = [];
+        $this->connection->method('executeStatement')->willReturnCallback(static function (string $sql) use (&$order): int {
+            $order[] = 'delete';
+
+            return 2;
+        });
+        $this->entityManager->method('persist')->willReturnCallback(static function () use (&$order): void {
+            $order[] = 'persist';
+        });
+
+        $this->customFieldValueModel->save($this->multiValue(['grad', 'pos']));
+
+        $this->assertSame(['delete', 'persist', 'persist'], $order, 'the old rows go first, so the unique (value, field, item) never clashes');
     }
 }

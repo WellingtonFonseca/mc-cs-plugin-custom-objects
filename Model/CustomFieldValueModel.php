@@ -6,6 +6,7 @@ namespace MauticPlugin\CustomObjectsBundle\Model;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManager;
 use MauticPlugin\CustomObjectsBundle\DTO\CustomItemFieldListData;
@@ -175,20 +176,32 @@ class CustomFieldValueModel
     }
 
     /**
+     * Removes the option rows the item has for the field, so the new ones can be saved. The rows are read first, WITHOUT a lock, and deleted by
+     * their ids (the primary key): a DELETE by (custom_field_id, custom_item_id) scans the index of custom_field_id, and when it finds nothing (an
+     * item that was just inserted) InnoDB takes a next-key lock on the END of that index. Two transactions that do this and then insert wait for
+     * each other: deadlock 1213 of the item POST with a multiselect field. With no rows there is no DELETE at all; with rows the lock is on the
+     * rows (record locks only).
+     *
      * @return int Number of deleted rows
      */
     private function deleteOptionsForField(CustomFieldValueInterface $customFieldValue): int
     {
-        $entityClass = CustomFieldValueOption::class;
-        $dql         = "
-            delete from {$entityClass} cfvo  
-            where cfvo.customField = {$customFieldValue->getCustomField()->getId()}
-            and cfvo.customItem = {$customFieldValue->getCustomItem()->getId()}
-        ";
+        $connection = $this->entityManager->getConnection();
+        $table      = $this->entityManager->getClassMetadata(CustomFieldValueOption::class)->getTableName();
+        $ids        = $connection->fetchFirstColumn(
+            "SELECT id FROM {$table} WHERE custom_field_id = ? AND custom_item_id = ?",
+            [$customFieldValue->getCustomField()->getId(), $customFieldValue->getCustomItem()->getId()]
+        );
 
-        $query = $this->entityManager->createQuery($dql);
+        if ([] === $ids) {
+            return 0;
+        }
 
-        return $query->execute();
+        return (int) $connection->executeStatement(
+            "DELETE FROM {$table} WHERE id IN (?)",
+            [array_map('intval', $ids)],
+            [ArrayParameterType::INTEGER]
+        );
     }
 
     /**

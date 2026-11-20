@@ -737,6 +737,14 @@ curl -s -u "$AUTH" -X DELETE "$BASE/api/customobjects/prova"   # {"alias":"prova
 
 ---
 
+### 503 when the database is busy — repeat the request
+
+A write of items (`POST`, `PATCH`, `PUT` on `/api/customobjects/{alias}/items`) can be stopped by the database when another write holds a lock it
+needs (a deadlock or a lock wait timeout). The batch is rolled back, nothing is saved, and the answer is `503` with `Retry-After: 1` and an error
+message. **Repeat the whole request.** In n8n, turn on Retry On Fail for the 503 status. A `400` (invalid value, unknown field) is never repeated.
+
+---
+
 ### Quick reference
 
 | Verb | Endpoint | What it does |
