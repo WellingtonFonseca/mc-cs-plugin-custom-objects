@@ -14,7 +14,7 @@
 }
 ```
 
-Install a new plugin with `mautic:plugins:install`; a new version (migrations) with `mautic:plugins:reload` (`Migrations/Version_0_0_NN.php`; Mautic re-checks every migration on each update). Clear the cache after editing plugin code ([../wiki/docker-mautic5.md](../../wiki/docker-mautic5.md)).
+Padrão: [stack-plugin.md](stack-plugin.md) (install / reload, cache, assets), [testes.md](testes.md) (how to run the tests).
 
 ## What the live scripts cover instead of Tests/Functional
 
@@ -22,19 +22,7 @@ The 31 files of `Tests/Functional` need the Mautic monorepo and never run in thi
 
 ## Running the plugin's own tests
 
-The plugin's `phpunit.xml` needs the Mautic monorepo. In this stack use the `Tests/Infection/` folder of the plugin (unit suite only, `Tests/Functional` never runs here), from the plugin folder inside the web container:
-
-```json
-{
-  "unit tests": "docker exec --user www-data mautic-mautic_web-1 sh -c \"cd /var/www/html/docroot/plugins/CustomObjectsBundle && php /var/www/html/vendor/bin/phpunit --do-not-cache-result -c Tests/Infection/phpunit.xml\". AbstractFieldControllerTest is excluded (abstract: PHPUnit warns and Infection stops on a warning).",
-  "coverage": "php -d pcov.enabled=1 /var/www/html/vendor/bin/phpunit --do-not-cache-result -c Tests/Infection/phpunit.xml --coverage-text (PCOV, see ../wiki/tests-mutation-and-coverage.md)",
-  "mutation testing": "infection --configuration=Tests/Infection/infection.json5 --threads=8 --no-progress --initial-tests-php-options='-d pcov.enabled=1' --min-msi=0 [--filter=File.php]; about a minute for the whole plugin; the report is /tmp/infection-co/infection.log. Reads Model, EventListener, Helper, Segment, CustomFieldType, Provider, DTO and Repository.",
-  "why a bootstrap": "Tests/Infection/bootstrap.php registers the project autoloader WITHOUT nikic/php-parser: Infection brings its own and loading both is a fatal error. Without it Infection cannot reflect the classes that extend Mautic's (models, query builders) and stops with 'Class ... does not exist'. Paths in infection.json5 and phpunit.xml are relative to the file; the bootstrap path of infection.json5 is relative to the plugin folder.",
-  "traps": "The folder is under Tests/ on purpose: the plugin's Config/services.php loads EVERY .php file under the plugin root into the container (excluding Tests/ and a few others), so a bootstrap anywhere else is executed by cache:clear and the plugin-boots test (memory exhausted by the classmap). A PHP warning in any unit test stops Infection (it runs PHPUnit with failOnWarning). Do not commit Tests/Infection/.phpunit.result.cache (cacheResult is off). LeadRepository::exists does not exist in Mautic 5.2, so CustomItemImportModelTest is skipped here and the warning about unknown contacts of an import is unreachable; CustomItemImportModelFlowTest covers the rest of the import."
-}
-```
-
-What is left escaped is noise (empty table prefix, casts, event priorities, JS/SQL fragments checked live) or needs a real database (the `from`/`exists` of the full-text subselects, the select/from of ReportSubscriber::onReportGenerate).
+See [testes.md](testes.md) (unit suite, coverage, mutation testing, traps).
 
 ## Where to read
 

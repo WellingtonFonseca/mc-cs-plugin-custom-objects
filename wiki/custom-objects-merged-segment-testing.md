@@ -1,6 +1,6 @@
 # Custom Object merge filter: operators, test data, tests and deploy checklist
 
-The operators the segment screen offers, the permanent test data, how to run the tests and the checklist for a new environment. What must not break: the seed is rebuilt by a script and every test finds its ids by alias. How the merge works: wiki/custom-objects-merged-segment-filters.md.
+The operators the segment screen offers, the permanent test data, how to run the tests and the checklist for a new environment. Padrão: [testes.md](testes.md) (how to run the unit tests, PHPUnit 10, functional tests, SQL log). What must not break: the seed is rebuilt by a script and every test finds its ids by alias. How the merge works: wiki/custom-objects-merged-segment-filters.md.
 
 ## Operators the segment screen offers (pinned by test-segment-filter-operators.sh)
 
@@ -64,11 +64,7 @@ Scripts in `mautic/scripts`:
 
 ```json
 {
-  "unit tests": "docker exec --user www-data mautic-mautic_web-1 sh -c \"cd /var/www/html/docroot/plugins/CustomObjectsBundle && /var/www/html/vendor/bin/phpunit --no-configuration --bootstrap /var/www/html/vendor/autoload.php Tests/Unit\". The plugin's phpunit.xml points to an autoload.php that does not exist in the container, hence --no-configuration. Two errors remain: CustomItemExportCommandTest and ExportControllerTest extend MauticMysqlTestCase (functional tests kept under Tests/Unit) and need a dedicated test database. A single test file may fail on the undefined MAUTIC_TABLE_PREFIX: run the suite or the whole Helper folder.",
-  "PHPUnit 10": "the container runs PHPUnit 10.5. Tests/Unit/ConsecutiveCallsTrait.php replaces withConsecutive() (removed in 10) and returnsThenNull() keeps the old 'null after the last configured value' behavior. Do not reintroduce withConsecutive().",
-  "functional tests": "do not run here: they need a dedicated test database, and the dev database holds the seed data",
   "default config without env vars": "run the console with env -u MAUTIC_CUSTOM_OBJECT_MERGE_FILTER -u MAUTIC_CUSTOM_OBJECT_ITEM_VALUE_TO_CONTACT_RELATION_LIMIT (as www-data, after a cache:clear in the same state). The effective values must read true and 0 from the plugin default alone.",
-  "see the real SQL of a segment": "as MySQL root: SET GLOBAL log_output='TABLE'; SET GLOBAL general_log=1; run mautic:segments:update --list-id=N; read mysql.general_log for 'custom_item_xref_contact cix'; then SET GLOBAL general_log=0; TRUNCATE mysql.general_log; SET GLOBAL log_output='FILE'. Always turn the log back off.",
   "a test that proves the operator bug needs both settings": "CustomObjectMergedFilterQueryBuilderTest sets both settings itself and counts contacts on one text field: it cannot tell operators apart and proves nothing about the environment's config. Use the live scripts for that."
 }
 ```

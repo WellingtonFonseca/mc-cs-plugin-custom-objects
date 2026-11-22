@@ -1,6 +1,6 @@
 # Custom Objects: the Status column of the object list
 
-The Custom Objects list shows the status of a row as an icon badge in a Status column, and "Desativar" / "Ativar" as the first item of the row menu, the same pattern as the lists of MauticPatchesBundle and N8nDispatchBundle. The items list does NOT have it (see `items list`). What must not break: core's toggle icon of the row stays in the page (hidden), the badge and the menu item follow it, and the plugin works without the other plugins.
+The Custom Objects list shows the status of a row as an icon badge in a Status column, and "Desativar" / "Ativar" as the first item of the row menu, the same pattern as the lists of MauticPatchesBundle and N8nDispatchBundle. The items list does NOT have it (see `items list`). Padrão: [ui-lista.md](ui-lista.md). What must not break: core's toggle icon of the row stays in the page (hidden), the badge and the menu item follow it, and the plugin works without the other plugins.
 
 ## What it does
 
@@ -13,8 +13,6 @@ The Custom Objects list shows the status of a row as an icon badge in a Status c
   "menu item": "ListStatusSubscriber (CoreEvents::VIEW_INJECT_CUSTOM_BUTTONS): `data-toggle=co-status` (without a data-toggle core adds `ajax` and navigates), `data-co-status-action=activate|deactivate`, the texts in `data-text-activate/deactivate`, priority 800 (above Details 600), only for who may edit the object (CustomObjectPermissionProvider::canEdit). Texts: custom.object.status.activate / deactivate / column in en_US and pt_BR.",
   "items list": "NOT done, on purpose (not asked yet): CustomItem/_list.html.twig prints core's toggle icon with `filterEntityId is empty ? icon : ''`, but the controller passes `(int) filterEntityId`, so it is 0, and Twig's `empty` test is FALSE for the integer 0: the items list has never shown any status icon. Giving it the badge needs `not filterEntityId` there (and the column only outside a contact / item tab), the same subscriber branch with CustomItemPermissionProvider::canEdit, and #assetTable in the script and the CSS.",
   "description": "the description under the name is NOT hidden here (the patches and n8n lists hide it).",
-  "twin": "the look is a copy of `.patches-badge` / `.n8ndispatch-badge` and of the icon badge CSS of the other two plugins, on purpose (CLAUDE.md, "Plugins are independent"): a visual change is written in the three.",
   "tests": "PHPUnit Tests/Unit/EventListener/ListStatusSubscriberTest.php, Node Tests/js/list-status.test.js, browser spec scripts/5/e2e/tests/custom-object-status.spec.js (objects made in the database).",
-  "no column layout by script": "Assets/css/custom-objects.css: the cells of `#custom-objects-table` are `white-space:nowrap`, so the wider Status column makes the table scroll in its box instead of squeezing the names; no script fixes the widths. TRAP: with wrapping cells the open badge shrank the other columns, the rows re-wrapped and the badge slid from under the pointer (it flickered). Same rule as the lists of MauticPatchesBundle (../mautic-patches-bundle-5/wiki/patches-status-column.md, `badges box and layout`), duplicated on purpose."
 }
 ```

@@ -1,0 +1,12 @@
+categoria: api
+regras:
+- The plugin's `/custom/object/...` and `/custom/item/...` routes are admin-UI routes (session login only; with Basic Auth they 302 to the login). The REST API is the routes in `routes.api` of `Config/config.php`, with the same Basic Auth as every `/api` route.
+- POST and PATCH are strictly split on purpose: items have no uniqueness, so a silent create-instead-of-update (or the reverse) would make duplicates or wrong updates. POST with 'id' = 400; PATCH with 'id' missing or not found = 400. PUT (upsert) carries the silent-fallback risk by design.
+- 'name' is required on every entry and has at most 191 characters (VARCHAR(191)); a longer name is a 400 that says 191 (a 255 limit answered a 500 from the database). Field values of type text have no such limit (longtext). Every string limit uses `StringColumn::LENGTH`.
+- A batch is ONE DB transaction: any failure, including a validation error on item 3, rolls back items 1-2.
+- DELETE is idempotent: an id that does not exist is not an error, it goes to `alreadyGone` and the rest is deleted; an id repeated in the call is deleted once and is never alreadyGone. One transaction: an id of ANOTHER object = 404 and nothing is deleted. A body without 'data', an entry without 'id', or an id that is not a positive integer = 400 (a typo must not become a success).
+- Database busy: POST, PATCH and PUT of items answer 503 with `Retry-After: 1` when the database stops the request for a deadlock (1213) or a lock wait timeout (Doctrine RetryableException): the batch is rolled back, nothing is saved, the caller repeats the WHOLE request (Retry On Fail in the production n8n; n8n-dispatch and patches do not call this API). Any other error rolls back and is thrown again (500). 400 and 404 are not repeated.
+- Every API action checks the permission provider (CustomObjectPermissionProvider: create / view / delete): 403. The item controllers do not check: do not copy them.
+- The direct routes never link an item to a contact; linking only exists inside the contact hook.
+- Values of many items are read in batch (`CustomFieldValueModel::createValuesForItems`, one query per value table, chunks of 1000), never per item (the per-item version made 7174 queries and ~2.3 s per call in production).
+- Plain routes only: `#[ApiResource]` (`/api/v2/...`) does not work here (`api-platform` is not installed); do not build on it. Add `limit`/`offset` to the plain route if pagination is ever needed.

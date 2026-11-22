@@ -1,6 +1,6 @@
 # Custom Objects: clone an object to another instance (definition JSON)
 
-The Clone tab shows the definition of an object (the object and its fields, no items) as read-only JSON; the import page on another instance creates the object from it, or adds the fields an existing one lacks. Nothing here moves items. What must not break: the JSON keeps no ids, a check never saves, and an existing object is never changed beyond new fields.
+Padrão: [stack-plugin.md](stack-plugin.md) (services in `DTO/`, translations, `renderForm` name). The Clone tab shows the definition of an object (the object and its fields, no items) as read-only JSON; the import page on another instance creates the object from it, or adds the fields an existing one lacks. Nothing here moves items. What must not break: the JSON keeps no ids, a check never saves, and an existing object is never changed beyond new fields.
 
 ## The JSON
 
@@ -36,9 +36,6 @@ The Clone tab shows the definition of an object (the object and its fields, no i
 {
   "field alias is unique in the WHOLE instance": "CustomFieldRepository::isAliasUnique checks every object, and CustomFieldModel renames a taken alias by adding a number. A copy must be faithful, so the importer refuses an alias another object's field has (for an existing object, its own fields are skipped, not refused).",
   "a unique identifier is required": "CustomField::setRequired() returns true for a unique identifier field. Adding one (or any required field) to an object with items is accepted, because the plugin only checks turning an EXISTING field unique, but the old items, with it empty, are not saved again until it has a value (the API answers 400 'Field ... is required'). The API does not refuse a repeated value. The importer warns (required_with_items) when it adds such a field to an object that has items.",
-  "services": "Config/services.php loads every class under the plugin as a service: the result object lives in DTO/ (excluded), not in Helper/.",
-  "translations": "the alert and page texts are in messages.ini; addFlashMessage texts would need flashes.ini and are not used.",
-  "controller helper name": "a private method called renderForm collides with AbstractController::renderForm: the controller's is renderImportForm."
 }
 ```
 
