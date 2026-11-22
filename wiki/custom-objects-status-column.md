@@ -1,6 +1,6 @@
 # Custom Objects: the Status column of the object list
 
-The Custom Objects list shows the status of a row as an icon badge in a Status column, and "Desativar" / "Ativar" as the first item of the row menu, the same pattern as the lists of MauticPatchesBundle and N8nDispatchBundle. The items list does NOT have it (see `items list`). Padrão: [ui-lista.md](ui-lista.md). What must not break: core's toggle icon of the row stays in the page (hidden), the badge and the menu item follow it, and the plugin works without the other plugins.
+The Custom Objects list shows the status of a row as an icon badge in a Status column, and "Desativar" / "Ativar" as the first item of the row menu, the same pattern as the lists of MauticPatchesBundle and N8nDispatchBundle. The items list does NOT have it (see `items list`). Padrão: [ui-list.md](ui-list.md). What must not break: core's toggle icon of the row stays in the page (hidden), the badge and the menu item follow it, and the plugin works without the other plugins.
 
 ## What it does
 

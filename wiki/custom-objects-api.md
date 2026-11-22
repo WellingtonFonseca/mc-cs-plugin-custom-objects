@@ -1,10 +1,10 @@
 # Custom Objects: REST API, filters and field types
 
-Padrão: [api-convencoes.md](api-convencoes.md). The `/api/customobjects/{alias}/items` routes (list/search, create, update, upsert, delete, batch delete), the list/search filter semantics and the field types (including `decimal`).
+Padrão: [api-conventions.md](api-conventions.md). The `/api/customobjects/{alias}/items` routes (list/search, create, update, upsert, delete, batch delete), the list/search filter semantics and the field types (including `decimal`).
 
 ## API
 
-The REST API is the routes in `routes.api` of `Config/config.php` (admin-UI vs API routes: api-convencoes.md):
+The REST API is the routes in `routes.api` of `Config/config.php` (admin-UI vs API routes: api-conventions.md):
 
 ```json
 {
@@ -13,8 +13,8 @@ The REST API is the routes in `routes.api` of `Config/config.php` (admin-UI vs A
   "update": "PATCH same path, same body shape with 'id' on every entry. 'id' missing or not found = 400.",
   "upsert": "PUT same path. 'id' found = update; 'id' missing or not found = create (fresh id). Matches core's own PUT convention.",
   "delete one": "DELETE /api/customobjects/{alias}/items/{itemId} -> the batch shape below. 404 for an unknown alias or an item of another object. An unknown item is 200 with the id in alreadyGone.",
-  "delete batch": "DELETE /api/customobjects/{alias}/items with {\"data\": [{\"id\": ...}]} -> {\"total\": N, \"deleted\": [ids], \"alreadyGone\": [ids]}. Idempotent (api-convencoes.md): an unknown id goes to alreadyGone and the rest is deleted; an id repeated in the call is deleted once and is never alreadyGone (a repeat used to fail with a 404 that named an existing id). One transaction: an id of ANOTHER object = 404 and nothing is deleted. A body without 'data', an entry without 'id', or an id that is not a positive integer = 400 (a typo must not become a success).",
-  "write rules": "POST and PATCH strictly split, one transaction per batch, 'name' max 191 (api-convencoes.md). PUT carries the silent-fallback risk by design.",
+  "delete batch": "DELETE /api/customobjects/{alias}/items with {\"data\": [{\"id\": ...}]} -> {\"total\": N, \"deleted\": [ids], \"alreadyGone\": [ids]}. Idempotent (api-conventions.md): an unknown id goes to alreadyGone and the rest is deleted; an id repeated in the call is deleted once and is never alreadyGone (a repeat used to fail with a 404 that named an existing id). One transaction: an id of ANOTHER object = 404 and nothing is deleted. A body without 'data', an entry without 'id', or an id that is not a positive integer = 400 (a typo must not become a success).",
+  "write rules": "POST and PATCH strictly split, one transaction per batch, 'name' max 191 (api-conventions.md). PUT carries the silent-fallback risk by design.",
   "multiselect rows": "CustomFieldValueModel::deleteOptionsForField reads the ids of the option rows of the item and field WITHOUT a lock and deletes them by id (PK); no rows = no DELETE. The old DELETE by (custom_field_id, custom_item_id) scanned the index of custom_field_id and, when it found nothing (a new item), took a next-key lock on the END of that index: two transactions that then inserted there waited for each other (deadlock 1213, InnoDB status of 2026-11-19 12:57:23, index IDX_7D4C1F48A1E5E0D4). Live: scripts/5/test-items-concurrent-multiselect.sh (5 simultaneous POSTs to 5 own objects, a text-only discriminator, 10 rounds of 2 simultaneous PATCHes). NOT covered: POST/PATCH of contacts with customObjects.data (ApiSubscriber) uses the same CustomItemModel::save, so it has the same fix, but a deadlock that still happens there is a 500 of the core; the concurrent item import (CustomItemImportModel); the real isolation level and binlog of production. A PATCH still deletes and re-inserts all the options of the field of that item (a diff of the values is a later task).",
   "no auto-link": "the direct routes never link an item to a contact.",
   "not covered": "campaigns that use the fields of an object are not checked by the object DELETE."
@@ -31,7 +31,7 @@ The REST API is the routes in `routes.api` of `Config/config.php` (admin-UI vs A
   "race": "closed: custom_object.alias is a UNIQUE index (Migrations/Version_0_0_32, see wiki/custom-objects-data.md). Two simultaneous POSTs of one new alias: one 201, the others 409. The importer catches the unique violation AND a deadlock / lock wait timeout (RetryableException), rolls back and checks the alias through the connection: alias there = 409, alias free = the generic 400. The create also refuses an alias that CustomObjectModel::save renamed ('<alias>1'): a create never saves under another alias.",
   "view": "GET /api/customobjects/{alias} = the Clone tab JSON + id, isPublished and the id of each field. 404 unknown alias.",
   "delete": "DELETE /api/customobjects/{alias}: fields and items go by cascade. 200 {alias, deleted, alreadyGone}; an unknown alias is 200 with alreadyGone true (idempotent), but only after the view permission is checked (a caller without it gets 403 for any alias, so 'alreadyGone' does not tell which aliases exist). 409 {errors, segments: [{id, name}]} when a segment filter uses the object. 409 naming the child when the object is a MASTER with a child (relationshipObject): the database would delete the child and its items by cascade (master_object ON DELETE CASCADE) without the segment check, so the caller deletes the child first. Same permission as the delete on the screen. It does NOT check campaigns that use the fields: teardown order is campaign, segment, child, master.",
-  "permissions": "every action checks CustomObjectPermissionProvider (create / view / delete): 403 (see api-convencoes.md).",
+  "permissions": "every action checks CustomObjectPermissionProvider (create / view / delete): 403 (see api-conventions.md).",
   "traps": "a field alias is unique in the WHOLE instance and must be clean (lower case, letters, digits, hyphen): a test makes '<runid><field>'. relationshipObject has a unique index: a master has one child; a child goes only under an object of the test, never under 'disciplina'.",
   "tests": "Tests/Unit/Controller/Api/CustomObjectApiControllerTest, the isPublished and createOnly tests of CustomObjectDefinitionImporterTest. Live: scripts/5/test-objects-api.sh. Helpers for tests: make_object / drop_object (scripts/5/lib/objects.sh) and createCustomObject / deleteCustomObject (e2e helpers.js)."
 }

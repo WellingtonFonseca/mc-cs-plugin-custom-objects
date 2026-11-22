@@ -1,6 +1,6 @@
 # Custom Object merge filter: operators, test data, tests and deploy checklist
 
-The operators the segment screen offers, the permanent test data, how to run the tests and the checklist for a new environment. Padrão: [testes.md](testes.md) (how to run the unit tests, PHPUnit 10, functional tests, SQL log). What must not break: the seed is rebuilt by a script and every test finds its ids by alias. How the merge works: wiki/custom-objects-merged-segment-filters.md.
+The operators the segment screen offers, the permanent test data, how to run the tests and the checklist for a new environment. Padrão: [tests.md](tests.md) (how to run the unit tests, PHPUnit 10, functional tests, SQL log). What must not break: the seed is rebuilt by a script and every test finds its ids by alias. How the merge works: wiki/custom-objects-merged-segment-filters.md.
 
 ## Operators the segment screen offers (pinned by test-segment-filter-operators.sh)
 

@@ -4,15 +4,15 @@ Docs of `CustomObjectsBundle`, the external fork of the Custom Objects plugin fo
 
 ## UI
 
-- [ui-lista.md](ui-lista.md): lists, row menus, item / object modals and footers, status badge (links to the shared root rules).
+- [ui-list.md](ui-list.md): lists, row menus, item / object modals and footers, status badge (links to the shared root rules).
 
 ## API
 
-- [api-convencoes.md](api-convencoes.md): write rules, transactions, idempotent DELETE, 503 retry, permissions of the REST API.
+- [api-conventions.md](api-conventions.md): write rules, transactions, idempotent DELETE, 503 retry, permissions of the REST API.
 
 ## Testes
 
-- [testes.md](testes.md): how to run unit suite, coverage and mutation; live-test conventions.
+- [tests.md](tests.md): how to run unit suite, coverage and mutation; live-test conventions.
 
 ## Stack
 

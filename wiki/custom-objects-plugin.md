@@ -14,7 +14,7 @@
 }
 ```
 
-Padrão: [stack-plugin.md](stack-plugin.md) (install / reload, cache, assets), [testes.md](testes.md) (how to run the tests).
+Padrão: [stack-plugin.md](stack-plugin.md) (install / reload, cache, assets), [tests.md](tests.md) (how to run the tests).
 
 ## What the live scripts cover instead of Tests/Functional
 
@@ -22,7 +22,7 @@ The 31 files of `Tests/Functional` need the Mautic monorepo and never run in thi
 
 ## Running the plugin's own tests
 
-See [testes.md](testes.md) (unit suite, coverage, mutation testing, traps).
+See [tests.md](tests.md) (unit suite, coverage, mutation testing, traps).
 
 ## Where to read
 
