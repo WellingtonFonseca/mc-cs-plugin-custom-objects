@@ -10,12 +10,7 @@
                         {{ '%s'|format(nameSingular|escape)|raw }}
                     </div>
                 </div>
-                {# TODO: Check if this block is needed #}
-                <div class="col-xs-2 text-right">
-                    {{ include('@MauticCore/Helper/publishstatus_badge.html.twig', {
-                        entity: item
-                    }) }}
-                </div>
+                {# the status is the badge of the page header (title + badges), not repeated here #}
             </div>
         </div>
         <!--/ page detail header -->
