@@ -2,6 +2,11 @@
 
 Só as mudanças feitas neste fork, a partir de 2026-08-24 (o que veio do plugin original não está aqui). Um bloco por dia, do mais novo para o mais antigo. Formato fixo: `## AAAA-MM-DD` e uma linha `- ` por mudança (a tela do plugin lê este arquivo).
 
+## 2026-11-24
+- A lista de itens de um Custom Object ganhou a coluna Modificado (data e hora da última alteração; se o item nunca foi alterado, mostra a data de criação), entre o Nome e o ID. Dá para ordenar por ela
+- O título da janela de detalhes agora é Custom Object Item (#id) para itens e Custom Object (#id) para objetos, em vez do nome. A janela de detalhes do item ficou mais larga e mostra título e status quando o plugin Patches está instalado
+- A página do item não repete mais o selo de status no cabeçalho da coluna esquerda (ele já aparece no título da página)
+
 ## 2026-11-19
 - A API de criar e alterar itens (POST, PATCH, PUT) não dá mais erro 500 quando dois pedidos gravam itens com campo de seleção múltipla ao mesmo tempo. A causa era um deadlock do banco (1213): o plugin apagava as opções antigas mesmo quando o item era novo, e dois pedidos travavam um ao outro. Agora ele só apaga quando existem opções, e apaga pelo id
 - Quando o banco ainda assim cancela um pedido por deadlock ou por espera de bloqueio, a API de itens responde 503 com o cabeçalho Retry-After: 1 e não salva nada. Quem chama deve repetir o pedido inteiro. No n8n de produção, ative Retry On Fail para o status 503 (quem configura é o Wellington)
