@@ -7,11 +7,14 @@
 #}
 <style>
     .modal-dialog:has(.custom-object-details-modal) {
-        width: 1100px;
+        width: 1310px;
+        width: round(up, calc((1100px + 95vw) / 2), 1px);
         max-width: 95vw;
     }
 </style>
 <div class="custom-object-details-modal">
+    {# title + status badge, drawn by the Patches plugin when it is installed (nothing otherwise) #}
+    {{ customContent('patches.details.modal.head', _context) }}
     <ul class="nav nav-tabs nav-tabs-contained" role="tablist">
         <li class="active">
             <a href="#custom-object-modal-fields" data-toggle="tab">{{ 'custom.object.tab.fields'|trans }}</a>

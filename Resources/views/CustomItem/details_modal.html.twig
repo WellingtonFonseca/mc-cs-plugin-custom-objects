@@ -6,7 +6,8 @@
 #}
 <style>
     .modal-dialog:has(.custom-item-details-modal) {
-        width: 1100px;
+        width: 1310px;
+        width: round(up, calc((1100px + 95vw) / 2), 1px);
         max-width: 95vw;
     }
     .custom-item-details-modal td,
@@ -19,6 +20,8 @@
     }
 </style>
 <div class="custom-item-details-modal">
+    {# title + status badge, drawn by the Patches plugin when it is installed (nothing otherwise) #}
+    {{ customContent('patches.details.modal.head', _context) }}
     <div class="panel shd-none mb-md">
         <table class="table table-bordered table-striped mb-0">
             <tbody>
