@@ -39,6 +39,14 @@
                 }) -}}
                 {{- include('@MauticCore/Helper/tableheader.html.twig', {
                         'sessionVar' : sessionVar,
+                        'orderBy'    : tableAlias~'.dateModified',
+                        'text'       : 'mautic.core.date.modified',
+                        'class'      : 'col-custom_item_date_modified',
+                        'baseUrl'    : routerSelf,
+                        'target'     : target
+                }) -}}
+                {{- include('@MauticCore/Helper/tableheader.html.twig', {
+                        'sessionVar' : sessionVar,
                         'orderBy'    : tableAlias~'.id',
                         'text'       : 'mautic.core.id',
                         'default'    : true,
@@ -71,6 +79,10 @@
                                 {{ item.getName() }}
                             </a>
                         </div>
+                    </td>
+                    <td>
+                        {% set modified = item.getDateModified() ?: item.getDateAdded() %}
+                        {{ modified ? dateToFull(modified) : '' }}
                     </td>
                     <td>
                         {{ item.getId() }}
