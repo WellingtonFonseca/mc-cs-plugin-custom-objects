@@ -24,6 +24,14 @@ class GetCustomObjectDefinitionTool extends AbstractCustomObjectsTool
         return 'custom_objects_get_definition';
     }
 
+    /**
+     * @return array<string, bool>
+     */
+    public function annotations(): array
+    {
+        return ['readOnlyHint' => true];
+    }
+
     public function description(): string
     {
         return 'Get the definition (structure: object and fields, no items) of one Custom Object by alias, as the JSON of the Clone tab. Pass it to custom_objects_apply_definition of another instance. Read-only.';

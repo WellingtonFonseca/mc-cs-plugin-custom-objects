@@ -22,6 +22,14 @@ class ListCustomObjectsTool extends AbstractCustomObjectsTool
         return 'custom_objects_list';
     }
 
+    /**
+     * @return array<string, bool>
+     */
+    public function annotations(): array
+    {
+        return ['readOnlyHint' => true];
+    }
+
     public function description(): string
     {
         return 'List the Custom Objects of this Mautic instance (structure only, no items): alias, name and number of fields. Read-only.';

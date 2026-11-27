@@ -28,6 +28,14 @@ class ApplyCustomObjectDefinitionTool extends AbstractCustomObjectsTool
         return 'custom_objects_apply_definition';
     }
 
+    /**
+     * @return array<string, bool>
+     */
+    public function annotations(): array
+    {
+        return ['readOnlyHint' => false, 'destructiveHint' => false, 'idempotentHint' => true];
+    }
+
     public function description(): string
     {
         return 'Apply a Custom Object definition (the output of custom_objects_get_definition of another instance). Add-only: creates the object when the alias is new, or adds the fields it lacks; never changes or deletes anything. With "dryRun" true (default) nothing is saved and the report says what would happen; pass false to apply.';

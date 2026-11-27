@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Mcp;
 
-use MauticPlugin\MauticMcpBundle\Mcp\Tool\ToolInterface;
+use MauticPlugin\MauticMcpBundle\Mcp\Tool\AnnotatedToolInterface;
 
 /**
  * Shared answer shapes of the Custom Objects MCP tools. Loaded only when MauticMcpBundle is installed (see Config/services.php), because
  * ToolInterface belongs to that plugin.
  */
-abstract class AbstractCustomObjectsTool implements ToolInterface
+abstract class AbstractCustomObjectsTool implements AnnotatedToolInterface
 {
     /**
      * @param array<string, mixed> $content
