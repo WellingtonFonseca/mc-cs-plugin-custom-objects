@@ -32,10 +32,14 @@ class CustomObjectDefinitionImportAlerts
 
         if ($result->isCreated()) {
             $alerts[] = $this->alert('success', 'custom.object.import.done'.$suffix, ['%name%' => $name], $preview ? $result->getAddedAliases() : []);
-        } elseif ([] === $result->getAddedAliases()) {
+        } elseif ([] === $result->getAddedAliases() && [] === $result->getOptionChanges()) {
             $alerts[] = $this->alert('info', 'custom.object.import.nothing'.$suffix, ['%name%' => $name]);
-        } else {
+        } elseif ([] !== $result->getAddedAliases()) {
             $alerts[] = $this->alert('success', 'custom.object.import.added'.$suffix, ['%name%' => $name], $result->getAddedAliases());
+        }
+
+        if (!$result->isCreated() && [] !== $result->getOptionChanges()) {
+            $alerts[] = $this->alert('success', 'custom.object.import.options'.$suffix, ['%name%' => $name], $result->getOptionChanges());
         }
 
         if (null !== $result->getCreatedCategory()) {

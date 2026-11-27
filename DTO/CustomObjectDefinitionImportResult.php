@@ -19,6 +19,7 @@ class CustomObjectDefinitionImportResult
      * @param string[] $addedAliases
      * @param string[] $typeMismatches
      * @param string[] $requiredWithItems
+     * @param string[] $optionChanges     a text per existing select field that received options or new labels
      */
     public function __construct(
         private CustomObject $customObject,
@@ -26,7 +27,8 @@ class CustomObjectDefinitionImportResult
         private array $addedAliases,
         private array $typeMismatches = [],
         private array $requiredWithItems = [],
-        private ?string $createdCategory = null
+        private ?string $createdCategory = null,
+        private array $optionChanges = []
     ) {
     }
 
@@ -62,6 +64,14 @@ class CustomObjectDefinitionImportResult
     public function getRequiredWithItems(): array
     {
         return $this->requiredWithItems;
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getOptionChanges(): array
+    {
+        return $this->optionChanges;
     }
 
     public function getCreatedCategory(): ?string

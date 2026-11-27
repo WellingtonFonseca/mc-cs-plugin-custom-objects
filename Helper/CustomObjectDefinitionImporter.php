@@ -171,6 +171,7 @@ class CustomObjectDefinitionImporter
         $newFields  = [];
         $required   = [];
         $mismatches = [];
+        $optionSync = [];
         foreach ($fields as $rawField) {
             $alias = $rawField['alias'];
             if (isset($existingFields[$alias])) {
@@ -180,6 +181,8 @@ class CustomObjectDefinitionImporter
                         '%existing%' => (string) $existingFields[$alias]->getType(),
                         '%file%'     => $rawField['type'],
                     ]);
+                } else {
+                    $optionSync = array_merge($optionSync, $this->syncOptions($existingFields[$alias], $rawField, $apply));
                 }
 
                 continue;
@@ -206,7 +209,7 @@ class CustomObjectDefinitionImporter
             }
         }
 
-        if ($apply && [] !== $added) {
+        if ($apply && ([] !== $added || [] !== $optionSync)) {
             $this->applyInTransaction(function () use ($customObject): void {
                 $this->customObjectModel->save($customObject);
             });
@@ -216,7 +219,55 @@ class CustomObjectDefinitionImporter
         // again until it has a value, which is said to who imports
         $requiredWithItems = [] !== $required && $this->hasItems($customObject) ? $required : [];
 
-        return new CustomObjectDefinitionImportResult($customObject, false, $added, $mismatches, $requiredWithItems);
+        return new CustomObjectDefinitionImportResult($customObject, false, $added, $mismatches, $requiredWithItems, null, $optionSync);
+    }
+
+    /**
+     * Brings the options of the file into a field that already exists: an option whose value is missing is added (file order), one whose
+     * value exists with another label gets the new label. Options only the object has are kept (items may use them). Changes the field only
+     * when $apply is true.
+     *
+     * @param mixed[] $raw
+     *
+     * @return string[] a text per field that changed: the alias and the options added or relabelled
+     */
+    private function syncOptions(CustomField $field, array $raw, bool $apply): array
+    {
+        if (!$field->isChoiceType()) {
+            return [];
+        }
+
+        $options = is_array($raw['options'] ?? null) ? $raw['options'] : [];
+        usort($options, fn ($a, $b): int => $this->orderOf($a) <=> $this->orderOf($b));
+
+        $byValue = [];
+        foreach ($field->getOptions() as $existing) {
+            $byValue[$existing->getValue()] = $existing;
+        }
+
+        $changes = [];
+        foreach ($options as $option) {
+            if (!is_array($option) || !isset($option['label'], $option['value'])) {
+                continue;
+            }
+            $label = (string) $option['label'];
+            $value = (string) $option['value'];
+            if (!isset($byValue[$value])) {
+                $changes[] = $label;
+                if ($apply) {
+                    $new = new CustomFieldOption(['label' => $label, 'value' => $value]);
+                    $field->addOption($new);
+                    $byValue[$value] = $new;
+                }
+            } elseif ($byValue[$value]->getLabel() !== $label) {
+                $changes[] = $byValue[$value]->getLabel().' → '.$label;
+                if ($apply) {
+                    $byValue[$value]->setLabel($label);
+                }
+            }
+        }
+
+        return [] === $changes ? [] : [$this->t('custom.object.import.options_changed', ['%alias%' => (string) $field->getAlias(), '%options%' => implode(', ', $changes)])];
     }
 
     /**
