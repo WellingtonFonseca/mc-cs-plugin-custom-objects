@@ -4,6 +4,7 @@ Só as mudanças feitas neste fork, a partir de 2026-08-24 (o que veio do plugin
 
 ## 2026-11-27
 - Novas ferramentas MCP para sincronizar a estrutura dos Custom Objects entre instâncias (só aparecem quando o plugin MCP está instalado): custom_objects_list lista os objetos, custom_objects_get_definition devolve a definição (objeto e campos, sem itens, o mesmo JSON da aba Clone) e custom_objects_apply_definition aplica essa definição em outra instância. Só adiciona: cria o objeto se o alias for novo ou acrescenta os campos que faltam, nunca altera nem apaga. Com dryRun ligado (padrão) nada é salvo e o relatório mostra o que seria feito
+- As ferramentas MCP dos Custom Objects agora declaram suas dicas de uso para os clientes MCP: custom_objects_list e custom_objects_get_definition são só leitura, e custom_objects_apply_definition grava, mas só adiciona (não destrói) e pode ser repetida sem efeito extra
 
 ## 2026-11-24
 - A lista de itens de um Custom Object ganhou a coluna Modificado (data e hora da última alteração; se o item nunca foi alterado, mostra a data de criação), entre o Nome e o ID. Dá para ordenar por ela
