@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MauticPlugin\CustomObjectsBundle\Helper;
 
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\DBAL\Exception\RetryableException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -167,11 +168,12 @@ class CustomObjectDefinitionImporter
             $nextOrder                          = max($nextOrder, (int) $field->getOrder() + 1);
         }
 
-        $added      = [];
-        $newFields  = [];
-        $required   = [];
-        $mismatches = [];
-        $optionSync = [];
+        $added        = [];
+        $newFields    = [];
+        $required     = [];
+        $mismatches   = [];
+        $optionSync   = [];
+        $finalOptions = [];
         foreach ($fields as $rawField) {
             $alias = $rawField['alias'];
             if (isset($existingFields[$alias])) {
@@ -182,7 +184,11 @@ class CustomObjectDefinitionImporter
                         '%file%'     => $rawField['type'],
                     ]);
                 } else {
-                    $optionSync = array_merge($optionSync, $this->syncOptions($existingFields[$alias], $rawField, $apply));
+                    $sync = $this->syncOptions($existingFields[$alias], $rawField);
+                    if (null !== $sync) {
+                        $optionSync           = array_merge($optionSync, $sync['changes']);
+                        $finalOptions[$alias] = $sync['options'];
+                    }
                 }
 
                 continue;
@@ -210,6 +216,7 @@ class CustomObjectDefinitionImporter
         }
 
         if ($apply && ([] !== $added || [] !== $optionSync)) {
+            $this->recreateOptions($existingFields, $finalOptions);
             $this->applyInTransaction(function () use ($customObject): void {
                 $this->customObjectModel->save($customObject);
             });
@@ -223,68 +230,84 @@ class CustomObjectDefinitionImporter
     }
 
     /**
-     * Makes the options of a field that already exists the options of the file: an option whose value is missing is added, one whose value
-     * exists with another label gets the new label, and one the file does not have is removed (the file is the truth: a value absent from it
-     * was deleted at the source). The options follow the order of the file. Changes the field only when $apply is true.
+     * Compares the options of a field that already exists with the options of the file: an option whose value is missing is added, one whose
+     * value exists with another label gets the new label, and one the file does not have is removed (the file is the truth: a value absent
+     * from it was deleted at the source). The options end up in the order of the file. Changes nothing: the result says what changes and what
+     * the options will be.
      *
      * @param mixed[] $raw
      *
-     * @return string[] a text per field that changed: the alias and the options added, relabelled or removed
+     * @return array{changes: string[], options: array<int, array{label: string, value: string}>}|null null when the field has no options
      */
-    private function syncOptions(CustomField $field, array $raw, bool $apply): array
+    private function syncOptions(CustomField $field, array $raw): ?array
     {
         if (!$field->isChoiceType()) {
-            return [];
+            return null;
         }
 
         $options = is_array($raw['options'] ?? null) ? $raw['options'] : [];
         usort($options, fn ($a, $b): int => $this->orderOf($a) <=> $this->orderOf($b));
 
-        $byValue = [];
+        $labels = [];
         foreach ($field->getOptions() as $existing) {
-            $byValue[$existing->getValue()] = $existing;
+            $labels[$existing->getValue()] = $existing->getLabel();
         }
 
         $changes = [];
-        $inFile  = [];
-        $order   = 0;
+        $final   = [];
         foreach ($options as $option) {
             if (!is_array($option) || !isset($option['label'], $option['value'])) {
                 continue;
             }
-            $label          = (string) $option['label'];
-            $value          = (string) $option['value'];
-            $inFile[$value] = true;
-            if (!isset($byValue[$value])) {
+            $label = (string) $option['label'];
+            $value = (string) $option['value'];
+            if (!isset($labels[$value])) {
                 $changes[] = '+ '.$label;
-                if ($apply) {
-                    $new = new CustomFieldOption(['label' => $label, 'value' => $value]);
-                    $field->addOption($new);
-                    $byValue[$value] = $new;
-                }
-            } elseif ($byValue[$value]->getLabel() !== $label) {
-                $changes[] = $byValue[$value]->getLabel().' → '.$label;
-                if ($apply) {
-                    $byValue[$value]->setLabel($label);
-                }
+            } elseif ($labels[$value] !== $label) {
+                $changes[] = $labels[$value].' → '.$label;
             }
-            if ($apply) {
-                $byValue[$value]->setOrder($order++);
+            $final[$value] = ['label' => $label, 'value' => $value];
+        }
+
+        foreach ($labels as $value => $label) {
+            if (!isset($final[$value])) {
+                $changes[] = '- '.$label;
             }
         }
 
-        foreach ($byValue as $value => $existing) {
-            if (isset($inFile[$value]) || !$existing instanceof CustomFieldOption || null === $existing->getCustomField()) {
+        $summary = [] === $changes ? [] : [$this->t('custom.object.import.options_changed', ['%alias%' => (string) $field->getAlias(), '%options%' => implode(', ', $changes)])];
+
+        return ['changes' => $summary, 'options' => array_values($final)];
+    }
+
+    /**
+     * The save of the object deletes the option rows of every field it already has (CustomFieldPreSaveSubscriber) and expects the options to be
+     * new entities that are inserted again, as the field form makes them. So the options of every existing choice field are rebuilt as new
+     * entities: the ones of $finalOptions (by field alias, from the file) or, for the fields the file did not touch, the ones they have now.
+     *
+     * @param array<string, CustomField>                                     $existingFields
+     * @param array<string, array<int, array{label: string, value: string}>> $finalOptions
+     */
+    private function recreateOptions(array $existingFields, array $finalOptions): void
+    {
+        foreach ($existingFields as $alias => $field) {
+            if (!$field->isChoiceType()) {
                 continue;
             }
-            $changes[] = '- '.$existing->getLabel();
-            if ($apply) {
-                $field->removeOption($existing);
-                $this->entityManager->remove($existing);
-            }
-        }
 
-        return [] === $changes ? [] : [$this->t('custom.object.import.options_changed', ['%alias%' => (string) $field->getAlias(), '%options%' => implode(', ', $changes)])];
+            $pairs = $finalOptions[$alias] ?? null;
+            if (null === $pairs) {
+                $current = $field->getOptions()->toArray();
+                usort($current, static fn (CustomFieldOption $a, CustomFieldOption $b): int => $a->getOrder() <=> $b->getOrder());
+                $pairs = array_map(static fn (CustomFieldOption $o): array => ['label' => $o->getLabel(), 'value' => $o->getValue()], $current);
+            }
+
+            // the old entities stay managed with the same key as the new ones: out of the unit of work first
+            foreach ($field->getOptions() as $old) {
+                $this->entityManager->detach($old);
+            }
+            $field->setOptions(new ArrayCollection(array_map(static fn (array $pair): CustomFieldOption => new CustomFieldOption($pair), $pairs)));
+        }
     }
 
     /**
