@@ -2,6 +2,9 @@
 
 Só as mudanças feitas neste fork, a partir de 2026-08-24 (o que veio do plugin original não está aqui). Um bloco por dia, do mais novo para o mais antigo. Formato fixo: `## AAAA-MM-DD` e uma linha `- ` por mudança (a tela do plugin lê este arquivo).
 
+## 2026-11-27
+- Novas ferramentas MCP para sincronizar a estrutura dos Custom Objects entre instâncias (só aparecem quando o plugin MCP está instalado): custom_objects_list lista os objetos, custom_objects_get_definition devolve a definição (objeto e campos, sem itens, o mesmo JSON da aba Clone) e custom_objects_apply_definition aplica essa definição em outra instância. Só adiciona: cria o objeto se o alias for novo ou acrescenta os campos que faltam, nunca altera nem apaga. Com dryRun ligado (padrão) nada é salvo e o relatório mostra o que seria feito
+
 ## 2026-11-24
 - A lista de itens de um Custom Object ganhou a coluna Modificado (data e hora da última alteração; se o item nunca foi alterado, mostra a data de criação), entre o Nome e o ID. Dá para ordenar por ela
 - O título da janela de detalhes agora é Custom Object Item (#id) para itens e Custom Object (#id) para objetos, em vez do nome. A janela de detalhes do item ficou mais larga e mostra título e status quando o plugin Patches está instalado
