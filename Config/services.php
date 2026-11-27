@@ -20,10 +20,19 @@ return function (ContainerConfigurator $configurator): void {
         'Report/ReportColumnsBuilder.php',
         'Serializer/ApiNormalizer.php',
         'Extension/CustomItemListeningExtension.php',
+        // implements MauticMcpBundle's ToolInterface: registered below only when that plugin is installed
+        'Mcp',
     ];
 
     $services->load('MauticPlugin\\CustomObjectsBundle\\', '../')
         ->exclude('../{'.implode(',', array_merge(MauticCoreExtension::DEFAULT_EXCLUDES, $excludes)).'}');
 
     $services->load('MauticPlugin\\CustomObjectsBundle\\Repository\\', '../Repository/*Repository.php');
+
+    // MCP tools: Custom Objects works without the MCP plugin, so they exist only when its ToolInterface does.
+    if (interface_exists(\MauticPlugin\MauticMcpBundle\Mcp\Tool\ToolInterface::class)) {
+        foreach (['ListCustomObjectsTool', 'GetCustomObjectDefinitionTool', 'ApplyCustomObjectDefinitionTool'] as $tool) {
+            $services->set('MauticPlugin\\CustomObjectsBundle\\Mcp\\'.$tool)->tag('mautic_mcp.tool');
+        }
+    }
 };
