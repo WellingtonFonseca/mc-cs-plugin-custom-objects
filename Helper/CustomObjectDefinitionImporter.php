@@ -223,13 +223,13 @@ class CustomObjectDefinitionImporter
     }
 
     /**
-     * Brings the options of the file into a field that already exists: an option whose value is missing is added (file order), one whose
-     * value exists with another label gets the new label. Options only the object has are kept (items may use them). Changes the field only
-     * when $apply is true.
+     * Makes the options of a field that already exists the options of the file: an option whose value is missing is added, one whose value
+     * exists with another label gets the new label, and one the file does not have is removed (the file is the truth: a value absent from it
+     * was deleted at the source). The options follow the order of the file. Changes the field only when $apply is true.
      *
      * @param mixed[] $raw
      *
-     * @return string[] a text per field that changed: the alias and the options added or relabelled
+     * @return string[] a text per field that changed: the alias and the options added, relabelled or removed
      */
     private function syncOptions(CustomField $field, array $raw, bool $apply): array
     {
@@ -246,14 +246,17 @@ class CustomObjectDefinitionImporter
         }
 
         $changes = [];
+        $inFile  = [];
+        $order   = 0;
         foreach ($options as $option) {
             if (!is_array($option) || !isset($option['label'], $option['value'])) {
                 continue;
             }
-            $label = (string) $option['label'];
-            $value = (string) $option['value'];
+            $label          = (string) $option['label'];
+            $value          = (string) $option['value'];
+            $inFile[$value] = true;
             if (!isset($byValue[$value])) {
-                $changes[] = $label;
+                $changes[] = '+ '.$label;
                 if ($apply) {
                     $new = new CustomFieldOption(['label' => $label, 'value' => $value]);
                     $field->addOption($new);
@@ -264,6 +267,20 @@ class CustomObjectDefinitionImporter
                 if ($apply) {
                     $byValue[$value]->setLabel($label);
                 }
+            }
+            if ($apply) {
+                $byValue[$value]->setOrder($order++);
+            }
+        }
+
+        foreach ($byValue as $value => $existing) {
+            if (isset($inFile[$value]) || !$existing instanceof CustomFieldOption || null === $existing->getCustomField()) {
+                continue;
+            }
+            $changes[] = '- '.$existing->getLabel();
+            if ($apply) {
+                $field->removeOption($existing);
+                $this->entityManager->remove($existing);
             }
         }
 
