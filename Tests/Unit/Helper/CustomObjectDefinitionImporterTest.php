@@ -495,6 +495,7 @@ class CustomObjectDefinitionImporterTest extends TestCase
             $field = new CustomField();
             $field->setAlias($alias);
             $field->setType($type);
+            $field->setTypeObject($this->typeProvider->getType($type)); // the post-load subscriber does this for a stored field
             $field->setOrder($order);
             $existing->addCustomField($field);
         }
@@ -986,5 +987,126 @@ class CustomObjectDefinitionImporterTest extends TestCase
         } catch (DefinitionImportException $e) {
             $this->assertSame(['custom.object.import.error.category_forbidden {"%alias%":"school"}'], $e->getErrors());
         }
+    }
+
+    /**
+     * @param array<int, array{0: string, 1: string}> $options [label, value] in the order the object has now
+     */
+    private function objectWithChoiceField(array $options, ?string $storedDefault): CustomField
+    {
+        $existing = new CustomObject();
+        $existing->setAlias('course');
+        $existing->setNameSingular('Original');
+        $field = new CustomField();
+        $field->setAlias('ans');
+        $field->setType('select');
+        $field->setOrder(1);
+        $field->setTypeObject($this->typeProvider->getType('select'));
+        foreach ($options as [$label, $value]) {
+            $field->addOption(['label' => $label, 'value' => $value]);
+        }
+        $field->setStoredDefaultValue($storedDefault);
+        $existing->addCustomField($field);
+        $this->objectRepository->method('findOneBy')->willReturnCallback(static fn (array $c) => 'course' === $c['alias'] ? $existing : null);
+        $this->fieldRepository->method('isAliasUnique')->willReturnCallback(static fn (string $alias): bool => 'ans' === $alias);
+
+        return $field;
+    }
+
+    /**
+     * @param array<int, array{0: string, 1: string}> $options [label, value] in the order of the file
+     *
+     * @return mixed[]
+     */
+    private function fileWithChoiceOptions(array $options): array
+    {
+        $definition                 = $this->definition();
+        $definition['customFields'] = [['alias' => 'ans', 'label' => 'Ans', 'type' => 'select', 'options' => array_map(
+            static fn (array $o, int $i): array => ['label' => $o[0], 'value' => $o[1], 'order' => $i],
+            $options,
+            array_keys($options)
+        )]];
+
+        return $definition;
+    }
+
+    /**
+     * @return array<int, array{0: string, 1: string}>
+     */
+    private function optionsOf(CustomField $field): array
+    {
+        return array_map(static fn ($o): array => [$o->getLabel(), $o->getValue()], array_values($field->getOptions()->toArray()));
+    }
+
+    public function testARemovedOptionThatIsTheDefaultOfASelectClearsTheDefaultOnApply(): void
+    {
+        $field = $this->objectWithChoiceField([['Yes', 'y'], ['No', 'n']], 'n');
+
+        $result = $this->importer->import((string) json_encode($this->fileWithChoiceOptions([['Yes', 'y']])));
+
+        $this->assertSame([['Yes', 'y']], $this->optionsOf($field));
+        $this->assertNull($field->getStoredDefaultValue());
+        $this->assertCount(1, $result->getOptionChanges());
+    }
+
+    public function testADefaultThatStillExistsInTheFileIsKept(): void
+    {
+        $field = $this->objectWithChoiceField([['Yes', 'y'], ['No', 'n']], 'y');
+
+        $this->importer->import((string) json_encode($this->fileWithChoiceOptions([['Yes', 'y']])));
+
+        $this->assertSame('y', $field->getStoredDefaultValue());
+    }
+
+    public function testARemovedOptionOfAMultiselectDefaultKeepsTheRemainingValuesAsJson(): void
+    {
+        $field = $this->objectWithChoiceField([['A', 'a'], ['B', 'b'], ['C', 'c']], '["a","c"]');
+
+        $this->importer->import((string) json_encode($this->fileWithChoiceOptions([['A', 'a'], ['B', 'b']])));
+
+        $this->assertSame('["a"]', $field->getStoredDefaultValue());
+    }
+
+    public function testAMultiselectDefaultWithNoValueLeftIsCleared(): void
+    {
+        $field = $this->objectWithChoiceField([['A', 'a'], ['B', 'b']], '["a"]');
+
+        $this->importer->import((string) json_encode($this->fileWithChoiceOptions([['B', 'b']])));
+
+        $this->assertNull($field->getStoredDefaultValue());
+    }
+
+    public function testTheCheckDoesNotTouchTheDefaultNorTheOptions(): void
+    {
+        $field = $this->objectWithChoiceField([['Yes', 'y'], ['No', 'n']], 'n');
+        $this->model->expects($this->never())->method('save');
+
+        $result = $this->importer->import((string) json_encode($this->fileWithChoiceOptions([['Yes', 'y']])), false);
+
+        $this->assertSame('n', $field->getStoredDefaultValue());
+        $this->assertSame([['Yes', 'y'], ['No', 'n']], $this->optionsOf($field));
+        $this->assertCount(1, $result->getOptionChanges());
+    }
+
+    public function testAReorderOnlyDiffIsAChangeAndTheSavedOrderIsTheOneOfTheFile(): void
+    {
+        $field = $this->objectWithChoiceField([['A', 'a'], ['B', 'b'], ['C', 'c']], null);
+        $this->model->expects($this->once())->method('save');
+
+        $result = $this->importer->import((string) json_encode($this->fileWithChoiceOptions([['C', 'c'], ['A', 'a'], ['B', 'b']])));
+
+        $this->assertCount(1, $result->getOptionChanges());
+        $this->assertStringContainsString('custom.object.import.options_reordered', $result->getOptionChanges()[0]);
+        $this->assertSame([['C', 'c'], ['A', 'a'], ['B', 'b']], $this->optionsOf($field));
+    }
+
+    public function testTheSameOptionsInTheSameOrderAreNotAChangeAndSaveNothing(): void
+    {
+        $this->objectWithChoiceField([['A', 'a'], ['B', 'b']], null);
+        $this->model->expects($this->never())->method('save');
+
+        $result = $this->importer->import((string) json_encode($this->fileWithChoiceOptions([['A', 'a'], ['B', 'b']])));
+
+        $this->assertSame([], $result->getOptionChanges());
     }
 }
