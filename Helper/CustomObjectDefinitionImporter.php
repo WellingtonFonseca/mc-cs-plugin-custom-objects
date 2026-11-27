@@ -275,9 +275,44 @@ class CustomObjectDefinitionImporter
             }
         }
 
+        // the options that stay in the object keep their relative order unless the file has another one: a reorder alone is a change too
+        $kept = array_values(array_filter(array_keys($labels), static fn ($value): bool => isset($final[$value])));
+        $kept   = array_map('strval', $kept);
+        $wanted = array_values(array_filter(array_map('strval', array_keys($final)), static fn (string $value): bool => isset($labels[$value])));
+        if ($kept !== $wanted) {
+            $changes[] = $this->t('custom.object.import.options_reordered');
+        }
+
         $summary = [] === $changes ? [] : [$this->t('custom.object.import.options_changed', ['%alias%' => (string) $field->getAlias(), '%options%' => implode(', ', $changes)])];
 
         return ['changes' => $summary, 'options' => array_values($final)];
+    }
+
+    /**
+     * A default value that points to an option the file removed is cleared (a multiselect keeps the values that remain).
+     *
+     * @param string[] $finalValues
+     */
+    private function dropRemovedDefaults(CustomField $field, array $finalValues): void
+    {
+        $stored = $field->getStoredDefaultValue();
+        if (null === $stored || '' === $stored) {
+            return;
+        }
+
+        $decoded = json_decode($stored, true);
+        if (is_array($decoded)) {
+            $keep = array_values(array_filter($decoded, static fn ($v): bool => in_array((string) $v, $finalValues, true)));
+            if (count($keep) !== count($decoded)) {
+                $field->setStoredDefaultValue([] === $keep ? null : (string) json_encode($keep));
+            }
+
+            return;
+        }
+
+        if (!in_array($stored, $finalValues, true)) {
+            $field->setStoredDefaultValue(null);
+        }
     }
 
     /**
@@ -296,7 +331,9 @@ class CustomObjectDefinitionImporter
             }
 
             $pairs = $finalOptions[$alias] ?? null;
-            if (null === $pairs) {
+            if (null !== $pairs) {
+                $this->dropRemovedDefaults($field, array_map(static fn (array $pair): string => $pair['value'], $pairs));
+            } else {
                 $current = $field->getOptions()->toArray();
                 usort($current, static fn (CustomFieldOption $a, CustomFieldOption $b): int => $a->getOrder() <=> $b->getOrder());
                 $pairs = array_map(static fn (CustomFieldOption $o): array => ['label' => $o->getLabel(), 'value' => $o->getValue()], $current);
