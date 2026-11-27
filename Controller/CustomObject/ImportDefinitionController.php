@@ -75,7 +75,7 @@ class ImportDefinitionController extends CommonController
             }
 
             // an existing object that has every field of the file has nothing to confirm
-            $canConfirm = $check->isCreated() || [] !== $check->getAddedAliases();
+            $canConfirm = $check->isCreated() || [] !== $check->getAddedAliases() || [] !== $check->getOptionChanges();
 
             return $this->renderImportForm(
                 $this->createImportForm($formFactory, $routeProvider, true, $json, $canConfirm),
