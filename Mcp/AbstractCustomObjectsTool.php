@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MauticPlugin\CustomObjectsBundle\Mcp;
 
 use MauticPlugin\MauticMcpBundle\Mcp\Tool\AnnotatedToolInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 /**
  * Shared answer shapes of the Custom Objects MCP tools. Loaded only when MauticMcpBundle is installed (see Config/services.php), because
@@ -43,5 +44,20 @@ abstract class AbstractCustomObjectsTool implements AnnotatedToolInterface
         $unknown = array_diff(array_keys($args), $allowed);
 
         return [] === $unknown ? null : 'Unknown argument: '.implode(', ', $unknown).'.';
+    }
+
+    /**
+     * The answer of an item API controller action: its JSON on success, its first error message otherwise.
+     *
+     * @return array<string, mixed>
+     */
+    protected function fromApiResponse(JsonResponse $response): array
+    {
+        $body = json_decode((string) $response->getContent(), true);
+        if ($response->getStatusCode() >= 400) {
+            return $this->error(is_array($body) && isset($body['errors'][0]['message']) ? (string) $body['errors'][0]['message'] : 'The request failed (HTTP '.$response->getStatusCode().').');
+        }
+
+        return $this->ok(is_array($body) ? $body : []);
     }
 }
