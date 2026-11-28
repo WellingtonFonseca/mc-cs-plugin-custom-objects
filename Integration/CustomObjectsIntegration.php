@@ -62,7 +62,17 @@ class CustomObjectsIntegration extends AbstractIntegration
         return [
             'custom'     => true,
             'template'   => '@CustomObjects/Integration/_settings_tabs.html.twig',
-            'parameters' => ['days' => Changelog::days(), 'icon' => self::ICON],
+            'parameters' => ['days' => Changelog::days(), 'icon' => self::ICON, 'version' => $this->installedVersion()],
         ];
+    }
+
+    /**
+     * The version of the installed plugin (the Plugin row Mautic fills from config.php 'version'), empty when it is not known.
+     */
+    private function installedVersion(): string
+    {
+        $plugin = $this->getIntegrationSettings()->getPlugin();
+
+        return null === $plugin ? '' : (string) $plugin->getVersion();
     }
 }

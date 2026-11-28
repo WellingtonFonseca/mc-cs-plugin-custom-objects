@@ -1,12 +1,12 @@
 {#
   The "Sobre" block: the plugin icon, its name and one sentence about the plugin, centered. Assets/js/plugin-about-tab.js moves it into the FIRST tab.
-  Needs: icon (the path of the plugin icon, as core's integration tile gets it).
+  Needs: icon (the path of the plugin icon, as core's integration tile gets it), version (the installed plugin version, may be empty).
 #}
 
 <div class="customobjects-about-block" data-tab-label="{{ 'custom.object.settings.about'|trans }}" data-onload-callback="customObjectsAboutTab">
     <div class="customobjects-about text-center">
         <img class="img img-responsive customobjects-about__icon" src="{{ getAssetUrl(icon) }}" alt="" />
-        <h4 class="customobjects-about__title">Custom Objects</h4>
+        <h4 class="customobjects-about__title">Custom Objects{% if version|default %} • {{ version }}{% endif %}</h4>
         <p class="customobjects-about__text text-muted">{{ 'custom.object.settings.about.text'|trans }}</p>
     </div>
 </div>
