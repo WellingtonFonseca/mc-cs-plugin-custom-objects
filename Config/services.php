@@ -31,7 +31,7 @@ return function (ContainerConfigurator $configurator): void {
 
     // MCP tools: Custom Objects works without the MCP plugin, so they exist only when its AnnotatedToolInterface does.
     if (interface_exists(\MauticPlugin\MauticMcpBundle\Mcp\Tool\AnnotatedToolInterface::class)) {
-        foreach (['ListCustomObjectsTool', 'GetCustomObjectDefinitionTool', 'ApplyCustomObjectDefinitionTool', 'SearchCustomItemsTool', 'GetCustomItemTool', 'SaveCustomItemsTool', 'DeleteCustomItemsTool'] as $tool) {
+        foreach (['ListCustomObjectsTool', 'GetCustomObjectDefinitionTool', 'ApplyCustomObjectDefinitionTool', 'SearchCustomItemsTool', 'GetCustomItemTool', 'SaveCustomItemsTool', 'DeleteCustomItemsTool', 'LinkCustomItemTool', 'UnlinkCustomItemTool', 'ContactCustomItemsTool'] as $tool) {
             $services->set('MauticPlugin\\CustomObjectsBundle\\Mcp\\'.$tool)->tag('mautic_mcp.tool');
         }
     }
