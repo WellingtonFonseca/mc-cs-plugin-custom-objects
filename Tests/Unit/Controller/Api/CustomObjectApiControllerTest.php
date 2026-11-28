@@ -17,7 +17,9 @@ use MauticPlugin\CustomObjectsBundle\Exception\InUseException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Helper\CustomObjectDefinitionExporter;
 use MauticPlugin\CustomObjectsBundle\Helper\CustomObjectDefinitionImporter;
+use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
+use MauticPlugin\CustomObjectsBundle\Repository\CustomItemRepository;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -40,18 +42,23 @@ final class CustomObjectApiControllerTest extends TestCase
     /** @var CustomObjectPermissionProvider|MockObject */
     private $permissionProvider;
 
+    /** @var CustomItemModel|MockObject */
+    private $itemModel;
+
     private CustomObjectApiController $controller;
 
     protected function setUp(): void
     {
         $this->importer           = $this->createMock(CustomObjectDefinitionImporter::class);
         $this->model              = $this->createMock(CustomObjectModel::class);
+        $this->itemModel          = $this->createMock(CustomItemModel::class);
         $this->permissionProvider = $this->createMock(CustomObjectPermissionProvider::class);
 
         $this->controller = new CustomObjectApiController(
             $this->importer,
             new CustomObjectDefinitionExporter(),
             $this->model,
+            $this->itemModel,
             $this->permissionProvider
         );
     }
@@ -209,7 +216,7 @@ final class CustomObjectApiControllerTest extends TestCase
         $this->model->expects($this->once())->method('checkIfTheCustomObjectIsUsedInSegmentFilters')->with($object);
         $this->model->expects($this->once())->method('delete')->with($object);
 
-        $response = $this->controller->deleteAction('prova');
+        $response = $this->controller->deleteAction(new Request(), 'prova');
 
         $this->assertSame(Response::HTTP_OK, $response->getStatusCode());
         $this->assertSame(['alias' => 'prova', 'deleted' => true, 'alreadyGone' => false], $this->body($response));
@@ -220,7 +227,7 @@ final class CustomObjectApiControllerTest extends TestCase
         $this->model->method('fetchEntityByAlias')->willThrowException(new NotFoundException('no'));
         $this->model->expects($this->never())->method('delete');
 
-        $response = $this->controller->deleteAction('prova');
+        $response = $this->controller->deleteAction(new Request(), 'prova');
 
         $this->assertSame(Response::HTTP_OK, $response->getStatusCode());
         $this->assertSame(['alias' => 'prova', 'deleted' => false, 'alreadyGone' => true], $this->body($response));
@@ -233,7 +240,7 @@ final class CustomObjectApiControllerTest extends TestCase
         $this->model->expects($this->never())->method('fetchEntityByAlias');
         $this->model->expects($this->never())->method('delete');
 
-        $this->assertSame(Response::HTTP_FORBIDDEN, $this->controller->deleteAction('nobody')->getStatusCode());
+        $this->assertSame(Response::HTTP_FORBIDDEN, $this->controller->deleteAction(new Request(), 'nobody')->getStatusCode());
     }
 
     public function testDeleteOfAMasterThatHasAChildIs409NamingTheChild(): void
@@ -246,7 +253,7 @@ final class CustomObjectApiControllerTest extends TestCase
         $this->model->expects($this->never())->method('checkIfTheCustomObjectIsUsedInSegmentFilters');
         $this->model->expects($this->never())->method('delete');
 
-        $response = $this->controller->deleteAction('mestre');
+        $response = $this->controller->deleteAction(new Request(), 'mestre');
 
         $this->assertSame(Response::HTTP_CONFLICT, $response->getStatusCode());
         $this->assertStringContainsString('"filho"', $this->body($response)['errors'][0]['message']);
@@ -258,7 +265,7 @@ final class CustomObjectApiControllerTest extends TestCase
         $this->permissionProvider->method('canDelete')->willThrowException(new ForbiddenException('delete'));
         $this->model->expects($this->never())->method('delete');
 
-        $this->assertSame(Response::HTTP_FORBIDDEN, $this->controller->deleteAction('prova')->getStatusCode());
+        $this->assertSame(Response::HTTP_FORBIDDEN, $this->controller->deleteAction(new Request(), 'prova')->getStatusCode());
     }
 
     public function testDeleteOfAnObjectUsedByASegmentIs409ListingTheSegments(): void
@@ -273,11 +280,80 @@ final class CustomObjectApiControllerTest extends TestCase
         $this->model->method('checkIfTheCustomObjectIsUsedInSegmentFilters')->willThrowException($exception);
         $this->model->expects($this->never())->method('delete');
 
-        $response = $this->controller->deleteAction('prova');
+        $response = $this->controller->deleteAction(new Request(), 'prova');
         $body     = $this->body($response);
 
         $this->assertSame(Response::HTTP_CONFLICT, $response->getStatusCode());
         $this->assertSame([['id' => 12, 'name' => 'Alunos']], $body['segments']);
         $this->assertStringContainsString('Alunos', $body['errors'][0]['message']);
+    }
+
+    private function dryRunRequest(): Request
+    {
+        return new Request(['dryRun' => '1']);
+    }
+
+    public function testDeleteDryRunDeletesNothingAndAnswersTheCount(): void
+    {
+        $object = $this->customObject();
+        $this->model->method('fetchEntityByAlias')->willReturn($object);
+        $repository = $this->createMock(CustomItemRepository::class);
+        $repository->expects($this->once())->method('getItemCount')->with(7)->willReturn(42);
+        $this->itemModel->method('getRepository')->willReturn($repository);
+        $this->permissionProvider->expects($this->once())->method('canDelete')->with($object);
+        $this->model->expects($this->once())->method('checkIfTheCustomObjectIsUsedInSegmentFilters')->with($object);
+        $this->model->expects($this->never())->method('delete');
+
+        $response = $this->controller->deleteAction($this->dryRunRequest(), 'prova');
+
+        $this->assertSame(Response::HTTP_OK, $response->getStatusCode());
+        $this->assertSame(
+            ['alias' => 'prova', 'dryRun' => true, 'deleted' => false, 'itemCount' => 42, 'wouldDelete' => true],
+            $this->body($response)
+        );
+    }
+
+    public function testDeleteDryRunWithoutPermissionIs403(): void
+    {
+        $this->model->method('fetchEntityByAlias')->willReturn($this->customObject());
+        $this->permissionProvider->method('canDelete')->willThrowException(new ForbiddenException('delete'));
+        $this->model->expects($this->never())->method('delete');
+        $this->itemModel->expects($this->never())->method('getRepository');
+
+        $this->assertSame(Response::HTTP_FORBIDDEN, $this->controller->deleteAction($this->dryRunRequest(), 'prova')->getStatusCode());
+    }
+
+    public function testDeleteDryRunOfAMasterWithAChildIs409(): void
+    {
+        $master = $this->customObject('mestre', 9);
+        $master->setRelationshipObject($this->customObject('filho', 8));
+        $this->model->method('fetchEntityByAlias')->willReturn($master);
+        $this->model->expects($this->never())->method('delete');
+
+        $response = $this->controller->deleteAction($this->dryRunRequest(), 'mestre');
+
+        $this->assertSame(Response::HTTP_CONFLICT, $response->getStatusCode());
+        $this->assertArrayNotHasKey('dryRun', $this->body($response));
+    }
+
+    public function testDeleteDryRunOfAnObjectUsedByASegmentIs409(): void
+    {
+        $exception = new InUseException();
+        $exception->setSegmentList([]);
+        $this->model->method('fetchEntityByAlias')->willReturn($this->customObject());
+        $this->model->method('checkIfTheCustomObjectIsUsedInSegmentFilters')->willThrowException($exception);
+        $this->model->expects($this->never())->method('delete');
+
+        $this->assertSame(Response::HTTP_CONFLICT, $this->controller->deleteAction($this->dryRunRequest(), 'prova')->getStatusCode());
+    }
+
+    public function testDeleteWithDryRunZeroStillDeletes(): void
+    {
+        $this->model->method('fetchEntityByAlias')->willReturn($this->customObject());
+        $this->model->expects($this->once())->method('delete');
+
+        $response = $this->controller->deleteAction(new Request(['dryRun' => '0']), 'prova');
+
+        $this->assertTrue($this->body($response)['deleted']);
     }
 }

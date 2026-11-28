@@ -309,4 +309,108 @@ final class CustomItemLinkApiControllerTest extends TestCase
 
         $this->assertSame([], $this->body($this->controller->contactItemsAction(new Request(), 7))['objects']);
     }
+
+    /**
+     * count query answers $total; the page query answers $rows and records limit/offset into $seen
+     *
+     * @param array<array<string,mixed>> $rows
+     * @param array<string,int>          $seen
+     */
+    private function contactsPage(int $total, array $rows, array &$seen = []): void
+    {
+        $countQuery = $this->createMock(Query::class);
+        $countQuery->method('getSingleScalarResult')->willReturn($total);
+        $pageQuery = $this->createMock(Query::class);
+        $pageQuery->method('getArrayResult')->willReturn($rows);
+
+        $count = $this->createMock(QueryBuilder::class);
+        $page  = $this->createMock(QueryBuilder::class);
+        foreach ([$count, $page] as $qb) {
+            foreach (['select', 'from', 'join', 'where', 'setParameter', 'orderBy'] as $method) {
+                $qb->method($method)->willReturnSelf();
+            }
+        }
+        $count->method('getQuery')->willReturn($countQuery);
+        $page->method('getQuery')->willReturn($pageQuery);
+        $page->method('setMaxResults')->willReturnCallback(function (int $n) use (&$seen, $page) {
+            $seen['limit'] = $n;
+
+            return $page;
+        });
+        $page->method('setFirstResult')->willReturnCallback(function (int $n) use (&$seen, $page) {
+            $seen['offset'] = $n;
+
+            return $page;
+        });
+        $this->em->method('createQueryBuilder')->willReturnOnConsecutiveCalls($count, $page);
+    }
+
+    public function testItemContactsWithoutContactPermissionIs403BeforeAnyLookup(): void
+    {
+        $this->corePermissions->method('isGranted')->willReturn(false);
+        $this->model->expects($this->never())->method('fetchEntity');
+
+        $this->assertSame(403, $this->controller->itemContactsAction(new Request(), 5)->getStatusCode());
+    }
+
+    public function testItemContactsMissingItemIs404(): void
+    {
+        $this->corePermissions->method('isGranted')->willReturn(true);
+        $this->model->method('fetchEntity')->willThrowException(new NotFoundException('Item 5 was not found.'));
+        $this->em->expects($this->never())->method('createQueryBuilder');
+
+        $this->assertSame(404, $this->controller->itemContactsAction(new Request(), 5)->getStatusCode());
+    }
+
+    public function testItemContactsWithoutItemViewPermissionIs403AndListsNothing(): void
+    {
+        $this->corePermissions->method('isGranted')->willReturn(true);
+        $this->model->method('fetchEntity')->willReturn($this->item());
+        $this->permissions->method('canView')->willThrowException(new ForbiddenException('view'));
+        $this->em->expects($this->never())->method('createQueryBuilder');
+
+        $this->assertSame(403, $this->controller->itemContactsAction(new Request(), 5)->getStatusCode());
+    }
+
+    public function testItemContactsAnswersTheShapeWithDefaultLimit(): void
+    {
+        $this->corePermissions->method('isGranted')->willReturn(true);
+        $this->model->method('fetchEntity')->willReturn($this->item());
+        $seen = [];
+        $this->contactsPage(23, [['id' => '3', 'firstname' => 'Ana', 'lastname' => 'Souza', 'email' => 'ana@example.com']], $seen);
+
+        $body = $this->body($this->controller->itemContactsAction(new Request(), 5));
+
+        $this->assertSame(
+            ['itemId' => 5, 'total' => 23, 'limit' => 10, 'offset' => 0, 'contacts' => [['id' => 3, 'firstname' => 'Ana', 'lastname' => 'Souza', 'email' => 'ana@example.com']]],
+            $body
+        );
+        $this->assertSame(['limit' => 10, 'offset' => 0], $seen);
+    }
+
+    public function testItemContactsCapsLimitAt100AndPassesOffset(): void
+    {
+        $this->corePermissions->method('isGranted')->willReturn(true);
+        $this->model->method('fetchEntity')->willReturn($this->item());
+        $seen = [];
+        $this->contactsPage(500, [], $seen);
+
+        $body = $this->body($this->controller->itemContactsAction(new Request(['limit' => '9999', 'offset' => '20']), 5));
+
+        $this->assertSame(100, $body['limit']);
+        $this->assertSame(20, $body['offset']);
+        $this->assertSame(['limit' => 100, 'offset' => 20], $seen);
+    }
+
+    public function testItemContactsClampsNonPositiveLimitAndNegativeOffset(): void
+    {
+        $this->corePermissions->method('isGranted')->willReturn(true);
+        $this->model->method('fetchEntity')->willReturn($this->item());
+        $this->contactsPage(0, []);
+
+        $body = $this->body($this->controller->itemContactsAction(new Request(['limit' => '0', 'offset' => '-5']), 5));
+
+        $this->assertSame(1, $body['limit']);
+        $this->assertSame(0, $body['offset']);
+    }
 }
