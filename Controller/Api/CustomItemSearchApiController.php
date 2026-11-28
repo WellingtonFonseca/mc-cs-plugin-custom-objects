@@ -7,6 +7,7 @@ namespace MauticPlugin\CustomObjectsBundle\Controller\Api;
 use Doctrine\ORM\EntityManagerInterface;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
+use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefContact;
 use MauticPlugin\CustomObjectsBundle\Exception\InvalidValueException;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
@@ -74,8 +75,16 @@ class CustomItemSearchApiController extends AbstractController
         // viewown-only users see only the items they created (same rule as the item list)
         $this->customItemModel->applyOwnerFilter($qb, (int) $customObject->getId());
 
+        $limit  = min(100, max(1, (int) $request->query->get('limit', 25)));
+        $offset = max(0, (int) $request->query->get('offset', 0));
+
         $index = 0;
         foreach ($request->query->all() as $fieldAlias => $value) {
+            // limit/offset are reserved for pagination, never field filters
+            if (in_array($fieldAlias, ['limit', 'offset'], true)) {
+                continue;
+            }
+
             if (!isset($fieldsByAlias[$fieldAlias])) {
                 return new JsonResponse(
                     ['errors' => [['message' => "Field '{$fieldAlias}' not found on Custom Object '{$objectAlias}'."]]],
@@ -105,15 +114,73 @@ class CustomItemSearchApiController extends AbstractController
             }
         }
 
-        $items = $qb->getQuery()->getResult();
+        $total = (int) (clone $qb)
+            ->select('COUNT(DISTINCT '.CustomItem::TABLE_ALIAS.'.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $items = $qb->orderBy(CustomItem::TABLE_ALIAS.'.id', 'ASC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset)
+            ->getQuery()
+            ->getResult();
 
         // The values of every item in one go; serializeItem() below then finds them already loaded.
         $this->customItemModel->populateCustomFieldsForItems($items);
 
         return new JsonResponse([
-            'total' => count($items),
-            'items' => array_map(fn (CustomItem $item) => $this->serializeItem($item), $items),
+            'total'  => $total,
+            'limit'  => $limit,
+            'offset' => $offset,
+            'items'  => array_map(fn (CustomItem $item) => $this->serializeItem($item), $items),
         ]);
+    }
+
+    public function getAction(string $objectAlias, int $itemId): JsonResponse
+    {
+        try {
+            $customObject = $this->customObjectModel->fetchEntityByAlias($objectAlias);
+            $this->permissionProvider->canViewAtAll((int) $customObject->getId());
+        } catch (NotFoundException $e) {
+            return new JsonResponse(['errors' => [['message' => $e->getMessage()]]], Response::HTTP_NOT_FOUND);
+        } catch (ForbiddenException $e) {
+            return new JsonResponse(['errors' => [['message' => $e->getMessage()]]], Response::HTTP_FORBIDDEN);
+        }
+
+        $qb = $this->em->createQueryBuilder()
+            ->select(CustomItem::TABLE_ALIAS)
+            ->from(CustomItem::class, CustomItem::TABLE_ALIAS)
+            ->andWhere(CustomItem::TABLE_ALIAS.'.id = :itemId')
+            ->andWhere(CustomItem::TABLE_ALIAS.'.customObject = :customObject')
+            ->setParameter('itemId', $itemId)
+            ->setParameter('customObject', $customObject);
+
+        // viewown-only users see only the items they created
+        $this->customItemModel->applyOwnerFilter($qb, (int) $customObject->getId());
+
+        $item = $qb->getQuery()->getOneOrNullResult();
+
+        if (!$item instanceof CustomItem || !$this->belongsToCustomObject($item->getCustomObject(), $customObject)) {
+            return new JsonResponse(
+                ['errors' => [['message' => "Item with ID = {$itemId} was not found on Custom Object '{$objectAlias}'."]]],
+                Response::HTTP_NOT_FOUND
+            );
+        }
+
+        $linkedContactCount = (int) $this->em->createQueryBuilder()
+            ->select('COUNT(x.contact)')
+            ->from(CustomItemXrefContact::class, 'x')
+            ->where('x.customItem = :item')
+            ->setParameter('item', $item)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return new JsonResponse($this->serializeItem($item) + ['linkedContactCount' => $linkedContactCount]);
+    }
+
+    private function belongsToCustomObject(\MauticPlugin\CustomObjectsBundle\Entity\CustomObject $itemOwner, \MauticPlugin\CustomObjectsBundle\Entity\CustomObject $customObject): bool
+    {
+        return $itemOwner->getId() === $customObject->getId();
     }
 
     /**
