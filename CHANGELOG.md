@@ -3,6 +3,8 @@
 Só as mudanças feitas neste fork, a partir de 2026-08-24 (o que veio do plugin original não está aqui). Um bloco por dia, do mais novo para o mais antigo. Formato fixo: `## AAAA-MM-DD` e uma linha `- ` por mudança (a tela do plugin lê este arquivo).
 
 ## 2026-11-28
+- A busca de itens da API REST agora é paginada: parâmetros limit (1 a 100, padrão 25) e offset, em ordem de id. A resposta traz total (todos os itens que batem), limit e offset. Atenção: chamadas sem limit (ex.: fluxos do n8n) passam a receber no máximo 25 itens.
+- Nova rota da API REST para ler um item: GET /api/customobjects/{alias}/items/{id}, com o item e linkedContactCount (quantos contatos estão ligados a ele).
 - A API REST de itens agora confere as permissões do usuário: a busca exige ver os itens (quem só vê os próprios itens recebe só os que criou), criar e atualizar exigem criar ou editar, e apagar exige apagar. Sem permissão a resposta é 403, antes de qualquer consulta, então não revela quais itens existem. Em lote, se um item não é permitido nada é salvo
 
 ## 2026-11-27

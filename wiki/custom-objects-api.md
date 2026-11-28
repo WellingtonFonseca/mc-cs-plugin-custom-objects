@@ -9,6 +9,7 @@ The REST API is the routes in `routes.api` of `Config/config.php` (admin-UI vs A
 ```json
 {
   "list/search": "GET /api/customobjects/{alias}/items[?fieldAlias=value...] (CustomItemSearchApiController)",
+  "get one": "GET /api/customobjects/{alias}/items/{itemId} (getAction): the serialized item + linkedContactCount (contacts linked to it). Same view permission as the list (viewown = only own items). 404 unknown alias, or an item that does not exist / belongs to another object / is not visible to the caller.",
   "create": "POST same path, body {\"data\": [{\"name\": \"...\", \"attributes\": {fieldAlias: value}}]}. 'id' on any entry = 400.",
   "update": "PATCH same path, same body shape with 'id' on every entry. 'id' missing or not found = 400.",
   "upsert": "PUT same path. 'id' found = update; 'id' missing or not found = create (fresh id). Matches core's own PUT convention.",
@@ -50,7 +51,7 @@ The REST API is the routes in `routes.api` of `Config/config.php` (admin-UI vs A
 
 The guide for callers, with examples, is the REST API guide section of `mc-cs-plugin-custom-objects-5/README.md`.
 
-`#[ApiResource]` annotations on the entities (a `/api/v2/...` CRUD) do not work here: `api-platform` is not installed in the image (`GET /api/v2/custom_items` is 404). Do not build on them. Decision: keep only the plain routes `/api/customobjects/{alias}/items` (what the production n8n uses for GET, POST and PATCH); the API Platform classes stay as unused code. Porting to API Platform 4 would only add pagination (the plain GET has no `limit`), so add `limit`/`offset` to the plain route instead if that is ever needed.
+`#[ApiResource]` annotations on the entities (a `/api/v2/...` CRUD) do not work here: `api-platform` is not installed in the image (`GET /api/v2/custom_items` is 404). Do not build on them. Decision: keep only the plain routes `/api/customobjects/{alias}/items` (what the production n8n uses for GET, POST and PATCH); the API Platform classes stay as unused code. The plain GET already paginates (`limit`/`offset`, see the list/search filter semantics).
 
 ### List/search filter semantics
 
@@ -62,7 +63,7 @@ Each query parameter is `<fieldAlias>=<value>`, ANDed. The filter is `Helper/Ite
   "int, decimal, date, datetime": "exact, or a leading >, >=, <, <= (URL-encode > and <): ?progresso=%3E%3D0.5",
   "date": "the whole day, dd/mm/yyyy or yyyy-mm-dd. Dates in the answer are plain Y-m-d.",
   "multiselect": "matches when the item has that option",
-  "errors": "404 unknown alias or a parameter that is not a field alias; 400 invalid value for the type (?inicio=31/02/2026). There is no pagination: limit, page or name answer 404, and no filter returns every item.",
+  "errors": "404 unknown alias or a parameter that is not a field alias; 400 invalid value for the type (?inicio=31/02/2026). Pagination: reserved params limit (clamped to 1-100, default 25) and offset (>= 0, default 0), ordered by id; the answer has total (count of ALL matches, not of the page), limit, offset, items. Out-of-range values are clamped, not rejected. limit and offset are never field filters; any other non-field param (page, name) still answers 404. CALLERS (n8n flows): no limit now returns at most 25 items, not every item; loop with offset until offset+limit >= total.",
   "values read in batch": "CustomItemModel::populateCustomFieldsForItems -> CustomFieldValueModel::createValuesForItems reads the values of all items together (one query per value table, chunks of 1000). The old per-item populateCustomFields made one UNION ALL query per item: 7174 queries and ~2.3 s per call in production. Keep it batched."
 }
 ```
