@@ -110,7 +110,7 @@ class CustomItemDeleteApiController extends AbstractController
         try {
             $customObject = $this->customObjectModel->fetchEntityByAlias($objectAlias);
             // before any item lookup: "alreadyGone" must not tell a caller without the permission which ids exist
-            $this->permissionProvider->isGranted('delete', (int) $customObject->getId());
+            $this->permissionProvider->isGrantedOwnOrOther('delete', (int) $customObject->getId());
         } catch (NotFoundException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_NOT_FOUND);
         } catch (ForbiddenException $e) {

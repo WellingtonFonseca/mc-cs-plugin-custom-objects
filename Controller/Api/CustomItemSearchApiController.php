@@ -66,10 +66,13 @@ class CustomItemSearchApiController extends AbstractController
         }
 
         $qb = $this->em->createQueryBuilder()
-            ->select('ci')
-            ->from(CustomItem::class, 'ci')
-            ->andWhere('ci.customObject = :customObject')
+            ->select(CustomItem::TABLE_ALIAS)
+            ->from(CustomItem::class, CustomItem::TABLE_ALIAS)
+            ->andWhere(CustomItem::TABLE_ALIAS.'.customObject = :customObject')
             ->setParameter('customObject', $customObject);
+
+        // viewown-only users see only the items they created (same rule as the item list)
+        $this->customItemModel->applyOwnerFilter($qb, (int) $customObject->getId());
 
         $index = 0;
         foreach ($request->query->all() as $fieldAlias => $value) {
@@ -93,7 +96,7 @@ class CustomItemSearchApiController extends AbstractController
 
             try {
                 // Same filter as the item list search, except that text must be equal, not just contain the value.
-                $this->itemFieldFilter->apply($qb, 'ci', $customField, (string) $value, ItemFieldFilter::TEXT_EQUALS, $index++);
+                $this->itemFieldFilter->apply($qb, CustomItem::TABLE_ALIAS, $customField, (string) $value, ItemFieldFilter::TEXT_EQUALS, $index++);
             } catch (InvalidValueException $e) {
                 return new JsonResponse(
                     ['errors' => [['message' => "Invalid value for field '{$fieldAlias}': {$e->getMessage()}"]]],

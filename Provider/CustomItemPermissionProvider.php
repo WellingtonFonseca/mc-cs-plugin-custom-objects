@@ -26,6 +26,21 @@ class CustomItemPermissionProvider
     }
 
     /**
+     * Object-level gate for a level ("edit", "delete"): passes with the own OR the other permission.
+     * The per-item check (hasEntityAccess) still decides each item.
+     *
+     * @throws ForbiddenException
+     */
+    public function isGrantedOwnOrOther(string $level, int $customObjectId): void
+    {
+        $name = $this->getPermissionName($customObjectId, $level);
+
+        if (!$this->corePermissions->isGranted("{$name}own") && !$this->corePermissions->isGranted("{$name}other")) {
+            throw new ForbiddenException($level, 'Items for Custom Object', $customObjectId);
+        }
+    }
+
+    /**
      * @throws ForbiddenException
      */
     public function hasEntityAccess(string $permission, CustomItem $entity): void

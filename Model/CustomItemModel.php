@@ -445,7 +445,7 @@ class CustomItemModel extends FormModel
      *
      * @return QueryBuilder|DbalQueryBuilder
      */
-    private function applyOwnerFilter($queryBuilder, int $customObjectId)
+    public function applyOwnerFilter($queryBuilder, int $customObjectId)
     {
         $user = $this->userHelper->getUser();
 

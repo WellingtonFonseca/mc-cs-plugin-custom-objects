@@ -72,7 +72,7 @@ class CustomItemWriteApiController extends AbstractController
             if ($request->isMethod('POST')) {
                 $this->permissionProvider->canCreate((int) $customObject->getId());
             } elseif ($request->isMethod('PATCH')) {
-                $this->permissionProvider->isGranted('edit', (int) $customObject->getId());
+                $this->permissionProvider->isGrantedOwnOrOther('edit', (int) $customObject->getId());
             }
         } catch (NotFoundException $e) {
             return new JsonResponse(['errors' => [['message' => $e->getMessage()]]], Response::HTTP_NOT_FOUND);
