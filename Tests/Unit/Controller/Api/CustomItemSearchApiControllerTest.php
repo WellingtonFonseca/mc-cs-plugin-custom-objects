@@ -9,6 +9,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use MauticPlugin\CustomObjectsBundle\Controller\Api\CustomItemSearchApiController;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
+use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
@@ -30,6 +31,8 @@ final class CustomItemSearchApiControllerTest extends TestCase
 
     private QueryBuilder $queryBuilder;
 
+    private AbstractQuery $query;
+
     private CustomItemModel $customItemModel;
 
     private CustomItemPermissionProvider $permissionProvider;
@@ -43,8 +46,9 @@ final class CustomItemSearchApiControllerTest extends TestCase
         $this->customItemModel   = $this->createMock(CustomItemModel::class);
         $this->permissionProvider = $this->createMock(CustomItemPermissionProvider::class);
 
-        $query = $this->createMock(AbstractQuery::class);
+        $query = $this->query = $this->createMock(AbstractQuery::class);
         $query->method('getResult')->willReturn([]);
+        $query->method('getSingleScalarResult')->willReturn(7);
 
         $this->queryBuilder = $this->getMockBuilder(QueryBuilder::class)
             ->setConstructorArgs([$this->em])
@@ -199,5 +203,131 @@ final class CustomItemSearchApiControllerTest extends TestCase
         $this->customItemModel->expects($this->once())->method('applyOwnerFilter')->with($this->queryBuilder);
 
         $this->assertSame(Response::HTTP_OK, $this->controller->listAction(new Request(), 'o')->getStatusCode());
+    }
+
+    public function testListDefaultsToLimit25Offset0AndReportsTheFullTotal(): void
+    {
+        $this->objectWithFields(['nome1' => 'text']);
+
+        $body = json_decode((string) $this->controller->listAction(new Request(), 'o')->getContent(), true);
+
+        $this->assertSame(25, $this->queryBuilder->getMaxResults());
+        $this->assertSame(0, $this->queryBuilder->getFirstResult());
+        $this->assertSame(25, $body['limit']);
+        $this->assertSame(0, $body['offset']);
+        // total is the full match count (7 from the count query), not the size of the page
+        $this->assertSame(7, $body['total']);
+        $this->assertStringContainsString('ORDER BY', $this->queryBuilder->getDQL());
+    }
+
+    /**
+     * @return array<string, array{array<string, string>, int, int}>
+     */
+    public static function pagingInputs(): array
+    {
+        return [
+            'explicit'        => [['limit' => '10', 'offset' => '30'], 10, 30],
+            'limit above max' => [['limit' => '5000'], 100, 0],
+            'limit zero'      => [['limit' => '0'], 1, 0],
+            'limit negative'  => [['limit' => '-4'], 1, 0],
+            'offset negative' => [['offset' => '-9'], 25, 0],
+        ];
+    }
+
+    /**
+     * @dataProvider pagingInputs
+     *
+     * @param array<string, string> $query
+     */
+    public function testLimitIsClampedTo1To100AndOffsetToZeroOrMore(array $query, int $limit, int $offset): void
+    {
+        $this->objectWithFields(['nome1' => 'text']);
+
+        $body = json_decode((string) $this->controller->listAction(new Request($query), 'o')->getContent(), true);
+
+        $this->assertSame($limit, $this->queryBuilder->getMaxResults());
+        $this->assertSame($offset, $this->queryBuilder->getFirstResult());
+        $this->assertSame($limit, $body['limit']);
+        $this->assertSame($offset, $body['offset']);
+    }
+
+    public function testLimitAndOffsetAreNotTreatedAsFieldFilters(): void
+    {
+        $this->objectWithFields(['nome1' => 'text']);
+
+        $response = $this->controller->listAction(new Request(['limit' => '5', 'offset' => '2', 'nome1' => 'x']), 'o');
+
+        $this->assertSame(Response::HTTP_OK, $response->getStatusCode());
+        $this->assertSame('x', $this->params()['sval0']);
+        $this->assertArrayNotHasKey('sval1', $this->params());
+    }
+
+    public function testGetWithoutTheViewPermissionIs403AndNothingIsQueried(): void
+    {
+        $this->objectWithFields([]);
+        $this->permissionProvider->method('canViewAtAll')->willThrowException(new ForbiddenException('view'));
+        $this->em->expects($this->never())->method('createQueryBuilder');
+
+        $this->assertSame(Response::HTTP_FORBIDDEN, $this->controller->getAction('o', 5)->getStatusCode());
+    }
+
+    public function testGetOfAnUnknownObjectIs404(): void
+    {
+        $this->customObjectModel->method('fetchEntityByAlias')->willThrowException(new NotFoundException('x'));
+
+        $this->assertSame(Response::HTTP_NOT_FOUND, $this->controller->getAction('nope', 5)->getStatusCode());
+    }
+
+    public function testGetOfAnItemTheOwnerFilterHidesOrThatDoesNotExistIs404(): void
+    {
+        $this->objectWithFields([]);
+        $this->customItemModel->expects($this->once())->method('applyOwnerFilter')->with($this->queryBuilder);
+        $this->query->method('getOneOrNullResult')->willReturn(null);
+
+        $response = $this->controller->getAction('o', 5);
+
+        $this->assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
+        $this->assertSame(5, $this->params()['itemId']);
+    }
+
+    public function testGetOfAnItemFromAnotherObjectIs404(): void
+    {
+        $other = $this->createMock(CustomObject::class);
+        $other->method('getId')->willReturn(99);
+        $item = $this->createMock(CustomItem::class);
+        $item->method('getCustomObject')->willReturn($other);
+        $this->query->method('getOneOrNullResult')->willReturn($item);
+        $this->customObjectModel->method('fetchEntityByAlias')->willReturn($this->customObjectWithId(1));
+
+        $this->assertSame(Response::HTTP_NOT_FOUND, $this->controller->getAction('o', 5)->getStatusCode());
+    }
+
+    public function testGetReturnsTheItemWithItsLinkedContactCount(): void
+    {
+        $object = $this->customObjectWithId(1);
+        $this->customObjectModel->method('fetchEntityByAlias')->willReturn($object);
+        $item = $this->createMock(CustomItem::class);
+        $item->method('getCustomObject')->willReturn($object);
+        $item->method('getId')->willReturn(5);
+        $item->method('getName')->willReturn('Item five');
+        $item->method('getCustomFieldValues')->willReturn(new \Doctrine\Common\Collections\ArrayCollection());
+        $this->query->method('getOneOrNullResult')->willReturn($item);
+
+        $response = $this->controller->getAction('o', 5);
+        $body     = json_decode((string) $response->getContent(), true);
+
+        $this->assertSame(Response::HTTP_OK, $response->getStatusCode());
+        $this->assertSame(5, $body['id']);
+        $this->assertSame('Item five', $body['name']);
+        $this->assertArrayHasKey('attributes', $body);
+        $this->assertSame(7, $body['linkedContactCount']);
+    }
+
+    private function customObjectWithId(int $id): CustomObject
+    {
+        $object = $this->createMock(CustomObject::class);
+        $object->method('getId')->willReturn($id);
+
+        return $object;
     }
 }
