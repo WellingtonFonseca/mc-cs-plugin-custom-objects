@@ -10,6 +10,8 @@ use Mautic\CoreBundle\Security\Permissions\CorePermissions;
 use Mautic\LeadBundle\Entity\Lead;
 use MauticPlugin\CustomObjectsBundle\DTO\TableConfig;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
+use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefContact;
+use MauticPlugin\CustomObjectsBundle\Entity\CustomItemXrefCustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
@@ -75,6 +77,7 @@ class CustomItemLinkApiController extends AbstractController
             $this->permissionProvider->canEdit($customItem);
             // validate before anything is deleted: the child item goes only when the unlink will succeed
             $this->assertTargetExists($entityType, $entityId);
+            $this->assertLinked($customItem, $entityType, $entityId);
 
             if ($customItem->getCustomObject()->getRelationshipObject()) {
                 try {
@@ -170,6 +173,27 @@ class CustomItemLinkApiController extends AbstractController
 
         if (null === $this->em->find(self::LINKABLE[$entityType], $entityId)) {
             throw new NotFoundException("Entity {$entityType} with ID = {$entityId} was not found.");
+        }
+    }
+
+    private function assertLinked(CustomItem $customItem, string $entityType, int $entityId): void
+    {
+        $queryBuilder = $this->em->createQueryBuilder();
+
+        if ('contact' === $entityType) {
+            $queryBuilder->select('COUNT(x.customItem)')
+                ->from(CustomItemXrefContact::class, 'x')
+                ->where('x.customItem = :item')->andWhere('x.contact = :target');
+            $queryBuilder->setParameter('item', $customItem->getId())->setParameter('target', $entityId);
+        } else {
+            $queryBuilder->select('COUNT(x.customItemLower)')
+                ->from(CustomItemXrefCustomItem::class, 'x')
+                ->where('x.customItemLower = :lower')->andWhere('x.customItemHigher = :higher');
+            $queryBuilder->setParameter('lower', min($customItem->getId(), $entityId))->setParameter('higher', max($customItem->getId(), $entityId));
+        }
+
+        if (0 === (int) $queryBuilder->getQuery()->getSingleScalarResult()) {
+            throw new NotFoundException("Custom item {$customItem->getId()} is not linked to {$entityType} {$entityId}.");
         }
     }
 
