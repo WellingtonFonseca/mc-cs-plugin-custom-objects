@@ -45,7 +45,7 @@ class SaveCustomItemsTool extends AbstractCustomObjectsTool
 
     public function description(): string
     {
-        return 'Create and/or update items of one Custom Object, up to 100 per call, all in ONE transaction: if one entry fails, none is saved. "mode": "create" (entries must not have "id"), "update" (every entry needs the "id" of an existing item) or "upsert" (an "id" that exists is updated; no "id", or an unknown one, creates a new item with a new id). Only the given "name" and "attributes" change; fields not mentioned keep their value on update. Never deletes. Permissions are checked per entry like the API. With "dryRun" true (default) it validates everything and saves NOTHING; pass false to save.';
+        return 'Create and/or update items of one Custom Object, up to 100 per call, all in ONE transaction: if one entry fails, none is saved. "mode": "create" (entries must not have "id"), "update" (every entry needs the "id" of an existing item) or "upsert" (an "id" that exists is updated; no "id", or an unknown one, creates a new item with a new id). Only the given "name" and "attributes" change; fields not mentioned keep their value on update. Never deletes. Permissions are checked per entry like the API. With "dryRun" true (default) it saves NOTHING: it resolves ids, checks permissions and validates the item itself (name and item rules), but it does NOT validate the "attributes" values (type, format, options); those are checked only on a real save, so a dryRun that passes can still fail with dryRun false (then nothing is saved). A new item has id null on dryRun.';
     }
 
     public function inputSchema(): array
@@ -130,10 +130,13 @@ class SaveCustomItemsTool extends AbstractCustomObjectsTool
             if (isset($entry['attributes']) && !is_array($entry['attributes'])) {
                 return $this->error('Entry '.$position.': "attributes" must be an object.');
             }
-            if ('create' === $mode && !empty($entry['id'])) {
+            if (array_key_exists('id', $entry) && (!is_int($entry['id']) || $entry['id'] < 1)) {
+                return $this->error('Entry '.$position.': "id" must be a positive integer.');
+            }
+            if ('create' === $mode && isset($entry['id'])) {
                 return $this->error('Entry '.$position.': mode "create" never accepts "id". Use "update" or "upsert".');
             }
-            if ('update' === $mode && empty($entry['id'])) {
+            if ('update' === $mode && !isset($entry['id'])) {
                 return $this->error('Entry '.$position.': mode "update" needs the "id" of an existing item. Use "create" or "upsert" to create.');
             }
         }
@@ -159,7 +162,7 @@ class SaveCustomItemsTool extends AbstractCustomObjectsTool
                 $this->populate($customItem, $entry);
                 $customItem->setDefaultValuesForMissingFields();
                 $saved    = $this->customItemModel->save($customItem, $dryRun);
-                $report[] = ['action' => $isNew ? 'create' : 'update', 'id' => $saved->getId(), 'name' => $saved->getName()];
+                $report[] = ['action' => $isNew ? 'create' : 'update', 'id' => $dryRun && $isNew ? null : $saved->getId(), 'name' => $saved->getName()];
             }
 
             $this->em->getConnection()->commit();
@@ -196,7 +199,7 @@ class SaveCustomItemsTool extends AbstractCustomObjectsTool
      */
     private function customItem(\MauticPlugin\CustomObjectsBundle\Entity\CustomObject $customObject, array $entry, bool $upsert, bool &$isNew): CustomItem
     {
-        if (!empty($entry['id'])) {
+        if (isset($entry['id'])) {
             try {
                 $customItem = $this->customItemModel->fetchEntity((int) $entry['id']);
             } catch (NotFoundException $e) {
