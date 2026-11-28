@@ -8,10 +8,12 @@ use Doctrine\ORM\EntityManagerInterface;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Exception\InvalidValueException;
+use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Helper\ItemFieldFilter;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
+use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -41,7 +43,8 @@ class CustomItemSearchApiController extends AbstractController
     public function __construct(
         private CustomObjectModel $customObjectModel,
         private CustomItemModel $customItemModel,
-        private EntityManagerInterface $em
+        private EntityManagerInterface $em,
+        private CustomItemPermissionProvider $permissionProvider,
     ) {
         $this->itemFieldFilter = new ItemFieldFilter();
     }
@@ -50,8 +53,11 @@ class CustomItemSearchApiController extends AbstractController
     {
         try {
             $customObject = $this->customObjectModel->fetchEntityByAlias($objectAlias);
+            $this->permissionProvider->canViewAtAll((int) $customObject->getId());
         } catch (NotFoundException $e) {
             return new JsonResponse(['errors' => [['message' => $e->getMessage()]]], Response::HTTP_NOT_FOUND);
+        } catch (ForbiddenException $e) {
+            return new JsonResponse(['errors' => [['message' => $e->getMessage()]]], Response::HTTP_FORBIDDEN);
         }
 
         $fieldsByAlias = [];

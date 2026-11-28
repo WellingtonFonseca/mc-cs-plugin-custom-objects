@@ -9,9 +9,11 @@ use Doctrine\ORM\EntityManagerInterface;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
 use MauticPlugin\CustomObjectsBundle\Exception\InvalidValueException;
+use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
+use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -56,7 +58,8 @@ class CustomItemWriteApiController extends AbstractController
     public function __construct(
         private CustomObjectModel $customObjectModel,
         private CustomItemModel $customItemModel,
-        private EntityManagerInterface $em
+        private EntityManagerInterface $em,
+        private CustomItemPermissionProvider $permissionProvider,
     ) {
     }
 
@@ -64,8 +67,17 @@ class CustomItemWriteApiController extends AbstractController
     {
         try {
             $customObject = $this->customObjectModel->fetchEntityByAlias($objectAlias);
+
+            // before the body is read and before any item lookup; PUT can create or update, so it is checked per entry
+            if ($request->isMethod('POST')) {
+                $this->permissionProvider->canCreate((int) $customObject->getId());
+            } elseif ($request->isMethod('PATCH')) {
+                $this->permissionProvider->isGranted('edit', (int) $customObject->getId());
+            }
         } catch (NotFoundException $e) {
             return new JsonResponse(['errors' => [['message' => $e->getMessage()]]], Response::HTTP_NOT_FOUND);
+        } catch (ForbiddenException $e) {
+            return new JsonResponse(['errors' => [['message' => $e->getMessage()]]], Response::HTTP_FORBIDDEN);
         }
 
         $payload = json_decode((string) $request->getContent(), true);
@@ -121,6 +133,10 @@ class CustomItemWriteApiController extends AbstractController
             $this->em->getConnection()->rollBack();
 
             return new JsonResponse(['errors' => [['message' => $e->getMessage()]]], Response::HTTP_BAD_REQUEST);
+        } catch (ForbiddenException $e) {
+            $this->em->getConnection()->rollBack();
+
+            return new JsonResponse(['errors' => [['message' => $e->getMessage()]]], Response::HTTP_FORBIDDEN);
         } catch (RetryableException) {
             // a deadlock or a lock wait timeout: the database undid the work of the batch and the transaction is rolled back here too, so
             // repeating the WHOLE request is safe. The entity manager is closed after this kind of error: nothing else may use the ORM.
@@ -150,10 +166,13 @@ class CustomItemWriteApiController extends AbstractController
      * @param mixed[] $itemData
      *
      * @throws NotFoundException
+     * @throws ForbiddenException
      */
     private function getCustomItem(CustomObject $customObject, array $itemData, bool $isPut = false): CustomItem
     {
         if (empty($itemData['id'])) {
+            $this->permissionProvider->canCreate((int) $customObject->getId());
+
             return new CustomItem($customObject);
         }
 
@@ -163,11 +182,15 @@ class CustomItemWriteApiController extends AbstractController
             if ($isPut) {
                 // PUT upserts: an id that doesn't exist falls back to create, matching
                 // Mautic core's own PUT convention (see class docblock).
+                $this->permissionProvider->canCreate((int) $customObject->getId());
+
                 return new CustomItem($customObject);
             }
 
             throw $e;
         }
+
+        $this->permissionProvider->canEdit($customItem);
 
         return $this->customItemModel->populateCustomFields($customItem);
     }

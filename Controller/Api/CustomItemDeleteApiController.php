@@ -6,9 +6,11 @@ namespace MauticPlugin\CustomObjectsBundle\Controller\Api;
 
 use Doctrine\ORM\EntityManagerInterface;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
+use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
+use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -44,6 +46,7 @@ class CustomItemDeleteApiController extends AbstractController
         private CustomObjectModel $customObjectModel,
         private CustomItemModel $customItemModel,
         private EntityManagerInterface $em,
+        private CustomItemPermissionProvider $permissionProvider,
     ) {
     }
 
@@ -106,8 +109,12 @@ class CustomItemDeleteApiController extends AbstractController
 
         try {
             $customObject = $this->customObjectModel->fetchEntityByAlias($objectAlias);
+            // before any item lookup: "alreadyGone" must not tell a caller without the permission which ids exist
+            $this->permissionProvider->isGranted('delete', (int) $customObject->getId());
         } catch (NotFoundException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_NOT_FOUND);
+        } catch (ForbiddenException $e) {
+            return $this->errorResponse($e->getMessage(), Response::HTTP_FORBIDDEN);
         }
 
         $deletedIds     = [];
@@ -129,6 +136,7 @@ class CustomItemDeleteApiController extends AbstractController
                     throw new NotFoundException("Item with ID = {$itemId} was not found on Custom Object '{$objectAlias}'.");
                 }
 
+                $this->permissionProvider->canDelete($customItem);
                 $this->customItemModel->delete($customItem);
                 $deletedIds[] = $itemId;
             }
@@ -138,6 +146,10 @@ class CustomItemDeleteApiController extends AbstractController
             $this->em->getConnection()->rollBack();
 
             return $this->errorResponse($e->getMessage(), Response::HTTP_NOT_FOUND);
+        } catch (ForbiddenException $e) {
+            $this->em->getConnection()->rollBack();
+
+            return $this->errorResponse($e->getMessage(), Response::HTTP_FORBIDDEN);
         } catch (\Throwable $e) {
             // Without this the transaction stays open on the shared connection after a failed delete.
             $this->em->getConnection()->rollBack();
