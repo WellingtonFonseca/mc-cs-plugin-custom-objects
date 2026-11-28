@@ -281,6 +281,12 @@ $coParams = [
                 'method'       => 'GET',
                 'requirements' => ['contactId' => '\d+'],
             ],
+            'mautic_api_customitemcontacts' => [
+                'path'         => '/customitems/{itemId}/contacts',
+                'controller'   => 'MauticPlugin\CustomObjectsBundle\Controller\Api\CustomItemLinkApiController::itemContactsAction',
+                'method'       => 'GET',
+                'requirements' => ['itemId' => '\d+'],
+            ],
         ],
     ],
 

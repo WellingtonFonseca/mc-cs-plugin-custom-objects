@@ -14,6 +14,7 @@ use MauticPlugin\CustomObjectsBundle\Exception\InUseException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Helper\CustomObjectDefinitionExporter;
 use MauticPlugin\CustomObjectsBundle\Helper\CustomObjectDefinitionImporter;
+use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
 use MauticPlugin\CustomObjectsBundle\Provider\CustomObjectPermissionProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -31,6 +32,7 @@ class CustomObjectApiController extends AbstractController
         private CustomObjectDefinitionImporter $importer,
         private CustomObjectDefinitionExporter $exporter,
         private CustomObjectModel $customObjectModel,
+        private CustomItemModel $customItemModel,
         private CustomObjectPermissionProvider $permissionProvider,
     ) {
     }
@@ -81,7 +83,7 @@ class CustomObjectApiController extends AbstractController
         return new JsonResponse($this->definitionWithIds($customObject));
     }
 
-    public function deleteAction(string $objectAlias): JsonResponse
+    public function deleteAction(Request $request, string $objectAlias): JsonResponse
     {
         try {
             // before the lookup: "alreadyGone" must not tell a caller without permission which aliases exist
@@ -108,6 +110,17 @@ class CustomObjectApiController extends AbstractController
             return $this->errorResponse($e->getMessage(), Response::HTTP_FORBIDDEN);
         } catch (InUseException $e) {
             return $this->inUseResponse($objectAlias, $e);
+        }
+
+        // explicit ?dryRun=1 only: every checks above ran, nothing is deleted
+        if (filter_var($request->query->get('dryRun', false), FILTER_VALIDATE_BOOLEAN)) {
+            return new JsonResponse([
+                'alias'       => $objectAlias,
+                'dryRun'      => true,
+                'deleted'     => false,
+                'itemCount'   => $this->customItemModel->getRepository()->getItemCount((int) $customObject->getId()),
+                'wouldDelete' => true,
+            ]);
         }
 
         $this->customObjectModel->delete($customObject);

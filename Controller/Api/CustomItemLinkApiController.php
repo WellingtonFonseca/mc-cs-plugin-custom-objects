@@ -30,6 +30,7 @@ use Symfony\Component\HttpFoundation\Response;
  *   POST   /api/customobjects/items/{itemId}/links/{entityType}/{entityId}   link; already linked = 200 as well
  *   DELETE /api/customobjects/items/{itemId}/links/{entityType}/{entityId}   unlink
  *   GET    /api/contacts/{contactId}/customitems?alias=&limit=&offset=       items of the contact, grouped by object
+ *   GET    /api/customitems/{itemId}/contacts?limit=&offset=                 contacts linked to the item
  *
  * {entityType} is whatever CustomItemModel::linkEntity() can discover ("contact", "customItem"); another value is a 400.
  */
@@ -159,6 +160,55 @@ class CustomItemLinkApiController extends AbstractController
         }
 
         return new JsonResponse(['contactId' => $contactId, 'limit' => $limit, 'offset' => ($page - 1) * $limit, 'objects' => $result]);
+    }
+
+    /**
+     * Contacts linked to an item; "limit" default 10, max 100. The permission is checked before the lookup, like the UI list.
+     */
+    public function itemContactsAction(Request $request, int $itemId): JsonResponse
+    {
+        if (!$this->corePermissions->isGranted(['lead:leads:viewown', 'lead:leads:viewother'], 'MATCH_ONE')) {
+            return $this->errorResponse('You do not have permission to view contacts.', Response::HTTP_FORBIDDEN);
+        }
+
+        try {
+            $customItem = $this->customItemModel->fetchEntity($itemId);
+            $this->permissionProvider->canView($customItem);
+        } catch (NotFoundException $e) {
+            return $this->errorResponse($e->getMessage(), Response::HTTP_NOT_FOUND);
+        } catch (ForbiddenException $e) {
+            return $this->errorResponse($e->getMessage(), Response::HTTP_FORBIDDEN);
+        }
+
+        $limit  = min(self::MAX_LIMIT, max(1, (int) $request->query->get('limit', 10)));
+        $offset = max(0, (int) $request->query->get('offset', 0));
+
+        $total = (int) $this->em->createQueryBuilder()
+            ->select('COUNT(x.contact)')
+            ->from(CustomItemXrefContact::class, 'x')
+            ->where('x.customItem = :item')
+            ->setParameter('item', $itemId)
+            ->getQuery()->getSingleScalarResult();
+
+        $rows = $this->em->createQueryBuilder()
+            ->select('l.id, l.firstname, l.lastname, l.email')
+            ->from(CustomItemXrefContact::class, 'x')
+            ->join('x.contact', 'l')
+            ->where('x.customItem = :item')
+            ->setParameter('item', $itemId)
+            ->orderBy('l.id', 'ASC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset)
+            ->getQuery()->getArrayResult();
+
+        $contacts = array_map(static fn (array $row): array => [
+            'id'        => (int) $row['id'],
+            'firstname' => $row['firstname'],
+            'lastname'  => $row['lastname'],
+            'email'     => $row['email'],
+        ], $rows);
+
+        return new JsonResponse(['itemId' => $itemId, 'total' => $total, 'limit' => $limit, 'offset' => $offset, 'contacts' => $contacts]);
     }
 
     /**
