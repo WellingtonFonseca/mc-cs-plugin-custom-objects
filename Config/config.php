@@ -263,6 +263,24 @@ $coParams = [
                 'controller' => 'MauticPlugin\CustomObjectsBundle\Controller\Api\CustomItemDeleteApiController::batchDeleteAction',
                 'method'     => 'DELETE',
             ],
+            'mautic_api_customitemlink' => [
+                'path'         => '/customobjects/items/{itemId}/links/{entityType}/{entityId}',
+                'controller'   => 'MauticPlugin\CustomObjectsBundle\Controller\Api\CustomItemLinkApiController::linkAction',
+                'method'       => 'POST',
+                'requirements' => ['itemId' => '\d+', 'entityId' => '\d+'],
+            ],
+            'mautic_api_customitemunlink' => [
+                'path'         => '/customobjects/items/{itemId}/links/{entityType}/{entityId}',
+                'controller'   => 'MauticPlugin\CustomObjectsBundle\Controller\Api\CustomItemLinkApiController::unlinkAction',
+                'method'       => 'DELETE',
+                'requirements' => ['itemId' => '\d+', 'entityId' => '\d+'],
+            ],
+            'mautic_api_contactcustomitems' => [
+                'path'         => '/contacts/{contactId}/customitems',
+                'controller'   => 'MauticPlugin\CustomObjectsBundle\Controller\Api\CustomItemLinkApiController::contactItemsAction',
+                'method'       => 'GET',
+                'requirements' => ['contactId' => '\d+'],
+            ],
         ],
     ],
 
