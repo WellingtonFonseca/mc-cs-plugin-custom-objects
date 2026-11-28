@@ -2,6 +2,9 @@
 
 Só as mudanças feitas neste fork, a partir de 2026-08-24 (o que veio do plugin original não está aqui). Um bloco por dia, do mais novo para o mais antigo. Formato fixo: `## AAAA-MM-DD` e uma linha `- ` por mudança (a tela do plugin lê este arquivo).
 
+## 2026-11-28
+- A API REST de itens agora confere as permissões do usuário: a busca exige ver os itens (quem só vê os próprios itens recebe só os que criou), criar e atualizar exigem criar ou editar, e apagar exige apagar. Sem permissão a resposta é 403, antes de qualquer consulta, então não revela quais itens existem. Em lote, se um item não é permitido nada é salvo
+
 ## 2026-11-27
 - Importar definição (aba Clone) em um Custom Object que já existe agora também acerta as opções dos campos de seleção e seleção múltipla pelo JSON: opções novas são adicionadas, rótulos diferentes são atualizados, opções que não estão no JSON são removidas e a ordem do JSON é aplicada. Valores padrão que apontavam para opções removidas são limpos. A prévia e o resultado listam as opções alteradas por campo
 - Novas ferramentas MCP para sincronizar a estrutura dos Custom Objects entre instâncias (só aparecem quando o plugin MCP está instalado): custom_objects_list lista os objetos, custom_objects_get_definition devolve a definição (objeto e campos, sem itens, o mesmo JSON da aba Clone) e custom_objects_apply_definition aplica essa definição em outra instância. Cria o objeto se o alias for novo; se já existe, acrescenta os campos que faltam e acerta as opções dos campos de seleção, sem alterar nem apagar os demais campos. Com dryRun ligado (padrão) nada é salvo e o relatório mostra o que seria feito
