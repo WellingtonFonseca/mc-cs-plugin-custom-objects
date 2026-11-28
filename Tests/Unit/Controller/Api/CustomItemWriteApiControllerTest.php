@@ -12,10 +12,12 @@ use Doctrine\ORM\EntityManagerInterface;
 use MauticPlugin\CustomObjectsBundle\Controller\Api\CustomItemWriteApiController;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
+use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\InvalidValueException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
+use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -36,6 +38,9 @@ final class CustomItemWriteApiControllerTest extends TestCase
     /** @var Connection|MockObject */
     private $connection;
 
+    /** @var CustomItemPermissionProvider|MockObject */
+    private $permissionProvider;
+
     private CustomItemWriteApiController $controller;
 
     protected function setUp(): void
@@ -45,9 +50,10 @@ final class CustomItemWriteApiControllerTest extends TestCase
         $this->connection        = $this->createMock(Connection::class);
         $em                      = $this->createMock(EntityManagerInterface::class);
         $em->method('getConnection')->willReturn($this->connection);
+        $this->permissionProvider = $this->createMock(CustomItemPermissionProvider::class);
         $this->customObjectModel->method('fetchEntityByAlias')->willReturn(new CustomObject());
 
-        $this->controller = new CustomItemWriteApiController($this->customObjectModel, $this->customItemModel, $em);
+        $this->controller = new CustomItemWriteApiController($this->customObjectModel, $this->customItemModel, $em, $this->permissionProvider);
     }
 
     private function post(string $content = '{"data": [{"name": "item"}]}'): Request
@@ -149,5 +155,55 @@ final class CustomItemWriteApiControllerTest extends TestCase
         $response = $this->controller->saveAction($this->post('{"data": []}'), 'x');
 
         $this->assertSame(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
+    }
+
+    public function testPostWithoutTheCreatePermissionIs403BeforeAnythingIsRead(): void
+    {
+        $this->permissionProvider->method('canCreate')->willThrowException(new ForbiddenException('create'));
+        $this->connection->expects($this->never())->method('beginTransaction');
+        $this->customItemModel->expects($this->never())->method('save');
+
+        $response = $this->controller->saveAction($this->post(), 'x');
+
+        $this->assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
+        $this->assertArrayHasKey('errors', $this->body($response));
+    }
+
+    public function testPatchWithoutTheEditPermissionIs403BeforeAnythingIsRead(): void
+    {
+        $this->permissionProvider->expects($this->once())->method('isGrantedOwnOrOther')->with('edit')
+            ->willThrowException(new ForbiddenException('edit'));
+        $this->connection->expects($this->never())->method('beginTransaction');
+        $this->customItemModel->expects($this->never())->method('fetchEntity');
+        $this->customItemModel->expects($this->never())->method('save');
+
+        $request = Request::create('/api/customobjects/x/items', 'PATCH', [], [], [], [], '{"data": [{"id": 5, "name": "n"}]}');
+
+        $this->assertSame(Response::HTTP_FORBIDDEN, $this->controller->saveAction($request, 'x')->getStatusCode());
+    }
+
+    public function testAnItemTheUserMayNotEditIs403AndTheWholeBatchIsRolledBack(): void
+    {
+        $this->customItemModel->method('fetchEntity')->willReturn(new CustomItem(new CustomObject()));
+        $this->permissionProvider->method('canEdit')->willThrowException(new ForbiddenException('edit'));
+        $this->customItemModel->expects($this->never())->method('save');
+        $this->connection->expects($this->once())->method('rollBack');
+        $this->connection->expects($this->never())->method('commit');
+
+        $request = Request::create('/api/customobjects/x/items', 'PATCH', [], [], [], [], '{"data": [{"id": 5, "name": "n"}]}');
+
+        $this->assertSame(Response::HTTP_FORBIDDEN, $this->controller->saveAction($request, 'x')->getStatusCode());
+    }
+
+    public function testPutThatFallsBackToCreateNeedsTheCreatePermission(): void
+    {
+        $this->customItemModel->method('fetchEntity')->willThrowException(new NotFoundException('gone'));
+        $this->permissionProvider->expects($this->atLeastOnce())->method('canCreate')->willThrowException(new ForbiddenException('create'));
+        $this->customItemModel->expects($this->never())->method('save');
+        $this->connection->expects($this->once())->method('rollBack');
+
+        $request = Request::create('/api/customobjects/x/items', 'PUT', [], [], [], [], '{"data": [{"id": 999, "name": "n"}]}');
+
+        $this->assertSame(Response::HTTP_FORBIDDEN, $this->controller->saveAction($request, 'x')->getStatusCode());
     }
 }

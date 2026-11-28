@@ -10,9 +10,11 @@ use Doctrine\ORM\QueryBuilder;
 use MauticPlugin\CustomObjectsBundle\Controller\Api\CustomItemSearchApiController;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomField;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
+use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
+use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,12 +30,18 @@ final class CustomItemSearchApiControllerTest extends TestCase
 
     private QueryBuilder $queryBuilder;
 
+    private CustomItemModel $customItemModel;
+
+    private CustomItemPermissionProvider $permissionProvider;
+
     private CustomItemSearchApiController $controller;
 
     protected function setUp(): void
     {
         $this->customObjectModel = $this->createMock(CustomObjectModel::class);
         $this->em                = $this->createMock(EntityManagerInterface::class);
+        $this->customItemModel   = $this->createMock(CustomItemModel::class);
+        $this->permissionProvider = $this->createMock(CustomItemPermissionProvider::class);
 
         $query = $this->createMock(AbstractQuery::class);
         $query->method('getResult')->willReturn([]);
@@ -47,8 +55,9 @@ final class CustomItemSearchApiControllerTest extends TestCase
 
         $this->controller = new CustomItemSearchApiController(
             $this->customObjectModel,
-            $this->createMock(CustomItemModel::class),
-            $this->em
+            $this->customItemModel,
+            $this->em,
+            $this->permissionProvider
         );
     }
 
@@ -170,5 +179,25 @@ final class CustomItemSearchApiControllerTest extends TestCase
         $this->objectWithFields(['x' => 'unicorn']);
 
         $this->assertSame(400, $this->controller->listAction(new Request(['x' => '1']), 'o')->getStatusCode());
+    }
+
+    public function testWithoutTheViewPermissionIs403AndNothingIsQueried(): void
+    {
+        $this->objectWithFields(['nome1' => 'text']);
+        $this->permissionProvider->expects($this->once())->method('canViewAtAll')
+            ->willThrowException(new ForbiddenException('view'));
+        $this->em->expects($this->never())->method('createQueryBuilder');
+
+        $response = $this->controller->listAction(new Request(['nome1' => 'x']), 'o');
+
+        $this->assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
+    }
+
+    public function testTheOwnerFilterIsAppliedToTheQuery(): void
+    {
+        $this->objectWithFields(['nome1' => 'text']);
+        $this->customItemModel->expects($this->once())->method('applyOwnerFilter')->with($this->queryBuilder);
+
+        $this->assertSame(Response::HTTP_OK, $this->controller->listAction(new Request(), 'o')->getStatusCode());
     }
 }

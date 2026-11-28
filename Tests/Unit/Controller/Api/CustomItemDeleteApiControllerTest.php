@@ -9,9 +9,11 @@ use Doctrine\ORM\EntityManagerInterface;
 use MauticPlugin\CustomObjectsBundle\Controller\Api\CustomItemDeleteApiController;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomItem;
 use MauticPlugin\CustomObjectsBundle\Entity\CustomObject;
+use MauticPlugin\CustomObjectsBundle\Exception\ForbiddenException;
 use MauticPlugin\CustomObjectsBundle\Exception\NotFoundException;
 use MauticPlugin\CustomObjectsBundle\Model\CustomItemModel;
 use MauticPlugin\CustomObjectsBundle\Model\CustomObjectModel;
+use MauticPlugin\CustomObjectsBundle\Provider\CustomItemPermissionProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -29,6 +31,8 @@ final class CustomItemDeleteApiControllerTest extends TestCase
 
     private Connection $connection;
 
+    private CustomItemPermissionProvider $permissionProvider;
+
     private CustomItemDeleteApiController $controller;
 
     protected function setUp(): void
@@ -37,13 +41,15 @@ final class CustomItemDeleteApiControllerTest extends TestCase
         $this->customItemModel   = $this->createMock(CustomItemModel::class);
         $this->em                = $this->createMock(EntityManagerInterface::class);
         $this->connection        = $this->createMock(Connection::class);
+        $this->permissionProvider = $this->createMock(CustomItemPermissionProvider::class);
 
         $this->em->method('getConnection')->willReturn($this->connection);
 
         $this->controller = new CustomItemDeleteApiController(
             $this->customObjectModel,
             $this->customItemModel,
-            $this->em
+            $this->em,
+            $this->permissionProvider
         );
     }
 
@@ -331,5 +337,47 @@ final class CustomItemDeleteApiControllerTest extends TestCase
 
         $this->assertSame(Response::HTTP_BAD_REQUEST, $response->getStatusCode());
         $this->assertSame('Each "id" must be a positive integer.', $this->errorMessage($response));
+    }
+
+    public function testBatchDeleteWithoutTheDeletePermissionIs403AndNoItemIsLookedUp(): void
+    {
+        $this->customObjectModel->method('fetchEntityByAlias')->willReturn($this->customObject(1));
+        $this->permissionProvider->expects($this->once())->method('isGrantedOwnOrOther')->with('delete', 1)
+            ->willThrowException(new ForbiddenException('delete'));
+        // an "alreadyGone" answer would tell the caller which ids exist
+        $this->customItemModel->expects($this->never())->method('fetchEntity');
+        $this->customItemModel->expects($this->never())->method('delete');
+        $this->connection->expects($this->never())->method('beginTransaction');
+
+        $request  = new Request([], [], [], [], [], [], json_encode(['data' => [['id' => 7]]]));
+        $response = $this->controller->batchDeleteAction($request, 'documents');
+
+        $this->assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
+    }
+
+    public function testDeleteOneWithoutTheDeletePermissionIs403(): void
+    {
+        $this->customObjectModel->method('fetchEntityByAlias')->willReturn($this->customObject(1));
+        $this->permissionProvider->method('isGrantedOwnOrOther')->willThrowException(new ForbiddenException('delete'));
+        $this->customItemModel->expects($this->never())->method('delete');
+
+        $this->assertSame(Response::HTTP_FORBIDDEN, $this->controller->deleteAction('documents', 7)->getStatusCode());
+    }
+
+    public function testAnItemTheUserMayNotDeleteIs403AndTheBatchIsRolledBack(): void
+    {
+        $customObject = $this->customObject(1);
+        $item         = $this->customItem(7, $customObject);
+        $this->customObjectModel->method('fetchEntityByAlias')->willReturn($customObject);
+        $this->customItemModel->method('fetchEntity')->willReturn($item);
+        $this->permissionProvider->method('canDelete')->willThrowException(new ForbiddenException('delete'));
+        $this->customItemModel->expects($this->never())->method('delete');
+        $this->connection->expects($this->once())->method('rollBack');
+        $this->connection->expects($this->never())->method('commit');
+
+        $request  = new Request([], [], [], [], [], [], json_encode(['data' => [['id' => 7]]]));
+        $response = $this->controller->batchDeleteAction($request, 'documents');
+
+        $this->assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
     }
 }

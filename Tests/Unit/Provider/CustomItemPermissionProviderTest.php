@@ -127,4 +127,30 @@ class CustomItemPermissionProviderTest extends \PHPUnit\Framework\TestCase
 
         $this->provider->canDelete($this->customItem);
     }
+
+    public function testIsGrantedOwnOrOtherPassesWithOnlyTheOtherPermission(): void
+    {
+        $this->corePermissions->method('isGranted')
+            ->willReturnCallback(static fn (string $name): bool => 'custom_objects:33:editother' === $name);
+
+        $this->provider->isGrantedOwnOrOther('edit', self::OBJECT_ID);
+        $this->addToAssertionCount(1);
+    }
+
+    public function testIsGrantedOwnOrOtherPassesWithOnlyTheOwnPermission(): void
+    {
+        $this->corePermissions->method('isGranted')
+            ->willReturnCallback(static fn (string $name): bool => 'custom_objects:33:deleteown' === $name);
+
+        $this->provider->isGrantedOwnOrOther('delete', self::OBJECT_ID);
+        $this->addToAssertionCount(1);
+    }
+
+    public function testIsGrantedOwnOrOtherIsForbiddenWithNeither(): void
+    {
+        $this->corePermissions->method('isGranted')->willReturn(false);
+
+        $this->expectException(ForbiddenException::class);
+        $this->provider->isGrantedOwnOrOther('delete', self::OBJECT_ID);
+    }
 }
